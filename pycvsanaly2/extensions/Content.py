@@ -25,9 +25,83 @@ from pycvsanaly2.utils import printdbg, printerr, printout, \
         remove_directory, uri_to_filename
 from pycvsanaly2.profile import profiler_start, profiler_stop
 from FileRevs import FileRevs
+from repositoryhandler.backends import RepositoryCommandError
+from tempfile import mkdtemp, NamedTemporaryFile
+from repositoryhandler.backends.watchers import CAT
+import os
+import re
 
 class Content(Extension):
     deps = ['FileTypes']
+
+    def __init__(self):
+        self.path = ""
+
+    def __job_run(self, repo, repo_uri, rev):
+        def write_file (line, fd):
+            fd.write (line)
+            
+        repo_type = repo.get_type ()
+        if repo_type == 'cvs':
+            # CVS paths contain the module stuff
+            uri = repo.get_uri_for_path (repo_uri)
+            module = uri[len (repo.get_uri ()):].strip ('/')
+
+            if module != '.':
+                path = self.path[len (module):].strip ('/')
+            else:
+                path = self.path.strip ('/')
+        else:
+            path = self.path.strip ('/')
+
+        suffix = ''
+        filename = os.path.basename (self.path)
+        ext_ptr = filename.rfind ('.')
+        if ext_ptr != -1:
+            suffix = filename[ext_ptr:]
+
+        fd = NamedTemporaryFile ('w', suffix=suffix)
+        wid = repo.add_watch (CAT, write_file, fd.file)
+            
+        if repo_type == 'git':
+            retries = 0
+        else:
+            retries = 3
+            
+        done = False
+        failed = False
+        while not done and not failed:
+            try:
+                repo.cat (os.path.join (repo_uri, path), rev)
+                done = True
+            except RepositoryCommandError, e:
+                if retries > 0:
+                    printerr ("Command %s returned %d (%s), try again", (e.cmd, e.returncode, e.error))
+                    retries -= 1
+                    fd.file.seek (0)
+                elif retries == 0:
+                    failed = True
+                    printerr ("Error obtaining %s@%s. Command %s returned %d (%s)",
+                              (self.path, rev, e.cmd, e.returncode, e.error))
+            except Exception, e:
+                failed = True
+                printerr ("Error obtaining %s@%s. Exception: %s", (self.path, self.rev, str (e)))
+                
+        repo.remove_watch (CAT, wid)
+        fd.file.close ()
+
+        if failed:
+            self.measures.set_error ()
+        else:
+            try:
+                f = open(fd.name)
+                print "Dump: " + str(f.readlines())
+                #fm = create_file_metrics (fd.name)
+                #self.__measure_file (fm, self.measures, fd.name, self.rev)
+            except Exception, e:
+                printerr ("Error creating FileMetrics for %s@%s. Exception: %s", (fd.name, self.rev, str (e)))
+
+        fd.close ()
     
     def __create_table (self, connection, drop_table=True):
         cursor = connection.cursor()
@@ -152,6 +226,9 @@ class Content(Extension):
             # Threading stuff commented out
             #job = MetricsJob(id_counter, file_id, commit_id, relative_path, rev, failed)
             #job_pool.push(job)
+            self.path = relative_path
+            self.__job_run(repo, uri, rev)
+            
 
         #job_pool.join()
         #self.__process_finished_jobs(job_pool, write_cursor, True)
