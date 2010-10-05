@@ -1,4 +1,4 @@
-# Copyright (C) 2008 LibreSoft
+# Copyright (C) 2010 University of California, Santa Cruz
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,3 +17,16 @@
 # Authors :
 #       Chris Lewis <cflewis@soe.ucsc.edu>
 
+from pycvsanaly2.extensions import Extension, register_extension, \
+        ExtensionRunError
+from pycvsanaly2.utils import printdbg, printerr, printout, \
+        remove_directory, uri_to_filename
+from pycvsanaly2.profile import profiler_start, profiler_stop
+
+class Content(Extension):
+    def run(self, repo, url, db):
+        profiler_start("Running content extension")
+        printout("Hello extension world!")
+        profiler_stop("Running content extension", delete=True)
+
+register_extension("Content", Content)
