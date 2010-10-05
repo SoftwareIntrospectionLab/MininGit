@@ -92,12 +92,18 @@ class Content(Extension):
             else:
                 repo_uri = uri
 
-            read_cursor.execute(statement("SELECT id from repositories where uri = ?", db.place_holder),(repo_uri,))
+            read_cursor.execute(statement( \
+                    "SELECT id from repositories where uri = ?", \
+                    db.place_holder),(repo_uri,))
             repo_id = read_cursor.fetchone()[0]
         except NotImplementedError:
-            raise ExtensionRunError("Content extension is not supported for %s repositories" %(repo.get_type()))
+            raise ExtensionRunError( \
+                    "Content extension is not supported for %s repos" \
+                    %(repo.get_type()))
         except Exception, e:
-            raise ExtensionRunError("Error creating repository %s. Exception: %s" %(repo.get_uri(), str(e)))
+            raise ExtensionRunError( \
+                    "Error creating repository %s. Exception: %s" \
+                    %(repo.get_uri(), str(e)))
             
         # Try to create a table for storing the content
         # TODO: Removed use case for choosing between all or just the HEAD,
@@ -130,10 +136,7 @@ class Content(Extension):
             try:
                 relative_path = fr.get_path()
             except AttributeError, e:
-                if self.config.metrics_noerr:
-                    printerr("Error getting path for file %d@%d: %s",(file_id, commit_id, str(e)))
-                else:
-                    raise e
+                raise e
 
             if composed:
                 rev = revision.split("|")[0]
