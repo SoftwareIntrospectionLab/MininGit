@@ -28,48 +28,63 @@ from FileRevs import FileRevs
 from repositoryhandler.backends import RepositoryCommandError
 from tempfile import mkdtemp, NamedTemporaryFile
 from repositoryhandler.backends.watchers import CAT
+from Jobs import JobPool, Job
 import os
 import re
 
-class Content(Extension):
-    deps = ['FileTypes']
+class ContentJob(Job):
+    def __init__(self, repo, repo_id, repo_uri, rev, path):
+        self.repo = repo
+        self.repo_id = repo_id
+        self.repo_uri = repo_uri
+        self.rev = rev
+        self.path = path
+        self.file_contents = ""
 
-    def __job_run(self, repo, repo_uri, rev, path):
-        def write_file(line, fd):
-            fd.write(line)
-            
-        repo_type = repo.get_type()
-        if repo_type == 'cvs':
-            # CVS paths contain the module stuff
-            uri = repo.get_uri_for_path(repo_uri)
-            module = uri[len(repo.get_uri()):].strip('/')
+    def write_file(self, line, fd):
+        fd.write(line)
+    
+    def run(self, repo, repo_uri):
+        self.repo_type = self.repo.get_type()
+
+        if self.repo_type == 'cvs':
+            # CVS self.paths contain the module stuff
+            uri = self.repo.get_uri_for_self.path(self.repo_uri)
+            module = uri[len(self.repo.get_uri()):].strip('/')
 
             if module != '.':
-                path = path[len(module):].strip('/')
+                self.path = self.path[len(module):].strip('/')
             else:
-                path = path.strip('/')
+                self.path = self.path.strip('/')
         else:
-            path = path.strip('/')
+            self.path = self.path.strip('/')
 
         suffix = ''
-        filename = os.path.basename(path)
+        filename = os.path.basename(self.path)
         ext_ptr = filename.rfind('.')
         if ext_ptr != -1:
             suffix = filename[ext_ptr:]
 
+        # Write out to a temporary file
         fd = NamedTemporaryFile('w', suffix=suffix)
-        wid = repo.add_watch(CAT, write_file, fd.file)
-            
-        if repo_type == 'git':
+
+        # Not sure what this does yet
+        wid = self.repo.add_watch(CAT, self.write_file, fd.file)
+        
+        # Git doesn't need retries because all of the revisions
+        # are already on disk
+        if self.repo_type == 'git':
             retries = 0
         else:
             retries = 3
             
         done = False
         failed = False
+
+        # Try downloading the file revision
         while not done and not failed:
             try:
-                repo.cat(os.path.join(repo_uri, path), rev)
+                self.repo.cat(os.path.join(self.repo_uri, self.path), self.rev)
                 done = True
             except RepositoryCommandError, e:
                 if retries > 0:
@@ -79,31 +94,46 @@ class Content(Extension):
                 elif retries == 0:
                     failed = True
                     printerr("Error obtaining %s@%s. Command %s returned %d(%s)",
-                             (path, rev, e.cmd, e.returncode, e.error))
+                             (self.path, self.rev, e.cmd, e.returncode, e.error))
             except Exception, e:
                 failed = True
-                printerr("Error obtaining %s@%s. Exception: %s",(path, rev, str(e)))
+                printerr("Error obtaining %s@%s. Exception: %s",(self.path, self.rev, str(e)))
                 
-        repo.remove_watch(CAT, wid)
+        self.repo.remove_watch(CAT, wid)
         fd.file.close()
 
         if failed:
-            self.measures.set_error()
+            #self.measures.set_error()
+            printerr("Failure due to error")
         else:
             try:
                 f = open(fd.name)
                 #print "Dump: " + str(f.readlines())
-                return_string = ""
                 for line in f:
-                    return_string = return_string + line
+                    self.file_contents = self.file_contents + line
 
-                return return_string.decode("utf8")
+                f.close()
+                self.file_contents = self.file_contents.decode("utf8")
                 #fm = create_file_metrics(fd.name)
                 #self.__measure_file(fm, self.measures, fd.name, self.rev)
             except Exception, e:
-                printerr("Error creating FileMetrics for %s@%s. Exception: %s",(fd.name, rev, str(e)))
+                printerr("Error getting contents for for %s@%s. Exception: %s",(fd.name, self.rev, str(e)))
+            finally:
+                fd.close()
 
-        fd.close()
+        # Returning a value is probably *not* what run does, but we'll just
+        # assume it for now.
+        return self.file_contents
+
+    def get_repo_id(self):
+        return self.repo_id
+
+    def get_file_contents(self):
+        return self.file_contents
+
+
+class Content(Extension):
+    deps = ['FileTypes']
     
     def __create_table(self, connection, drop_table=True):
         cursor = connection.cursor()
@@ -152,6 +182,17 @@ class Content(Extension):
         connection.commit()
         cursor.close()
 
+    def __process_finished_jobs(self, job_pool, write_cursor):
+        finished_job = job_pool.get_next_done()
+
+        while finished_job is not None:
+            write_cursor.execute( \
+                    "insert into content(repository_id, content) " +
+                    "values(?,?)", (finished_job.get_repo_id(), \
+                            str(finished_job.get_file_contents())))
+            finished_job = job_pool.get_next_done(0.5)
+            
+
 
     def run(self, repo, uri, db):
         # Start the profiler, per every other extension
@@ -163,8 +204,6 @@ class Content(Extension):
         read_cursor = connection.cursor()
         write_cursor = connection.cursor()
         
-        id_counter = 1
-
         # Try to get the repository and get its ID from the database
         try:
             path = uri_to_filename(uri)
@@ -196,13 +235,12 @@ class Content(Extension):
 
         # This is where the threading stuff comes in, I expect
         # Commenting out as I don't really want to mess with this right now
-        #job_pool = JobPool(repo, path or repo.get_uri(), queuesize=self.MAX_METRICS)
+        job_pool = JobPool(repo, path or repo.get_uri(), queuesize=10)
 
-        # Get code files to discard all other files in case of metrics-all
-        # -- This filters files if they're not source files, I'm not sure
-        # why you would ever not want this on, metrics-all or not.
+        # This filters files if they're not source files.
         # I'm pretty sure "unknown" is returning binary files too, but
         # these are implicitly left out when trying to convert to utf-8
+        # after download
         query = "select f.id from file_types ft, files f " + \
                 "where f.id = ft.file_id and " + \
                 "ft.type in('code', 'unknown') and " + \
@@ -212,6 +250,7 @@ class Content(Extension):
 
         fr = FileRevs(db, connection, read_cursor, repo_id)
 
+        # Loop through each file and its revision
         for revision, commit_id, file_id, action_type, composed in fr:
             if file_id not in code_files:
                 continue
@@ -228,17 +267,18 @@ class Content(Extension):
 
             printdbg("Path for %d at %s -> %s",(file_id, rev, relative_path))
 
+            # Ignore SVN tags
             if repo.get_type() == 'svn' and relative_path == 'tags':
                 printdbg("Skipping file %s",(relative_path,))
                 continue
 
             # Threading stuff commented out
-            #job = MetricsJob(id_counter, file_id, commit_id, relative_path, rev, failed)
-            #job_pool.push(job)
-            file_content = self.__job_run(repo, uri, rev, relative_path)
-            print "Got file content of: " + str(file_content)
+            job = ContentJob(repo, repo_id, uri, rev, relative_path)
+            job_pool.push(job)
 
-            write_cursor.execute("insert into content(repository_id, content) values(?,?)", (repo_id, str(file_content)))
+            # This should operate as if it wasn't threaded at all
+            job_pool.join()
+            self.__process_finished_jobs(job_pool, write_cursor)
             connection.commit()
             
 
@@ -253,8 +293,6 @@ class Content(Extension):
         read_cursor.close()
         write_cursor.close()
         connection.close()
-
-        printout("Hello extension world!")
 
         # This turns off the profiler and deletes it's timings
         profiler_stop("Running content extension", delete=True)
