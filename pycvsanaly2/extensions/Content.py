@@ -82,7 +82,7 @@ class Content(Extension):
                              (path, rev, e.cmd, e.returncode, e.error))
             except Exception, e:
                 failed = True
-                printerr("Error obtaining %s@%s. Exception: %s",(path, self.rev, str(e)))
+                printerr("Error obtaining %s@%s. Exception: %s",(path, rev, str(e)))
                 
         repo.remove_watch(CAT, wid)
         fd.file.close()
@@ -93,11 +93,15 @@ class Content(Extension):
             try:
                 f = open(fd.name)
                 #print "Dump: " + str(f.readlines())
-                return str(f.readlines())
+                return_string = ""
+                for line in f:
+                    return_string = return_string + line
+
+                return return_string.decode("utf8")
                 #fm = create_file_metrics(fd.name)
                 #self.__measure_file(fm, self.measures, fd.name, self.rev)
             except Exception, e:
-                printerr("Error creating FileMetrics for %s@%s. Exception: %s",(fd.name, self.rev, str(e)))
+                printerr("Error creating FileMetrics for %s@%s. Exception: %s",(fd.name, rev, str(e)))
 
         fd.close()
     
@@ -119,9 +123,9 @@ class Content(Extension):
             
             try:
                 cursor.execute("CREATE TABLE content(" +
-                                "id int(11) primary key," +
-                                "repository_id int(11) NOT NULL," +
-                                "content clob NOT NULL)")
+                                "id INTEGER PRIMARY KEY," +
+                                "repository_id INTEGER NOT NULL," +
+                                "content CLOB NOT NULL)")
             except pysqlite2.dbapi2.OperationalError:
                 cursor.close()
                 raise TableAlreadyExists
@@ -197,6 +201,8 @@ class Content(Extension):
         # Get code files to discard all other files in case of metrics-all
         # -- This filters files if they're not source files, I'm not sure
         # why you would ever not want this on, metrics-all or not.
+        # I'm pretty sure "unknown" is returning binary files too, but
+        # these are implicitly left out when trying to convert to utf-8
         query = "select f.id from file_types ft, files f " + \
                 "where f.id = ft.file_id and " + \
                 "ft.type in('code', 'unknown') and " + \
