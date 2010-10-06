@@ -34,34 +34,31 @@ import re
 class Content(Extension):
     deps = ['FileTypes']
 
-    def __init__(self):
-        self.path = ""
-
-    def __job_run(self, repo, repo_uri, rev):
-        def write_file (line, fd):
-            fd.write (line)
+    def __job_run(self, repo, repo_uri, rev, path):
+        def write_file(line, fd):
+            fd.write(line)
             
-        repo_type = repo.get_type ()
+        repo_type = repo.get_type()
         if repo_type == 'cvs':
             # CVS paths contain the module stuff
-            uri = repo.get_uri_for_path (repo_uri)
-            module = uri[len (repo.get_uri ()):].strip ('/')
+            uri = repo.get_uri_for_path(repo_uri)
+            module = uri[len(repo.get_uri()):].strip('/')
 
             if module != '.':
-                path = self.path[len (module):].strip ('/')
+                path = path[len(module):].strip('/')
             else:
-                path = self.path.strip ('/')
+                path = path.strip('/')
         else:
-            path = self.path.strip ('/')
+            path = path.strip('/')
 
         suffix = ''
-        filename = os.path.basename (self.path)
-        ext_ptr = filename.rfind ('.')
+        filename = os.path.basename(path)
+        ext_ptr = filename.rfind('.')
         if ext_ptr != -1:
             suffix = filename[ext_ptr:]
 
-        fd = NamedTemporaryFile ('w', suffix=suffix)
-        wid = repo.add_watch (CAT, write_file, fd.file)
+        fd = NamedTemporaryFile('w', suffix=suffix)
+        wid = repo.add_watch(CAT, write_file, fd.file)
             
         if repo_type == 'git':
             retries = 0
@@ -72,38 +69,39 @@ class Content(Extension):
         failed = False
         while not done and not failed:
             try:
-                repo.cat (os.path.join (repo_uri, path), rev)
+                repo.cat(os.path.join(repo_uri, path), rev)
                 done = True
             except RepositoryCommandError, e:
                 if retries > 0:
-                    printerr ("Command %s returned %d (%s), try again", (e.cmd, e.returncode, e.error))
+                    printerr("Command %s returned %d(%s), try again",(e.cmd, e.returncode, e.error))
                     retries -= 1
-                    fd.file.seek (0)
+                    fd.file.seek(0)
                 elif retries == 0:
                     failed = True
-                    printerr ("Error obtaining %s@%s. Command %s returned %d (%s)",
-                              (self.path, rev, e.cmd, e.returncode, e.error))
+                    printerr("Error obtaining %s@%s. Command %s returned %d(%s)",
+                             (path, rev, e.cmd, e.returncode, e.error))
             except Exception, e:
                 failed = True
-                printerr ("Error obtaining %s@%s. Exception: %s", (self.path, self.rev, str (e)))
+                printerr("Error obtaining %s@%s. Exception: %s",(path, self.rev, str(e)))
                 
-        repo.remove_watch (CAT, wid)
-        fd.file.close ()
+        repo.remove_watch(CAT, wid)
+        fd.file.close()
 
         if failed:
-            self.measures.set_error ()
+            self.measures.set_error()
         else:
             try:
                 f = open(fd.name)
-                print "Dump: " + str(f.readlines())
-                #fm = create_file_metrics (fd.name)
-                #self.__measure_file (fm, self.measures, fd.name, self.rev)
+                #print "Dump: " + str(f.readlines())
+                return str(f.readlines())
+                #fm = create_file_metrics(fd.name)
+                #self.__measure_file(fm, self.measures, fd.name, self.rev)
             except Exception, e:
-                printerr ("Error creating FileMetrics for %s@%s. Exception: %s", (fd.name, self.rev, str (e)))
+                printerr("Error creating FileMetrics for %s@%s. Exception: %s",(fd.name, self.rev, str(e)))
 
-        fd.close ()
+        fd.close()
     
-    def __create_table (self, connection, drop_table=True):
+    def __create_table(self, connection, drop_table=True):
         cursor = connection.cursor()
 
         # Drop the table's old data
@@ -116,34 +114,39 @@ class Content(Extension):
                 # about it right now
                 pass
 
-        if isinstance (self.db, SqliteDatabase):
+        if isinstance(self.db, SqliteDatabase):
             import pysqlite2.dbapi2
             
             try:
-                cursor.execute("CREATE TABLE content (" +
-                                "id integer)")
+                cursor.execute("CREATE TABLE content(" +
+                                "id int(11) primary key," +
+                                "repository_id int(11) NOT NULL," +
+                                "content clob NOT NULL)")
             except pysqlite2.dbapi2.OperationalError:
-                cursor.close ()
+                cursor.close()
                 raise TableAlreadyExists
             except:
                 raise
-        elif isinstance (self.db, MysqlDatabase):
+        elif isinstance(self.db, MysqlDatabase):
             import _mysql_exceptions
 
             try:
-                cursor.execute ("CREATE TABLE content (" +
-                                "id integer" +
-                                ") CHARACTER SET=utf8")
+                cursor.execute("CREATE TABLE content(" +
+                                "id int(11) NOT NULL auto_increment," +
+                                "repository_id int(11) NOT NULL default '0'," +
+                                "content mediumtext NOT NULL,"
+                                "PRIMARY KEY(id)" +
+                                ") ENGINE=InnoDB CHARACTER SET=utf8")
             except _mysql_exceptions.OperationalError, e:
                 if e.args[0] == 1050:
-                    cursor.close ()
+                    cursor.close()
                     raise TableAlreadyExists
                 raise
             except:
                 raise
             
-        connection.commit ()
-        cursor.close ()
+        connection.commit()
+        cursor.close()
 
 
     def run(self, repo, uri, db):
@@ -226,8 +229,11 @@ class Content(Extension):
             # Threading stuff commented out
             #job = MetricsJob(id_counter, file_id, commit_id, relative_path, rev, failed)
             #job_pool.push(job)
-            self.path = relative_path
-            self.__job_run(repo, uri, rev)
+            file_content = self.__job_run(repo, uri, rev, relative_path)
+            print "Got file content of: " + str(file_content)
+
+            write_cursor.execute("insert into content(repository_id, content) values(?,?)", (repo_id, str(file_content)))
+            connection.commit()
             
 
         #job_pool.join()
