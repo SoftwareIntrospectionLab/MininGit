@@ -32,10 +32,13 @@ from Jobs import JobPool, Job
 import os
 import re
 
+# This class holds a single repository retrieve task,
+# and keeps the source code until the object is garbage-collected
 class ContentJob(Job):
-    def __init__(self, repo, repo_id, repo_uri, rev, path):
+    def __init__(self, repo, commit_id, file_id, repo_uri, rev, path):
         self.repo = repo
-        self.repo_id = repo_id
+        self.commit_id = commit_id
+        self.file_id = file_id
         self.repo_uri = repo_uri
         self.rev = rev
         self.path = path
@@ -88,19 +91,22 @@ class ContentJob(Job):
                 done = True
             except RepositoryCommandError, e:
                 if retries > 0:
-                    printerr("Command %s returned %d(%s), try again",(e.cmd, e.returncode, e.error))
+                    printerr("Command %s returned %d(%s), try again",\
+                            (e.cmd, e.returncode, e.error))
                     retries -= 1
                     fd.file.seek(0)
                 elif retries == 0:
                     failed = True
-                    printerr("Error obtaining %s@%s. Command %s returned %d(%s)",
-                             (self.path, self.rev, e.cmd, e.returncode, e.error))
+                    printerr("Error obtaining %s@%s. " +
+                                "Command %s returned %d(%s)", \
+                                (self.path, self.rev, e.cmd, \
+                                e.returncode, e.error))
             except Exception, e:
                 failed = True
-                printerr("Error obtaining %s@%s. Exception: %s",(self.path, self.rev, str(e)))
+                printerr("Error obtaining %s@%s. Exception: %s", \
+                        (self.path, self.rev, str(e)))
                 
         self.repo.remove_watch(CAT, wid)
-        fd.file.close()
 
         if failed:
             #self.measures.set_error()
@@ -113,29 +119,42 @@ class ContentJob(Job):
                     self.file_contents = self.file_contents + line
 
                 f.close()
-                self.file_contents = self.file_contents.decode("utf8")
                 #fm = create_file_metrics(fd.name)
                 #self.__measure_file(fm, self.measures, fd.name, self.rev)
             except Exception, e:
-                printerr("Error getting contents for for %s@%s. Exception: %s",(fd.name, self.rev, str(e)))
+                printerr("Error getting contents for for %s@%s. " +
+                            "Exception: %s",(fd.name, self.rev, str(e)))
             finally:
+                fd.file.close()
                 fd.close()
 
         # Returning a value is probably *not* what run does, but we'll just
         # assume it for now.
         return self.file_contents
 
-    def get_repo_id(self):
-        return self.repo_id
+    def get_commit_id(self):
+        return self.commit_id
 
     def get_file_contents(self):
-        return self.file_contents
+        # An encode will fail if the source code can't be converted to
+        # utf-8, ie. it's not already unicode, or latin-1, or something
+        # obvious. This almost always means that the file isn't source
+        # code at all. 
+        # TODO: I should really throw a "not source" exception,
+        # but just doing None is fine for now.
+        try:
+            return self.file_contents.encode("utf-8")
+        except UnicodeDecodeError, e:
+            return None
+
+    def get_file_id(self):
+        return self.file_id
 
 
 class Content(Extension):
     deps = ['FileTypes']
     
-    def __create_table(self, connection, drop_table=True):
+    def __prepare_table(self, connection, drop_table=True):
         cursor = connection.cursor()
 
         # Drop the table's old data
@@ -153,9 +172,10 @@ class Content(Extension):
             
             try:
                 cursor.execute("CREATE TABLE content(" +
-                                "id INTEGER PRIMARY KEY," +
-                                "repository_id INTEGER NOT NULL," +
-                                "content CLOB NOT NULL)")
+                    "id INTEGER PRIMARY KEY," +
+                    "scmlog_id INTEGER NOT NULL," +
+                    "file_id INTEGER NOT NULL," +
+                    "content CLOB NOT NULL)")
             except pysqlite2.dbapi2.OperationalError:
                 cursor.close()
                 raise TableAlreadyExists
@@ -166,11 +186,12 @@ class Content(Extension):
 
             try:
                 cursor.execute("CREATE TABLE content(" +
-                                "id int(11) NOT NULL auto_increment," +
-                                "repository_id int(11) NOT NULL default '0'," +
-                                "content mediumtext NOT NULL,"
-                                "PRIMARY KEY(id)" +
-                                ") ENGINE=InnoDB CHARACTER SET=utf8")
+                    "id int(11) NOT NULL auto_increment," +
+                    "scmlog_id int(11) NOT NULL," +
+                    "file_id int(11) NOT NULL," +
+                    "content mediumtext NOT NULL,"
+                    "PRIMARY KEY(id)" +
+                    ") ENGINE=InnoDB CHARACTER SET=utf8")
             except _mysql_exceptions.OperationalError, e:
                 if e.args[0] == 1050:
                     cursor.close()
@@ -185,11 +206,17 @@ class Content(Extension):
     def __process_finished_jobs(self, job_pool, write_cursor):
         finished_job = job_pool.get_next_done()
 
+        # scmlog_id is the commit ID. For some reason, the 
+        # documentaion advocates tablename_id as the reference,
+        # but in the source, these are referred to as commit IDs.
+        # Don't ask me why!
         while finished_job is not None:
-            write_cursor.execute( \
-                    "insert into content(repository_id, content) " +
-                    "values(?,?)", (finished_job.get_repo_id(), \
-                            str(finished_job.get_file_contents())))
+            if finished_job.get_file_contents() is not None:
+                write_cursor.execute( \
+                        "insert into content(scmlog_id, file_id, content) " +
+                        "values(?,?,?)", (finished_job.get_commit_id(), \
+                                finished_job.get_file_id(), \
+                                str(finished_job.get_file_contents())))
             finished_job = job_pool.get_next_done(0.5)
             
 
@@ -229,13 +256,15 @@ class Content(Extension):
         # TODO: Removed use case for choosing between all or just the HEAD,
         # should ideally put that back again. Just all for now is fine.
         try:
-            self.__create_table(connection)
+            self.__prepare_table(connection)
         except Exception, e:
             raise ExtensionRunError(str(e))
 
+        queuesize = 10
+
         # This is where the threading stuff comes in, I expect
         # Commenting out as I don't really want to mess with this right now
-        job_pool = JobPool(repo, path or repo.get_uri(), queuesize=10)
+        job_pool = JobPool(repo, path or repo.get_uri(), queuesize=queuesize)
 
         # This filters files if they're not source files.
         # I'm pretty sure "unknown" is returning binary files too, but
@@ -249,6 +278,8 @@ class Content(Extension):
         code_files = [item[0] for item in read_cursor.fetchall()]
 
         fr = FileRevs(db, connection, read_cursor, repo_id)
+
+        i = 0
 
         # Loop through each file and its revision
         for revision, commit_id, file_id, action_type, composed in fr:
@@ -273,14 +304,17 @@ class Content(Extension):
                 continue
 
             # Threading stuff commented out
-            job = ContentJob(repo, repo_id, uri, rev, relative_path)
+            job = ContentJob(repo, commit_id, file_id, uri, rev, relative_path)
             job_pool.push(job)
 
-            # This should operate as if it wasn't threaded at all
-            job_pool.join()
-            self.__process_finished_jobs(job_pool, write_cursor)
-            connection.commit()
-            
+            if i >= queuesize:
+                printdbg("Queue is now at %d, flushing to database", (i,))
+                job_pool.join()
+                self.__process_finished_jobs(job_pool, write_cursor)
+                connection.commit()
+                i = 0
+            else:
+                i = i + 1
 
         #job_pool.join()
         #self.__process_finished_jobs(job_pool, write_cursor, True)
