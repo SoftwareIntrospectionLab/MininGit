@@ -154,56 +154,72 @@ class ContentJob(Job):
 class Content(Extension):
     deps = ['FileTypes']
     
-    def __prepare_table(self, connection, drop_table=True):
+    def __prepare_table(self, connection, drop_table=False):
         cursor = connection.cursor()
 
         # Drop the table's old data
         if drop_table:
             try:
                 cursor.execute("DROP TABLE content")
-            except:
-                # Shouldn't pass on this really, but it will complain if
-                # content isn't there, and I can't bothered to worry
-                # about it right now
-                pass
+            except Exception, e:
+                printerr("Couldn't drop content table because %s", (e,))
 
         if isinstance(self.db, SqliteDatabase):
             import pysqlite2.dbapi2
             
+            # Note that we can't guarentee sqlite is going
+            # to provide foreign key support (it was only
+            # introduced in 3.6.19), so no constraints are set
             try:
                 cursor.execute("CREATE TABLE content(" +
                     "id INTEGER PRIMARY KEY," +
                     "scmlog_id INTEGER NOT NULL," +
                     "file_id INTEGER NOT NULL," +
-                    "content CLOB NOT NULL)")
+                    "content CLOB NOT NULL," +
+                    "UNIQUE (scmlog_id, file_id))")
             except pysqlite2.dbapi2.OperationalError:
-                cursor.close()
-                raise TableAlreadyExists
+                # It's OK if the table already exists
+                pass
+                #raise TableAlreadyExists
             except:
                 raise
+            finally:
+                cursor.close()
+
         elif isinstance(self.db, MysqlDatabase):
             import _mysql_exceptions
 
+            # I commented out foreign key constraints because
+            # cvsanaly uses MyISAM, which doesn't enforce them.
+            # MySQL was giving errno:150 when trying to create with
+            # them anyway
             try:
                 cursor.execute("CREATE TABLE content(" +
                     "id int(11) NOT NULL auto_increment," +
                     "scmlog_id int(11) NOT NULL," +
                     "file_id int(11) NOT NULL," +
-                    "content mediumtext NOT NULL,"
-                    "PRIMARY KEY(id)" +
+                    "content mediumtext NOT NULL," +
+                    "PRIMARY KEY(id)," +
+                    "UNIQUE (scmlog_id, file_id)" +
+                    #"FOREIGN KEY (scmlog_id) references scmlog(id), " +
+                    #"FOREIGN KEY (file_id) references files(id) " +
                     ") ENGINE=InnoDB CHARACTER SET=utf8")
             except _mysql_exceptions.OperationalError, e:
                 if e.args[0] == 1050:
-                    cursor.close()
-                    raise TableAlreadyExists
-                raise
+                    # It's OK if the table already exists
+                    pass
+                    #raise TableAlreadyExists
+                else:
+                    raise
             except:
                 raise
+            finally:
+                cursor.close()
             
         connection.commit()
         cursor.close()
 
-    def __process_finished_jobs(self, job_pool, write_cursor):
+    def __process_finished_jobs(self, job_pool, write_cursor, db):
         finished_job = job_pool.get_next_done()
 
         # scmlog_id is the commit ID. For some reason, the 
@@ -212,11 +228,17 @@ class Content(Extension):
         # Don't ask me why!
         while finished_job is not None:
             if finished_job.get_file_contents() is not None:
-                write_cursor.execute( \
-                        "insert into content(scmlog_id, file_id, content) " +
-                        "values(?,?,?)", (finished_job.get_commit_id(), \
+                try:
+                    query = "insert into content(scmlog_id, file_id, content) values(?,?,?)"
+
+                    write_cursor.execute(statement(query, db.place_holder), \
+                            (finished_job.get_commit_id(), \
                                 finished_job.get_file_id(), \
                                 str(finished_job.get_file_contents())))
+
+                except Exception as e:
+                    printerr("Couldn't insert, duplicate record?: %s", (e,))
+
             finished_job = job_pool.get_next_done(0.5)
             
 
@@ -257,8 +279,8 @@ class Content(Extension):
         # should ideally put that back again. Just all for now is fine.
         try:
             self.__prepare_table(connection)
-        except Exception, e:
-            raise ExtensionRunError(str(e))
+        except Exception as e:
+            raise ExtensionRunError("Couldn't prepare table because " + str(e))
 
         queuesize = 10
 
@@ -310,7 +332,7 @@ class Content(Extension):
             if i >= queuesize:
                 printdbg("Queue is now at %d, flushing to database", (i,))
                 job_pool.join()
-                self.__process_finished_jobs(job_pool, write_cursor)
+                self.__process_finished_jobs(job_pool, write_cursor, db)
                 connection.commit()
                 i = 0
             else:
