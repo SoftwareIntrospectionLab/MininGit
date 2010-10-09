@@ -32,7 +32,6 @@ CVSAnalY has the following dependencies:
 * subversion (optional, for SVN support)
 * git (optional, for Git support)
 * Python MySQLDB (optional but recommended)
-* Python SQLite (optional)
 
 Install
 -------
