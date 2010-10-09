@@ -165,7 +165,7 @@ class Content(Extension):
                 printerr("Couldn't drop content table because %s", (e,))
 
         if isinstance(self.db, SqliteDatabase):
-            import pysqlite2.dbapi2
+            import sqlite3.dbapi2
             
             # Note that we can't guarentee sqlite is going
             # to provide foreign key support (it was only
@@ -177,7 +177,7 @@ class Content(Extension):
                     "file_id INTEGER NOT NULL," +
                     "content CLOB NOT NULL," +
                     "UNIQUE (scmlog_id, file_id))")
-            except pysqlite2.dbapi2.OperationalError:
+            except sqlite3.dbapi2.OperationalError:
                 # It's OK if the table already exists
                 pass
                 #raise TableAlreadyExists
