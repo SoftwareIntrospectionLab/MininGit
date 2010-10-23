@@ -1,5 +1,2 @@
-*~
-*.pyc
-MANIFEST
-dist/
-*.sqlite
+.project
+.pydevproject
