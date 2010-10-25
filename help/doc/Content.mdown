@@ -1,0 +1,29 @@
+Content Extension
+=================
+
+How to run it
+-------------
+    cvsanaly2 [cvsanaly options] --extensions=Content [repository URL]
+
+If you want a quick example, you can run `test-content.sh`, which runs against the original cvsanaly repository (how meta) and saves to an SQLite database.
+
+Goal
+----
+The content extension is designed to get the source of every revision in the SCM repository. For DVCS technologies (like Git) this is trivial, for older technologies (like CVS/SVN) it's not.
+
+With CVS-like repositories, the main repo needs to be queried for each individual check-in and the source downloaded. This plugin does that for you.
+
+While cvsanaly is designed for metrics across the entire repo, you might want to know the source code for certain uses.
+
+Why doesn't cvsanaly do this already?
+-------------------------------------
+Downloading every snapshot of changed files is expensive in disk space (most DVCS techs have nice compression to deal with this issue), and your database size can blow up from a few megabytes to gigabytes. It also takes a long time to query the SCM this way, although the plugin uses  threading in order to open about 10 concurrent connections to the SCM server in order to alleviate some overhead.
+
+Schema
+------
+The plugin stores its results in the `content` table.
+
+* `id` (Integer) -> The table primary key, has no significance by itself.
+* `scmlog_id` (Integer) -> Foreign key to `scmlog(id)`, which allows you to find the details of the commit when this file was changed.
+* `file_id` (Integer) -> Foreign key to `file(id)`. `file` is a table that stores files independently of the file structure, the idea being that if a file is moved, it is still resolvable. Read the original cvsanaly docs for more information.
+* `content` (Text) -> The actual source code of the file.
