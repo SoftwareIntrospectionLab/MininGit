@@ -125,8 +125,11 @@ class ContentJob(Job):
                 printerr("Error getting contents for for %s@%s. " +
                             "Exception: %s",(fd.name, self.rev, str(e)))
             finally:
-                #fd.file.close()
-                fd.close()
+                #TODO: This should close, but it throws an error
+                # sometimes. It's fixable using an algorithm like
+                # <http://www.mail-archive.com/bazaar-commits@lists.canonical.com/msg06260.html>
+                #fd.close()
+                pass
 
         # Returning a value is probably *not* what run does, but we'll just
         # assume it for now.
