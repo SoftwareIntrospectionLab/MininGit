@@ -125,7 +125,7 @@ class ContentJob(Job):
                 printerr("Error getting contents for for %s@%s. " +
                             "Exception: %s",(fd.name, self.rev, str(e)))
             finally:
-                fd.file.close()
+                #fd.file.close()
                 fd.close()
 
         # Returning a value is probably *not* what run does, but we'll just
