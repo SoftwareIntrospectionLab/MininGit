@@ -19,6 +19,14 @@ Why doesn't cvsanaly do this already?
 -------------------------------------
 Downloading every snapshot of changed files is expensive in disk space (most DVCS techs have nice compression to deal with this issue), and your database size can blow up from a few megabytes to gigabytes. It also takes a long time to query the SCM this way, although the plugin uses  threading in order to open about 10 concurrent connections to the SCM server in order to alleviate some overhead.
 
+Throttling
+----------
+This plugin, by default, opens 10 threads to the repository. In testing, this seems like a reasonable value. If your download is going too slow, you can try to increase this number. If you suspect there are a lot of errors (such as the server backing off for fear of a denial of service attack), you can decrease the number.
+
+If you want to edit this value, you can do so by exporting an environment variable called `CVSANALY_THREADS`, with the number of threads you'd like to spawn. For example, in bash, this would be `CVSANALY_THREADS=20;export CVSANALY_THREADS`. Don't forget to **export** the value, or cvsanaly won't be able to see it.
+
+
+
 Schema
 ------
 The plugin stores its results in the `content` table.

@@ -285,7 +285,8 @@ class Content(Extension):
         except Exception as e:
             raise ExtensionRunError("Couldn't prepare table because " + str(e))
 
-        queuesize = 10
+        queuesize = int(os.getenv("CVSANALY_THREADS", 10))
+        printdbg("Setting queuesize to " + str(queuesize))
 
         # This is where the threading stuff comes in, I expect
         # Commenting out as I don't really want to mess with this right now
