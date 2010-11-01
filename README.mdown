@@ -26,8 +26,8 @@ CVSAnalY has the following dependencies:
 
 * Python 2.5 or higher
 * RepositoryHandler
-    git clone http://git.libresoft.es/repositoryhandler
-    git clone git://git.libresoft.es/git/repositoryhandler
+
+    `git clone http://git.libresoft.es/repositoryhandler` or `git clone git://git.libresoft.es/git/repositoryhandler`
 * cvs (optional, for CVS support)
 * subversion (optional, for SVN support)
 * git (optional, for Git support)
