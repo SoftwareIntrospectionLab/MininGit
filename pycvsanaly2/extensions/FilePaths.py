@@ -42,6 +42,40 @@ class FilePaths:
     def __init__ (self, db):
         self.__dict__ = self.__shared_state
         self.__dict__['db'] = db
+        
+    def update_for_file_revision(self, cursor, file_id, commit_id):
+        db = self.__dict__['db']
+        
+        if self.__dict__['adj'] is None:
+            adj = FilePaths.Adj ()
+            self.__dict__['adj'] = adj
+        else:
+            adj = self.__dict__['adj']
+            
+        while(file_id!=None):
+            query = "select file_name from files where id=?"
+            cursor.execute(statement(query, db.place_holder),(file_id,))
+            file_name = cursor.fetchone()
+            adj.files[file_id] = file_name
+            query = "select parent_id, commit_id from file_links where file_id=?"
+            cursor.execute(statement(query, db.place_holder),(file_id,))
+            rs = cursor.fetchall()
+            parent_id = None
+            
+            if(len(rs)>1):
+                query = "select s1.id from scmlog s1, scmlog s2 where s2.id=? and s1.id in ? and s1.date<=s2.date order by s1.date desc"
+                link_rev_ids = tuple([row[1] for row in rs])
+                cursor.execute(statement(query, db.place_holder),(str(link_rev_ids),commit_id))
+                latest_link_rev_id = cursor.fetchone[0]
+                parent_id = [row[0] for row in rs if row[1]==latest_link_rev_id][0]
+            elif len(rs)>0:
+                parent_id = rs[0][0]
+                
+            if(parent_id != None):
+                adj.adj[file_id] = parent_id
+            file_id = parent_id
+        
+        
 
     def update_for_revision (self, cursor, commit_id, repo_id):
         db = self.__dict__['db']
@@ -133,9 +167,9 @@ class FilePaths:
         tokens = []
         id = file_id
         
-        while id != -1:
+        while id != None and id !=-1:
             tokens.insert (0, adj.files[id])
-            id = adj.adj[id]
+            id = adj.adj.get(id) #use get instead of index to avoid key error
 
         profiler_stop ("Building path for file %d", (file_id,), True)
 
