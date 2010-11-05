@@ -64,7 +64,7 @@ class Patches (Extension):
                 cursor.execute ("CREATE TABLE patches (" +
                                 "id integer primary key," +
                                 "commit_id integer," +
-                                "patch blob" +
+                                "patch clob" +
                                 ")")
             except sqlite3.dbapi2.OperationalError:
                 cursor.close ()
@@ -78,7 +78,7 @@ class Patches (Extension):
                 cursor.execute ("CREATE TABLE patches (" +
                                 "id INT primary key," +
                                 "commit_id integer," +
-                                "patch LONGBLOB," +
+                                "patch LONGTEXT," +
                                 "FOREIGN KEY (commit_id) REFERENCES scmlog(id)" +
                                 ") CHARACTER SET=utf8")
             except _mysql_exceptions.OperationalError, e:
@@ -160,7 +160,7 @@ class Patches (Extension):
         rs = icursor.fetchmany ()
         while rs:
             for commit_id, revision, composed_rev in rs:
-                if commit_id in commits:
+                if (commit_id in commits) or (commit_id < 6975) or (commit_id > 6985):
                     continue
 
                 if composed_rev:
@@ -170,7 +170,7 @@ class Patches (Extension):
 
                 p = DBPatch (None, commit_id, self.get_patch_for_commit (rev))
                 write_cursor.execute (statement (DBPatch.__insert__, self.db.place_holder),
-                                      (p.id, p.commit_id, self.db.to_binary (p.patch)))
+                                      (p.id, p.commit_id, p.patch.decode("utf-8")))
 
             rs = icursor.fetchmany ()
 
