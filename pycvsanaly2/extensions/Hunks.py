@@ -259,7 +259,8 @@ class Hunks(Extension):
         # Get the patches from this repository
         query = "select p.commit_id, p.patch from patches p, scmlog s " + \
                 "where p.commit_id = s.id and " + \
-                "s.repository_id = ?"
+                "s.repository_id = ? and " + \
+                "p.patch is not NULL"
         read_cursor.execute(statement(query, db.place_holder),(repo_id,))
 
         self.__prepare_table(connection)
