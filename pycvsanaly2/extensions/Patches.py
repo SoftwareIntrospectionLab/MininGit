@@ -170,15 +170,15 @@ class Patches (Extension):
 
                 p = DBPatch (None, commit_id, self.get_patch_for_commit (rev))
 				
-				patch = p.patch
+		patch = p.patch
 
-				# We'll allow NULLs in the patch content to indicate we couldn't
-				# get the patch for some reason
-				if patch is not None:
-					patch.decode("utf-8")
+		# We'll allow NULLs in the patch content to indicate we couldn't
+		# get the patch for some reason
+		if patch is not None:
+			patch.decode("utf-8")
 
-				write_cursor.execute (statement (DBPatch.__insert__, self.db.place_holder),
-										(p.id, p.commit_id, patch))
+		write_cursor.execute (statement (DBPatch.__insert__, self.db.place_holder),
+					(p.id, p.commit_id, patch))
 				
 	    cnn.commit()
             rs = icursor.fetchmany ()
