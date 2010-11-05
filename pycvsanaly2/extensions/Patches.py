@@ -171,8 +171,8 @@ class Patches (Extension):
                 p = DBPatch (None, commit_id, self.get_patch_for_commit (rev))
                 write_cursor.execute (statement (DBPatch.__insert__, self.db.place_holder),
                                       (p.id, p.commit_id, p.patch.decode("utf-8")))
-
-			cnn.commit()
+				
+	    cnn.commit()
             rs = icursor.fetchmany ()
 
         cnn.commit ()
