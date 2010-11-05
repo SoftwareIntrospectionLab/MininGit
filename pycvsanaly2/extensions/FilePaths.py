@@ -52,10 +52,10 @@ class FilePaths:
         else:
             adj = self.__dict__['adj']
             
-        while(file_id!=None):
+        while(file_id!=None and file_id!=-1):
             query = "select file_name from files where id=?"
             cursor.execute(statement(query, db.place_holder),(file_id,))
-            file_name = cursor.fetchone()
+            file_name = cursor.fetchone()[0]
             adj.files[file_id] = file_name
             query = "select parent_id, commit_id from file_links where file_id=?"
             cursor.execute(statement(query, db.place_holder),(file_id,))
@@ -64,15 +64,14 @@ class FilePaths:
             
             if(len(rs)>1):
                 query = "select s1.id from scmlog s1, scmlog s2 where s2.id=? and s1.id in ? and s1.date<=s2.date order by s1.date desc"
-                link_rev_ids = tuple([row[1] for row in rs])
-                cursor.execute(statement(query, db.place_holder),(str(link_rev_ids),commit_id))
-                latest_link_rev_id = cursor.fetchone[0]
+                revs = tuple([row[1] for row in rs])
+                cursor.execute(statement(query, db.place_holder),(commit_id, revs))
+                latest_link_rev_id = cursor.fetchone()[0]
                 parent_id = [row[0] for row in rs if row[1]==latest_link_rev_id][0]
             elif len(rs)>0:
                 parent_id = rs[0][0]
                 
-            if(parent_id != None):
-                adj.adj[file_id] = parent_id
+            adj.adj[file_id] = parent_id
             file_id = parent_id
         
         
