@@ -160,7 +160,7 @@ class Patches (Extension):
         rs = icursor.fetchmany ()
         while rs:
             for commit_id, revision, composed_rev in rs:
-                if (commit_id in commits) or (commit_id < 6975) or (commit_id > 6985):
+                if commit_id in commits:
                     continue
 
                 if composed_rev:

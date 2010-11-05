@@ -68,9 +68,78 @@ class CommitData:
 class Hunks(Extension):
     deps = ['Patches']
 
+    def __prepare_table(self, connection, drop_table=False):
+        cursor = connection.cursor()
+
+        # Drop the table's old data
+        if drop_table:
+            try:
+                cursor.execute("DROP TABLE hunks")
+            except Exception, e:
+                printerr("Couldn't drop hunks table because %s", (e,))
+
+        if isinstance(self.db, SqliteDatabase):
+            import sqlite3.dbapi2
+            
+            # Note that we can't guarentee sqlite is going
+            # to provide foreign key support (it was only
+            # introduced in 3.6.19), so no constraints are set
+            try:
+                cursor.execute("""CREATE TABLE hunks(
+                    id INTEGER PRIMARY KEY,
+                    file_id INTEGER NOT NULL,
+                    commit_id INTEGER NOT NULL,
+                    start_line INTEGER NOT NULL,
+                    end_line INTEGER NOT NULL,
+                    bug_introducing INTEGER NOT NULL default 0,
+                    bug_introducing_hunk INTEGER,
+                    UNIQUE (file_id, commit_id, start_line, end_line))""")
+            except sqlite3.dbapi2.OperationalError:
+                # It's OK if the table already exists
+                pass
+                #raise TableAlreadyExists
+            except:
+                raise
+            finally:
+                cursor.close()
+
+        elif isinstance(self.db, MysqlDatabase):
+            import _mysql_exceptions
+
+            # I commented out foreign key constraints because
+            # cvsanaly uses MyISAM, which doesn't enforce them.
+            # MySQL was giving errno:150 when trying to create with
+            # them anyway
+            try:
+                cursor.execute("""CREATE TABLE hunks(
+                    id int(11) NOT NULL auto_increment,
+                    file_id int(11) NOT NULL,
+                    commit_id int(11) NOT NULL,
+                    start_line int(11) NOT NULL,
+                    end_line int(11) NOT NULL,
+                    bug_introducing bool NOT NULL default false,
+                    bug_introducing_hunk int(11),
+                    PRIMARY KEY(id),
+                    UNIQUE (file_id, commit_id, start_line, end_line)
+                    ) ENGINE=InnoDB CHARACTER SET=utf8)""")
+            except _mysql_exceptions.OperationalError, e:
+                if e.args[0] == 1050:
+                    # It's OK if the table already exists
+                    pass
+                    #raise TableAlreadyExists
+                else:
+                    raise
+            except:
+                raise
+            finally:
+                cursor.close()
+            
+        connection.commit()
+        cursor.close()
+
     def get_commit_data(self, patch_content):
         lines = [l + "\n" for l in patch_content.splitlines()]
-        commits = []
+        hunks = []
 
         for patch in parse_patches(lines, allow_dirty=True):
             # This method matches that of parseLine in UnifiedDiffParser.java
@@ -85,11 +154,11 @@ class Hunks(Extension):
             # I will need to copy the behavior of how Sep inserts a CommitData
             # into the database to ensure things match
             for hunk in patch.hunks:
-                oldStartLine = hunk.orig_pos - 1
-                newStartLine = hunk.mod_pos - 1
+                old_start_line = hunk.orig_pos - 1
+                new_start_line = hunk.mod_pos - 1
                 
-                oldEndLine = 0
-                newEndLine = 0
+                old_end_line = 0
+                new_end_line = 0
 
                 added = False
                 deleted = False
@@ -99,20 +168,20 @@ class Hunks(Extension):
                     if isinstance(line, RemoveLine):
                         if not in_change or not deleted:
                             in_change = True
-                            oldStartLine += 1
-                            oldEndLine = oldStartLine
+                            old_start_line += 1
+                            old_end_line = old_start_line
                         else:
-                            oldEndLine += 1
+                            old_end_line += 1
                         
                         deleted = True
 
                     elif isinstance(line, InsertLine):
                         if not in_change or not added:
                             in_change = True
-                            newStartLine += 1
-                            newEndLine = newStartLine
+                            new_start_line += 1
+                            new_end_line = new_start_line
                         else:
-                            newEndLine += 1
+                            new_end_line += 1
 
                         added = True
 
@@ -123,36 +192,36 @@ class Hunks(Extension):
                             cd = CommitData(re.split('\s+', patch.newname)[0])
 
                             if deleted:
-                                cd.old_start_line = oldStartLine
-                                cd.old_end_line = oldEndLine
-                                oldStartLine = oldEndLine
+                                cd.old_start_line = old_start_line
+                                cd.old_end_line = old_end_line
+                                old_start_line = old_end_line
                             
                             if added:
-                                cd.new_start_line = newStartLine
-                                cd.new_end_line = newEndLine
-                                newStartLine = newEndLine
+                                cd.new_start_line = new_start_line
+                                cd.new_end_line = new_end_line
+                                new_start_line = new_end_line
                             
-                            commits.append(cd)
+                            hunks.append(cd)
                             added = deleted = False
                         
-                        oldStartLine += 1
-                        newStartLine += 1
+                        old_start_line += 1
+                        new_start_line += 1
 
                 # The diff ended without a new context line
                 if in_change:
                     cd = CommitData(re.split('\s+', patch.newname)[0])
 
                     if deleted:
-                        cd.old_start_line = oldStartLine
-                        cd.old_end_line = oldEndLine
+                        cd.old_start_line = old_start_line
+                        cd.old_end_line = old_end_line
                     
                     if added:
-                        cd.new_start_line = newStartLine
-                        cd.new_end_line = newEndLine
+                        cd.new_start_line = new_start_line
+                        cd.new_end_line = new_end_line
 
-                    commits.append(cd)
+                    hunks.append(cd)
 
-        return commits
+        return hunks
 
     
     def run(self, repo, uri, db):
@@ -193,11 +262,20 @@ class Hunks(Extension):
                 "s.repository_id = ?"
         read_cursor.execute(statement(query, db.place_holder),(repo_id,))
 
+        self.__prepare_table(connection)
+
         for row in read_cursor:
             commit_id = row[0]
             patch_content = row[1]
 
-            for hunks in self.get_commit_data(patch_content):
+            for hunk in self.get_commit_data(patch_content):
+                # The original Java code seems to only pay attention to the
+                # revised code, not the original. New start/end lines won't
+                # be created if the change is simply removed lines.
+                # These hunks are skipped.
+                if hunk.new_start_line is None:
+                    continue
+
                 # Get the file ID from the database for linking
                 file_id_query = """select f.id from files f, actions a, scmlog s
                 where a.commit_id = ?
@@ -207,14 +285,25 @@ class Hunks(Extension):
                 # The regex strips the path from the file name, as per
                 # cvsanaly convention
                 read_cursor_1.execute(statement(file_id_query, db.place_holder), \
-                        (commit_id, re.search("[^\/]*$", hunks.file_name).group(0)))
-                print "File name: " + hunks.file_name + " File ID: " + str(read_cursor_1.fetchone()[0])
+                        (commit_id, re.search("[^\/]*$", hunk.file_name).group(0)))
+                file_id = read_cursor_1.fetchone()[0]
+                
+                insert = """insert into hunks(file_id, commit_id, 
+                            start_line, end_line)
+                            values(?,?,?,?)"""
+                printdbg("Inserting %s, %s, %d, %d" % (file_id, commit_id, \
+                                                    hunk.new_start_line, \
+                                                    hunk.new_end_line))
+                write_cursor.execute(statement(insert, db.place_holder), \
+                        (file_id, commit_id, hunk.new_start_line, \
+                        hunk.new_end_line))
 
         read_cursor.close()
         read_cursor_1.close()
+        connection.commit()
         connection.close()
 
-        # This turns off the profiler and deletes it's timings
+        # This turns off the profiler and deletes its timings
         profiler_stop("Running hunks extension", delete=True)
 
 register_extension("Hunks", Hunks)

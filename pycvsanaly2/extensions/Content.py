@@ -329,7 +329,6 @@ class Content(Extension):
                 printdbg("Skipping file %s",(relative_path,))
                 continue
 
-            # Threading stuff commented out
             job = ContentJob(repo, commit_id, file_id, uri, rev, relative_path)
             job_pool.push(job)
 
