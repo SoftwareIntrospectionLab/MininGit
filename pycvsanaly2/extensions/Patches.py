@@ -110,7 +110,7 @@ class Patches (Extension):
             self.repo.show (self.repo_uri, rev)
             data = io.getvalue ()
         except Exception, e:
-            printerr ("Error running show command: %s", (str (e)))
+            printerr ("Error running show command: %s", (str(e),))
             data = None
 
         self.repo.remove_watch (DIFF, wid)
