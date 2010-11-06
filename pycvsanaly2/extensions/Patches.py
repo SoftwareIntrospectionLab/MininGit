@@ -175,10 +175,10 @@ class Patches (Extension):
 		# We'll allow NULLs in the patch content to indicate we couldn't
 		# get the patch for some reason
 		if patch is not None:
-            try:
-			    patch = to_utf8(patch)
-            except:
-                pass
+	            try:
+			patch = to_utf8(patch)
+            	    except:
+                	pass
 
 		write_cursor.execute (statement (DBPatch.__insert__, self.db.place_holder),
 					(p.id, p.commit_id, patch))
