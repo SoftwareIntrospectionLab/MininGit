@@ -22,7 +22,7 @@ from pycvsanaly2.extensions import Extension, register_extension, \
 from pycvsanaly2.Database import SqliteDatabase, MysqlDatabase, \
         TableAlreadyExists, statement, DBFile
 from pycvsanaly2.utils import printdbg, printerr, printout, \
-        remove_directory, uri_to_filename
+        remove_directory, uri_to_filename, to_utf8
 from pycvsanaly2.profile import profiler_start, profiler_stop
 from FileRevs import FileRevs
 from repositoryhandler.backends import RepositoryCommandError
@@ -146,8 +146,8 @@ class ContentJob(Job):
         # TODO: I should really throw a "not source" exception,
         # but just doing None is fine for now.
         try:
-            return self.file_contents.encode("utf-8")
-        except UnicodeDecodeError, e:
+            return to_utf8(self.file_contents)
+        except:
             return None
 
     def get_file_id(self):
