@@ -160,7 +160,7 @@ class Patches (Extension):
         rs = icursor.fetchmany ()
         while rs:
             for commit_id, revision, composed_rev in rs:
-                if commit_id in commits or (commit_id != 7197):
+                if commit_id in commits or (commit_id < int(os.getenv("CVSANALY_START", 0))):
                     continue
 
                 if composed_rev:
