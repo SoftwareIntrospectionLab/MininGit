@@ -64,7 +64,7 @@ class Patches (Extension):
                 cursor.execute ("CREATE TABLE patches (" +
                                 "id integer primary key," +
                                 "commit_id integer," +
-                                "patch clob" +
+                                "patch text" +
                                 ")")
             except sqlite3.dbapi2.OperationalError:
                 cursor.close ()
@@ -160,7 +160,7 @@ class Patches (Extension):
         rs = icursor.fetchmany ()
         while rs:
             for commit_id, revision, composed_rev in rs:
-                if commit_id in commits:
+                if commit_id in commits or (commit_id != 7197):
                     continue
 
                 if composed_rev:
@@ -170,18 +170,8 @@ class Patches (Extension):
 
                 p = DBPatch (None, commit_id, self.get_patch_for_commit (rev))
 				
-		patch = p.patch
-
-		# We'll allow NULLs in the patch content to indicate we couldn't
-		# get the patch for some reason
-		if patch is not None:
-	            try:
-			patch = to_utf8(patch)
-            	    except:
-                	pass
-
 		write_cursor.execute (statement (DBPatch.__insert__, self.db.place_holder),
-					(p.id, p.commit_id, patch))
+					(p.id, p.commit_id, to_utf8(p.patch).decode("utf-8")))
 				
 	    cnn.commit()
             rs = icursor.fetchmany ()

@@ -19,6 +19,7 @@
 
 from pycvsanaly2.extensions import Extension, register_extension, \
         ExtensionRunError
+from pycvsanaly2.extensions.FilePaths import FilePaths
 from pycvsanaly2.Database import SqliteDatabase, MysqlDatabase, \
         TableAlreadyExists, statement, DBFile
 from pycvsanaly2.utils import printdbg, printerr, printout, \
@@ -87,7 +88,7 @@ class Hunks(Extension):
             try:
                 cursor.execute("""CREATE TABLE hunks(
                     id INTEGER PRIMARY KEY,
-                    file_id INTEGER NOT NULL,
+                    file_id INTEGER,
                     commit_id INTEGER NOT NULL,
                     start_line INTEGER NOT NULL,
                     end_line INTEGER NOT NULL,
@@ -113,7 +114,7 @@ class Hunks(Extension):
             try:
                 cursor.execute("""CREATE TABLE hunks(
                     id int(11) NOT NULL auto_increment,
-                    file_id int(11) NOT NULL,
+                    file_id int(11),
                     commit_id int(11) NOT NULL,
                     start_line int(11) NOT NULL,
                     end_line int(11) NOT NULL,
@@ -264,6 +265,8 @@ class Hunks(Extension):
         read_cursor.execute(statement(query, db.place_holder),(repo_id,))
 
         self.__prepare_table(connection)
+        fp = FilePaths(db)
+        fp.update_all()
 
         for row in read_cursor:
             commit_id = row[0]
@@ -278,16 +281,38 @@ class Hunks(Extension):
                     continue
 
                 # Get the file ID from the database for linking
-                file_id_query = """select f.id from files f, actions a, scmlog s
+                # TODO: This isn't going to work if two files are committed
+                # with the same name at the same time, eg. __init.py__ in
+                # different paths
+                file_id_query = """select f.id from files f, actions a
                 where a.commit_id = ?
                 and a.file_id = f.id
                 and f.file_name = ?"""
-                
-                # The regex strips the path from the file name, as per
-                # cvsanaly convention
+
                 read_cursor_1.execute(statement(file_id_query, db.place_holder), \
                         (commit_id, re.search("[^\/]*$", hunk.file_name).group(0)))
-                file_id = read_cursor_1.fetchone()[0]
+                possible_files = read_cursor_1.fetchall()
+            
+                file_id = None
+
+                printdbg("Got " + str(len(possible_files)) + " possible files")
+
+                if len(possible_files) == 1:
+                    file_id = possible_files[0][0]
+                else:
+                    for possible_file in possible_files:
+                        # Get the paths of the possible matches
+                        path = fp.get_path(possible_file[0], commit_id, repo_id).strip()
+
+                        printdbg("Comparing " + path + " to " + hunk.file_name.strip())
+                        if path == ("/" + hunk.file_name.strip()):
+                            printdbg("Match found")
+                            file_id = possible_file[0]
+                            break
+                            break
+
+                if file_id == None:
+                    printerr("No file ID found for hunk " + hunk.file_name)
                 
                 insert = """insert into hunks(file_id, commit_id, 
                             start_line, end_line)
