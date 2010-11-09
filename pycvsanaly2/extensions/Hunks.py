@@ -26,7 +26,7 @@ from pycvsanaly2.utils import printdbg, printerr, printout, \
         remove_directory, uri_to_filename
 from pycvsanaly2.profile import profiler_start, profiler_stop
 from pycvsanaly2.PatchParser import parse_patches, RemoveLine, InsertLine, \
-        ContextLine
+        ContextLine, Patch, BinaryPatch
 import os
 import re
 
@@ -139,10 +139,13 @@ class Hunks(Extension):
         cursor.close()
 
     def get_commit_data(self, patch_content):
-        lines = [l + "\n" for l in patch_content.splitlines()]
+        lines = [l + "\n" for l in patch_content.splitlines() if l]
+        printdbg(">>>>>>>>>")
+        printdbg(str(lines))
+        printdbg("<<<<<<<<<")
         hunks = []
 
-        for patch in parse_patches(lines, allow_dirty=True):
+        for patch in [p for p in parse_patches(lines, allow_dirty=True, allow_continue=True) if isinstance(p, Patch)]:
             # This method matches that of parseLine in UnifiedDiffParser.java
             # It's not necessarily intuitive, but this algorithm is much harder
             # than it looks, I spent hours trying to get a simpler solution.
@@ -317,7 +320,7 @@ class Hunks(Extension):
                 insert = """insert into hunks(file_id, commit_id, 
                             start_line, end_line)
                             values(?,?,?,?)"""
-                printdbg("Inserting %s, %s, %d, %d" % (file_id, commit_id, \
+                printdbg("Inserting into Hunks File ID: %s, Commit ID: %s, Start Line: %d, End Line: %d" % (file_id, commit_id, \
                                                     hunk.new_start_line, \
                                                     hunk.new_end_line))
                 write_cursor.execute(statement(insert, db.place_holder), \
