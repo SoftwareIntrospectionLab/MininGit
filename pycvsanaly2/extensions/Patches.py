@@ -33,10 +33,8 @@ from cStringIO import StringIO
 from Jobs import JobPool, Job
 
 class PatchJob(Job):
-    def __init__(self, repo, repo_uri, rev, commit_id):
-        self.repo = repo
+    def __init__(self, rev, commit_id):
         self.rev = rev
-        self.repo_uri = repo_uri
         self.commit_id = commit_id
         self.data = None
 
@@ -59,6 +57,8 @@ class PatchJob(Job):
         return self.data
 
     def run(self, repo, repo_uri):
+        self.repo = repo
+        self.repo_uri = repo_uri
         self.get_patch_for_commit()
 
 
@@ -145,11 +145,8 @@ class Patches (Extension):
         while finished_job is not None:
             try:
                 p = DBPatch (None, finished_job.commit_id, finished_job.data)
-                f = open("/tmp/cvs/" + str(finished_job.commit_id) + ".txt", "w")
-                f.write(str(p))
-                f.close
-             #write_cursor.execute (statement (DBPatch.__insert__, self.db.place_holder),
-             #   (p.id, p.commit_id, to_utf8(p.patch).decode("utf-8")))
+                write_cursor.execute (statement (DBPatch.__insert__, self.db.place_holder), \
+                    (p.id, p.commit_id, to_utf8(p.patch).decode("utf-8")))
 
             except Exception as e:
                 printerr("Couldn't insert, duplicate record?: %s", (e,))
@@ -210,7 +207,7 @@ class Patches (Extension):
                 else:
                     rev = revision
 
-                job = PatchJob(repo, repo_uri, rev, commit_id)
+                job = PatchJob(rev, commit_id)
                 job_pool.push(job)
 
                 if i >= queuesize:

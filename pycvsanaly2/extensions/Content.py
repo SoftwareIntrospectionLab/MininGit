@@ -35,11 +35,9 @@ import re
 # This class holds a single repository retrieve task,
 # and keeps the source code until the object is garbage-collected
 class ContentJob(Job):
-    def __init__(self, repo, commit_id, file_id, repo_uri, rev, path):
-        self.repo = repo
+    def __init__(self, commit_id, file_id, rev, path):
         self.commit_id = commit_id
         self.file_id = file_id
-        self.repo_uri = repo_uri
         self.rev = rev
         self.path = path
         self.file_contents = ""
@@ -48,6 +46,8 @@ class ContentJob(Job):
         fd.write(line)
     
     def run(self, repo, repo_uri):
+        self.repo = repo
+        self.repo_uri = repo_uri
         self.repo_type = self.repo.get_type()
 
         if self.repo_type == 'cvs':
@@ -329,7 +329,7 @@ class Content(Extension):
                 printdbg("Skipping file %s",(relative_path,))
                 continue
 
-            job = ContentJob(repo, commit_id, file_id, uri, rev, relative_path)
+            job = ContentJob(commit_id, file_id, rev, relative_path)
             job_pool.push(job)
 
             if i >= queuesize:
