@@ -149,7 +149,7 @@ class DBContentHandler (ContentHandler):
             self.actions = []
             profiler_stop ("Inserting actions for repository %d", (self.repo_id,))
         if self.commits:
-            commits = [(c.id, c.rev, c.committer, c.author, c.date, c.message, c.composed_rev, c.repository_id) for c in self.commits]
+            commits = [(c.id, c.rev, c.committer, c.author, c.date, to_utf8(c.message).decode("utf-8"), c.composed_rev, c.repository_id) for c in self.commits]
             profiler_start ("Inserting commits for repository %d", (self.repo_id,))
             cursor.executemany (statement (DBLog.__insert__, self.db.place_holder), commits)
             self.commits = []
@@ -191,12 +191,12 @@ class DBContentHandler (ContentHandler):
             name = to_utf8 (person.name)
             email = person.email
             cursor.execute (statement ("SELECT id from people where name = ?",
-                            self.db.place_holder), (name,))
+                            self.db.place_holder), (to_utf8(name).decode("utf-8"),))
             rs = cursor.fetchone ()
             if not rs:
                 p = DBPerson (None, person)
                 cursor.execute (statement (DBPerson.__insert__,
-                                self.db.place_holder), (p.id, p.name, email))
+                                self.db.place_holder), (p.id, to_utf8(p.name).decode("utf-8"), to_utf8(email).decode("utf-8")))
                 person_id = p.id
             else:
                 person_id = rs[0]
