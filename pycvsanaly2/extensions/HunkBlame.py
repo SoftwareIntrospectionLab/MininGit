@@ -15,13 +15,30 @@ from FilePaths import FilePaths
 
 class HunkBlameJob(BlameJob):
     class BlameContentHandler(BlameJob.BlameContentHandler):
-        def line(self,line):
-            print line
+        def __init__(self, start_line, end_line):
+            self.start_line = start_line
+            self.end_line = end_line
+
+        def line(self,blame_line):
+            if(blame_line.line>=self.start_line and blame_line.line<=self.end_line):
+                print blame_line
+
         def start_file (self, filename):
             pass
         def end_file (self):
             pass
 
+    def __init__ (self, file_id, commit_id, path, rev, start_line, end_line):
+        BlameJob.__init__(self, file_id, commit_id, path, rev)
+        self.start_line = start_line
+        self.end_line = end_line
+        
+
+    def get_content_handler(self):
+        return self.BlameContentHandler(self.start_line, self.end_line)
+    
+    def collect_results(self, content_handler):
+        print "in HunkBlameJob"
             
 class HunkBlame(Extension):
     '''
@@ -73,7 +90,7 @@ class HunkBlame(Extension):
             fp.update_for_file_revision(aux_cursor, file_id, commit_id)
             relative_path = fp.get_path(file_id, commit_id, repoid)
             printdbg ("Path for %d at %s -> %s", (file_id, rev, relative_path))
-            job = BlameJob (file_id, commit_id, relative_path, rev)
+            job = HunkBlameJob (file_id, commit_id, relative_path, rev, start_line, end_line)
             job_pool.push (job)
             n_blames += 1
 

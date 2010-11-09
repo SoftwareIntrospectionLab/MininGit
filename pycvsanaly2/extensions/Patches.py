@@ -64,7 +64,7 @@ class Patches (Extension):
                 cursor.execute ("CREATE TABLE patches (" +
                                 "id integer primary key," +
                                 "commit_id integer," +
-                                "patch blob" +
+                                "patch text" +
                                 ")")
             except sqlite3.dbapi2.OperationalError:
                 cursor.close ()
@@ -78,7 +78,7 @@ class Patches (Extension):
                 cursor.execute ("CREATE TABLE patches (" +
                                 "id INT primary key," +
                                 "commit_id integer," +
-                                "patch LONGBLOB," +
+                                "patch LONGTEXT," +
                                 "FOREIGN KEY (commit_id) REFERENCES scmlog(id)" +
                                 ") CHARACTER SET=utf8")
             except _mysql_exceptions.OperationalError, e:
@@ -110,7 +110,7 @@ class Patches (Extension):
             self.repo.show (self.repo_uri, rev)
             data = io.getvalue ()
         except Exception, e:
-            printerr ("Error running show command: %s", (str (e)))
+            printerr ("Error running show command: %s", (str(e),))
             data = None
 
         self.repo.remove_watch (DIFF, wid)
@@ -160,7 +160,7 @@ class Patches (Extension):
         rs = icursor.fetchmany ()
         while rs:
             for commit_id, revision, composed_rev in rs:
-                if commit_id in commits:
+                if commit_id in commits or (commit_id < int(os.getenv("CVSANALY_PATCHSTART", 0))):
                     continue
 
                 if composed_rev:
@@ -169,9 +169,11 @@ class Patches (Extension):
                     rev = revision
 
                 p = DBPatch (None, commit_id, self.get_patch_for_commit (rev))
-                write_cursor.execute (statement (DBPatch.__insert__, self.db.place_holder),
-                                      (p.id, p.commit_id, self.db.to_binary (p.patch)))
-
+				
+		write_cursor.execute (statement (DBPatch.__insert__, self.db.place_holder),
+					(p.id, p.commit_id, to_utf8(p.patch).decode("utf-8")))
+				
+	    cnn.commit()
             rs = icursor.fetchmany ()
 
         cnn.commit ()

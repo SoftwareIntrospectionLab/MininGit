@@ -197,6 +197,18 @@ class FilePaths:
     def get_commit_id (self):
         return self.__dict__['rev']
 
+    def update_all(self):
+        db = self.__dict__['db']
+        cnn = db.connect ()
+
+        cursor = cnn.cursor ()
+        cursor.execute ("select s.id, file_id from scmlog s, actions a where s.id = a.commit_id")
+        old_id = -1
+        for id, file_id in cursor.fetchall ():
+            if old_id != id:
+                self.update_for_revision (cursor, id, 1)
+                old_id = id
+        cursor.close()
 
 if __name__ == '__main__':
     import sys

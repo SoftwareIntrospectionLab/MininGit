@@ -75,16 +75,22 @@ class BlameJob (Job):
 
         filename = os.path.basename (self.path)
         p = create_parser (repo.get_type (), self.path)
-        out = self.BlameContentHandler ()
+        out = self.get_content_handler()
         p.set_output_device (out)
         wid = repo.add_watch (BLAME, blame_line, p)
         try:
             repo.blame (os.path.join (repo_uri, path), self.rev)
+            self.collect_results(out)
         except RepositoryCommandError, e:
             printerr ("Command %s returned %d (%s)", (e.cmd, e.returncode, e.error))
         p.end ()
+        
 
-        self.authors = out.get_authors ()
+    def collect_results(self, content_handler):
+        self.authors = content_handler.get_authors ()
+        
+    def get_content_handler(self):
+        return self.BlameContentHandler ()
 
     def get_authors (self):
         return self.authors
@@ -174,12 +180,7 @@ class Blame (Extension):
         args = []
 
         while job is not None:
-            authors = job.get_authors ()
-            file_id = job.get_file_id ()
-            commit_id = job.get_commit_id ()
-
-            a = [(self.id_counter + i, file_id, commit_id, self.authors[key], authors[key]) \
-                     for i, key in enumerate (authors.keys ())]
+            a = self.populate_insert_args(job)
             args.extend (a)
             self.id_counter += len (a)
 
@@ -192,6 +193,15 @@ class Blame (Extension):
             write_cursor.executemany (statement (self.__insert__, self.db.place_holder), args)
             del args
 
+    def populate_insert_args(self, job):
+        authors = job.get_authors ()
+        file_id = job.get_file_id ()
+        commit_id = job.get_commit_id ()
+
+        return [(self.id_counter + i, file_id, commit_id, self.authors[key], authors[key]) \
+                 for i, key in enumerate (authors.keys ())]
+        
+        
     def run (self, repo, uri, db):
         profiler_start ("Running Blame extension")
 
