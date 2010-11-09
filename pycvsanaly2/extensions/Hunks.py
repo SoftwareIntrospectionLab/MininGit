@@ -292,8 +292,12 @@ class Hunks(Extension):
                 and a.file_id = f.id
                 and f.file_name = ?"""
 
+                hunk_file_name = re.sub(r'^[ab]\/', '', hunk.file_name.strip())
+               
+                printdbg("Doing select with: " + str(commit_id) + "," +  re.search("[^\/]*$", hunk_file_name).group(0))
+
                 read_cursor_1.execute(statement(file_id_query, db.place_holder), \
-                        (commit_id, re.search("[^\/]*$", hunk.file_name).group(0)))
+                        (commit_id, re.search("[^\/]*$", hunk_file_name).group(0)))
                 possible_files = read_cursor_1.fetchall()
             
                 file_id = None
@@ -307,15 +311,15 @@ class Hunks(Extension):
                         # Get the paths of the possible matches
                         path = fp.get_path(possible_file[0], commit_id, repo_id).strip()
 
-                        printdbg("Comparing " + path + " to " + hunk.file_name.strip())
-                        if path == ("/" + hunk.file_name.strip()):
+                        printdbg("Comparing " + path + " to " + hunk_file_name)
+                        if path == ("/" + hunk_file_name):
                             printdbg("Match found")
                             file_id = possible_file[0]
                             break
                             break
 
                 if file_id == None:
-                    printerr("No file ID found for hunk " + hunk.file_name)
+                    printerr("No file ID found for hunk " + hunk_file_name)
                 
                 insert = """insert into hunks(file_id, commit_id, 
                             start_line, end_line)
