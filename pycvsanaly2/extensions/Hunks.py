@@ -289,15 +289,16 @@ class Hunks(Extension):
                 # different paths
                 file_id_query = """select f.id from files f, actions a
                 where a.commit_id = ?
-                and a.file_id = f.id
-                and f.file_name = ?"""
+                and a.file_id = f.id"""
+                #and f.file_name = ?"""
 
                 hunk_file_name = re.sub(r'^[ab]\/', '', hunk.file_name.strip())
                
                 printdbg("Doing select with: " + str(commit_id) + "," +  re.search("[^\/]*$", hunk_file_name).group(0))
 
                 read_cursor_1.execute(statement(file_id_query, db.place_holder), \
-                        (commit_id, re.search("[^\/]*$", hunk_file_name).group(0)))
+                        #(commit_id, re.search("[^\/]*$", hunk_file_name).group(0)))
+                        (commit_id,))
                 possible_files = read_cursor_1.fetchall()
             
                 file_id = None
