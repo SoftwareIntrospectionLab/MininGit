@@ -287,7 +287,7 @@ class Hunks(Extension):
                 # TODO: This isn't going to work if two files are committed
                 # with the same name at the same time, eg. __init.py__ in
                 # different paths
-                file_id_query = """select f.id from files f, actions a
+                file_id_query = """select f.id, f.file_name from files f, actions a
                 where a.commit_id = ?
                 and a.file_id = f.id"""
                 #and f.file_name = ?"""
@@ -319,8 +319,22 @@ class Hunks(Extension):
                             break
                             break
 
+                        printdbg("No match for old paths, is file name current?")
+
+                        printdbg("Comparing " + possible_file[1] + " to " + hunk_file_name)                        
+                        if possible_file[1] == hunk_file_name:
+                            printdbg("Match found")
+                            file_id = possible_file[0]
+                            break
+                            break
+
                 if file_id == None:
                     printerr("No file ID found for hunk " + hunk_file_name)
+                    if repo.type == "git":
+                        # The liklihood is that this is a merge, not a
+                        # missing ID from some data screwup.
+                        # We'll just continue and throw this away
+                        continue
                 
                 insert = """insert into hunks(file_id, commit_id, 
                             start_line, end_line)
