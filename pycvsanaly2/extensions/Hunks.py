@@ -122,7 +122,7 @@ class Hunks(Extension):
                     bug_introducing_hunk int(11),
                     PRIMARY KEY(id),
                     UNIQUE (file_id, commit_id, start_line, end_line)
-                    ) ENGINE=InnoDB CHARACTER SET=utf8)""")
+                    ) ENGINE=InnoDB CHARACTER SET=utf8""")
             except _mysql_exceptions.OperationalError, e:
                 if e.args[0] == 1050:
                     # It's OK if the table already exists
