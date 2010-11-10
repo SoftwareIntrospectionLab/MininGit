@@ -1,5 +1,5 @@
-#!/usr/bin/python
-# Copyright (C) 2006 Alvaro Navarro Clemente
+#!/usr/bin/env python
+# Copyright (C) 2010 Chris Lewis
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,73 +15,34 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 #
-# Authors : Alvaro Navarro <anavarro@gsyc.escet.urjc.es>
+# Authors : Chris Lewis <cflewis@soe.ucsc.edu>
 
-"""
-Installer
-
-@author:       Alvaro Navarro
-@organization: Grupo de Sistemas y Comunicaciones, Universidad Rey Juan Carlos
-@copyright:    Universidad Rey Juan Carlos (Madrid, Spain)
-@license:      GNU GPL version 2 or any later version
-@contact:      libresoft-tools-devel@lists.morfeo-project.org
-"""
-
-import commands
 import os
-import sys
+from setuptools import setup
 
-from distutils.core import setup
-from pycvsanaly2.FindProgram import find_program
+# Utility function to read the README file.
+# Used for the long_description. 
+def read(fname):
+    return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
-def pkg_check_modules (deps):
-    pkg_config = find_program ('pkg-config')
-    if pkg_config is None:
-        print "pkg-config was not found and it's required to build cvsanaly2"
-        sys.exit (1)
-        
-    cmd = "%s --errors-to-stdout --print-errors --exists '%s'" % (pkg_config, ' '.join (deps))
-    out = commands.getoutput (cmd)
-
-    if out:
-        print out
-        sys.exit (1)
-
-def generate_changelog ():
-    from subprocess import Popen, PIPE
-    from tempfile import mkstemp
-
-    fd, filename = mkstemp (dir=os.getcwd ())
-
-    print "Creating ChangeLog"
-    cmd = ["git", "log", "-M", "-C", "--name-status", "--date=short", "--no-color"]
-    pipe = Popen (cmd, stdout=PIPE).stdout
-
-    buff = pipe.read (1024)
-    while buff:
-        os.write (fd, buff)
-        buff = pipe.read (1024)
-    os.close (fd)
-
-    os.rename (filename, "ChangeLog")
-
-# Check dependencies
-deps = ['repositoryhandler >= 0.3']
-
-pkg_check_modules (deps)
-
-if sys.argv[1] == 'sdist':
-    generate_changelog ()
-
-from pycvsanaly2._config import *
-
-setup(name = PACKAGE,
-      version = VERSION,
-      author =  AUTHOR,
-      author_email = AUTHOR_EMAIL,
-      description = DESCRIPTION,
-      url = "https://forge.morfeo-project.org/projects/libresoft-tools/",      
-      packages = ['pycvsanaly2', 'pycvsanaly2.extensions'],
-      data_files = [('share/man/man1',['help/cvsanaly2.1'])],
-      scripts = ["cvsanaly2"])
+setup(
+    name = "cvsanaly",
+    version = "2.1.1",
+    author = "Chris Lewis",
+    author_email = "cflewis@soe.ucsc.edu",
+    description = ("A Python library for analyzing source control repositories"),
+    license = "GPL version 2",
+    keywords = "cvs svn git source sourcecontrol scm",
+    url = "https://github.com/Lewisham/cvsanaly",
+    packages=['pycvsanaly2', 'pycvsanaly2.extensions'],
+    long_description=read('README.mdown'),
+    data_files = [('share/man/man1',['help/cvsanaly2.1'])],
+    scripts = ["cvsanaly2"]
+    classifiers=[
+        "Development Status :: 4 - Beta",
+        "Topic :: Software Development :: Version Control",
+        "License :: OSI Approved :: GNU General Public License (GPL)",
+        "Environment :: Console"
+    ],
+)
 

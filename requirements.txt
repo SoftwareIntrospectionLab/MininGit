@@ -1,2 +1,1 @@
-cvsanaly
 -e "git+git://github.com/Lewisham/repositoryhandler.git#egg=repositoryhandler"
