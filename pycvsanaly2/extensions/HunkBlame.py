@@ -87,7 +87,7 @@ class HunkBlame(Extension):
         aux_cursor = cnn.cursor()
         while hunk!=None:
             hunk_id, file_id, commit_id, start_line, end_line, rev = hunk
-            fp.update_for_file_revision(aux_cursor, file_id, commit_id)
+            fp.update_all(repoid)
             relative_path = fp.get_path(file_id, commit_id, repoid)
             printdbg ("Path for %d at %s -> %s", (file_id, rev, relative_path))
             job = HunkBlameJob (file_id, commit_id, relative_path, rev, start_line, end_line)
