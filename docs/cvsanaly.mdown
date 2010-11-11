@@ -200,8 +200,8 @@ The `actions` table describes the different actions performed in every commit. I
     * `C`: The file has been copied. This is similar to an addition, except the file was copied from an existing one.
     * `R`: The file has been replaced, meaning an existing file has been removed and replaced by a new one with the same name. Additionally, another existing file might be used as a base for the replacement, meaning the new file is a copy from an existing file.
 * `commit_id`: The identifier of the commit where the action was
-performed. It's a foreign key that references the `id` field of the `scmlog` table.
-* `branch_id`: The identifier of the branch where the action was performed. It's a foreign key that references the `id` field of the `branches` table. 
+performed. This is a foreign key that references the `id` field of the `scmlog` table.
+* `branch_id`: The identifier of the branch where the action was performed. This is a foreign key that references the `id` field of the `branches` table. 
 
 **Note:** Not all of the action types are always supported, for example, CVS repositories only support the `A`, `M` and `D` actions.
 
@@ -211,7 +211,7 @@ The `files` table contains an identifier for every file or directory found in th
 
 * `id`: Database identifier.
 * `file_name`: The name of the file or directory. **Note:** this is *not* a path. 
-* `repository_id`: The identifier of the repository to which the file belongs. It allows to easily get the list of files of the repository. It's a foreign key that references the `id` field of the `repositories` table.
+* `repository_id`: The identifier of the repository to which the file belongs. It allows to easily get the list of files of the repository. This is a foreign key that references the `id` field of the `repositories` table.
 
 #### file_links table
 
@@ -219,20 +219,20 @@ This table contains relationships between files. The relationship
 between two files is always parent -> child. 
 
 * `id`: Database identifier.
-* `parent_id`: the identifier of parent file or -1 if the file is in the root of the repository. It's a foreign key that references the `id` field of the `files` table.
-* `file_id`: the identifier of the file. It's a foreign key that references the `id` field of the `files` table.
-* `commit_id`: the identifier of the commit where the relationship appears for the first time. When a file or directory is moved, a new link is created with the ID of the commit where the move action as performed. There will be, therefore, two links for the same file each one with a different parent. In order to know which parent is the right one at a certain point (revision), the `commit_id` field is used to choose the link that contains the latest commit. It's a foreign key that references the `id` field of the `scmlog` table.
+* `parent_id`: the identifier of parent file or -1 if the file is in the root of the repository. This is a foreign key that references the `id` field of the `files` table.
+* `file_id`: the identifier of the file. This is a foreign key that references the `id` field of the `files` table.
+* `commit_id`: the identifier of the commit where the relationship appears for the first time. When a file or directory is moved, a new link is created with the ID of the commit where the move action as performed. There will be, therefore, two links for the same file each one with a different parent. In order to know which parent is the right one at a certain point (revision), the `commit_id` field is used to choose the link that contains the latest commit. This is a foreign key that references the `id` field of the `scmlog` table.
 
 #### The file_copies table
 
 The `file_copies` table is used to store additional information about actions that involve more than one file. Copies, moves, renames and replacements are actions performed over two or more files. The `file_id` field of the `actions` table refers always to the file that is the object of the action. 
 
 * `id`: Database identifier.
-* `to_id`: identifier of the file that is the destination of the action. In a move or copy operation, this field is the same than the `file_id` in the `actions` table. However, when a file is replaced, the `file_id` stored in the `actions` table is the existing file being replaced, and this field contains the `file_id` of the new file that replaces the existing one. It's a foreign key that references the `id` field of the `files` table.
-* `from_id`: identifier of the file that is the source of the action. In a move or copy operation this is the `file_id` of the file from which the move or copy is done. It's a foreign key that references the `id` field of the `files` table.
-* `from_commit_id`: identifier of the commit from which the operation is carried out. The source file contents are taken from the revision associated to this commit identifier. It's a foreign key that references the `id` field of the `scmlog` table
+* `to_id`: identifier of the file that is the destination of the action. In a move or copy operation, this field is the same than the `file_id` in the `actions` table. However, when a file is replaced, the `file_id` stored in the `actions` table is the existing file being replaced, and this field contains the `file_id` of the new file that replaces the existing one. This is a foreign key that references the `id` field of the `files` table.
+* `from_id`: identifier of the file that is the source of the action. In a move or copy operation this is the `file_id` of the file from which the move or copy is done. This is a foreign key that references the `id` field of the `files` table.
+* `from_commit_id`: identifier of the commit from which the operation is carried out. The source file contents are taken from the revision associated to this commit identifier. This is a foreign key that references the `id` field of the `scmlog` table
 * `new_file_name`: contains the new name of the file for rename actions or `NULL` for other actions. 
-* `action_id`: the identifier of the action. It's a foreign key that references the `id` field of the `actions` table.
+* `action_id`: the identifier of the action. This is a foreign key that references the `id` field of the `actions` table.
 
 #### branches table
 
@@ -247,8 +247,8 @@ The combination of these two tables represents the list of tags found in the rep
 
 * `id`: Database identifier.
 * `name`: The name of the tag.
-* `tag_id`: the identifier of the tag associated to this revision. It's a foreign key that references the `id` field of the `tags` table.
-* `commit_id`: the identifier of the commit representing the revision. It's a foreign key that references the `id` field of the `scmlog` table. 
+* `tag_id`: the identifier of the tag associated to this revision. This is a foreign key that references the `id` field of the `tags` table.
+* `commit_id`: the identifier of the commit representing the revision. This is a foreign key that references the `id` field of the `scmlog` table. 
 
 #### people table
 
@@ -293,7 +293,7 @@ The file type is based on the file extension and it's assumed that a file doesn'
 The `file_types` table contains the following fields:
 
 * `id`: Database identifier.
-* `file_id`: the file identifier. It's a foreign key that references the `id` field of the `files` table.
+* `file_id`: the file identifier. This is a foreign key that references the `id` field of the `files` table.
 * `type`: the name of the type (as described above)
 
 #### Metrics extension
@@ -301,8 +301,8 @@ The `file_types` table contains the following fields:
 This extension provides simple source code metrics for every revision of every single file found in the repository. Since this extension is about source code, it uses the FileTypes extension to get only source code files.
 
 * `id`: Identifier in the database.
-* `file_id`: the identifier of the file. It's a foreign key that references the `id` field of the `files` table.
-* `commit_id`: the identifier of the commit (revision). It's a foreign key
+* `file_id`: the identifier of the file. This is a foreign key that references the `id` field of the `files` table.
+* `commit_id`: the identifier of the commit (revision). This is a foreign key
 that references the `id` field of the `scmlog` table.
 * `lang`: the programming language (as given by the `sloccount` tool).
 * `sloc`: number of source code lines of code.
@@ -319,7 +319,7 @@ that references the `id` field of the `scmlog` table.
 This extension adds a table with the number of lines added and removed for every commit. 
 
 * `id`: Database identifier.
-* `commit_id`: the commit identifier. It's a foreign key that references the `id` field of the `scmlog` table.
+* `commit_id`: the commit identifier. This is a foreign key that references the `id` field of the `scmlog` table.
 * `added`: number of lines added in the given commit.
 * `removed`: number of lines removed in the given commit.
 
