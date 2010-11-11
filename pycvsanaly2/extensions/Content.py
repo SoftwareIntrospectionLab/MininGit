@@ -176,10 +176,10 @@ class Content(Extension):
             try:
                 cursor.execute("CREATE TABLE content(" +
                     "id INTEGER PRIMARY KEY," +
-                    "scmlog_id INTEGER NOT NULL," +
+                    "commit_id INTEGER NOT NULL," +
                     "file_id INTEGER NOT NULL," +
                     "content CLOB NOT NULL," +
-                    "UNIQUE (scmlog_id, file_id))")
+                    "UNIQUE (commit_id, file_id))")
             except sqlite3.dbapi2.OperationalError:
                 # It's OK if the table already exists
                 pass
@@ -199,11 +199,11 @@ class Content(Extension):
             try:
                 cursor.execute("CREATE TABLE content(" +
                     "id int(11) NOT NULL auto_increment," +
-                    "scmlog_id int(11) NOT NULL," +
+                    "commit_id int(11) NOT NULL," +
                     "file_id int(11) NOT NULL," +
                     "content mediumtext NOT NULL," +
                     "PRIMARY KEY(id)," +
-                    "UNIQUE (scmlog_id, file_id)" +
+                    "UNIQUE (commit_id, file_id)" +
                     #"FOREIGN KEY (scmlog_id) references scmlog(id), " +
                     #"FOREIGN KEY (file_id) references files(id) " +
                     ") ENGINE=InnoDB CHARACTER SET=utf8")
