@@ -110,7 +110,8 @@ def parse_range(textrange):
 
 def hunk_from_header(line):
     import re
-    matches = re.match(r'\@\@ ([^@]*) \@\@( (.*))?\n', line)
+
+    matches = re.match(r'\@\@\@? ([^@]*) \@\@\@?( (.*))?\n', line)
     if matches is None:
         raise MalformedHunkHeader("Does not match format.", line)
     try:
@@ -435,16 +436,23 @@ def iter_lines_handle_nl(iter_lines):
         yield last_line
 
 
-def parse_patches(iter_lines, allow_dirty=False):
+def parse_patches(iter_lines, allow_dirty=False, allow_continue=False):
     '''
     :arg iter_lines: iterable of lines to parse for patches
     :kwarg allow_dirty: If True, allow text that's not part of the patch at
         selected places.  This includes comments before and after a patch
         for instance.  Default False.
+    :kwarg allow_continue: If True, continue parsing for patches
+        even if one is malformed.
     '''
-    return [parse_patch(f.__iter__(), allow_dirty) for f in
-                        iter_file_patch(iter_lines, allow_dirty)]
+    patches = []
+    for f in iter_file_patch(iter_lines, allow_dirty):
+        try:
+            patches.append(parse_patch(f.__iter__(), allow_dirty))
+        except Exception, e:
+            continue
 
+    return patches
 
 def difference_index(atext, btext):
     """Find the indext of the first character that differs between two texts

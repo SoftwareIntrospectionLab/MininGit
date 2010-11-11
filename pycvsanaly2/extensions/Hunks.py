@@ -26,7 +26,7 @@ from pycvsanaly2.utils import printdbg, printerr, printout, \
         remove_directory, uri_to_filename
 from pycvsanaly2.profile import profiler_start, profiler_stop
 from pycvsanaly2.PatchParser import parse_patches, RemoveLine, InsertLine, \
-        ContextLine
+        ContextLine, Patch, BinaryPatch
 import os
 import re
 
@@ -139,10 +139,13 @@ class Hunks(Extension):
         cursor.close()
 
     def get_commit_data(self, patch_content):
-        lines = [l + "\n" for l in patch_content.splitlines()]
+        lines = [l + "\n" for l in patch_content.splitlines() if l]
+        printdbg(">>>>>>>>>")
+        printdbg(str(lines))
+        printdbg("<<<<<<<<<")
         hunks = []
 
-        for patch in parse_patches(lines, allow_dirty=True):
+        for patch in [p for p in parse_patches(lines, allow_dirty=True, allow_continue=True) if isinstance(p, Patch)]:
             # This method matches that of parseLine in UnifiedDiffParser.java
             # It's not necessarily intuitive, but this algorithm is much harder
             # than it looks, I spent hours trying to get a simpler solution.
@@ -284,13 +287,18 @@ class Hunks(Extension):
                 # TODO: This isn't going to work if two files are committed
                 # with the same name at the same time, eg. __init.py__ in
                 # different paths
-                file_id_query = """select f.id from files f, actions a
+                file_id_query = """select f.id, f.file_name from files f, actions a
                 where a.commit_id = ?
-                and a.file_id = f.id
-                and f.file_name = ?"""
+                and a.file_id = f.id"""
+                #and f.file_name = ?"""
+
+                hunk_file_name = re.sub(r'^[ab]\/', '', hunk.file_name.strip())
+               
+                printdbg("Doing select with: " + str(commit_id) + "," +  re.search("[^\/]*$", hunk_file_name).group(0))
 
                 read_cursor_1.execute(statement(file_id_query, db.place_holder), \
-                        (commit_id, re.search("[^\/]*$", hunk.file_name).group(0)))
+                        #(commit_id, re.search("[^\/]*$", hunk_file_name).group(0)))
+                        (commit_id,))
                 possible_files = read_cursor_1.fetchall()
             
                 file_id = None
@@ -304,20 +312,34 @@ class Hunks(Extension):
                         # Get the paths of the possible matches
                         path = fp.get_path(possible_file[0], commit_id, repo_id).strip()
 
-                        printdbg("Comparing " + path + " to " + hunk.file_name.strip())
-                        if path == ("/" + hunk.file_name.strip()):
+                        printdbg("Comparing " + path + " to " + hunk_file_name)
+                        if path == ("/" + hunk_file_name):
+                            printdbg("Match found")
+                            file_id = possible_file[0]
+                            break
+                            break
+
+                        printdbg("No match for old paths, is file name current?")
+
+                        printdbg("Comparing " + possible_file[1] + " to " + hunk_file_name)                        
+                        if possible_file[1] == hunk_file_name:
                             printdbg("Match found")
                             file_id = possible_file[0]
                             break
                             break
 
                 if file_id == None:
-                    printerr("No file ID found for hunk " + hunk.file_name)
+                    printerr("No file ID found for hunk " + hunk_file_name)
+                    if repo.type == "git":
+                        # The liklihood is that this is a merge, not a
+                        # missing ID from some data screwup.
+                        # We'll just continue and throw this away
+                        continue
                 
                 insert = """insert into hunks(file_id, commit_id, 
                             start_line, end_line)
                             values(?,?,?,?)"""
-                printdbg("Inserting %s, %s, %d, %d" % (file_id, commit_id, \
+                printdbg("Inserting into Hunks File ID: %s, Commit ID: %s, Start Line: %d, End Line: %d" % (file_id, commit_id, \
                                                     hunk.new_start_line, \
                                                     hunk.new_end_line))
                 write_cursor.execute(statement(insert, db.place_holder), \
