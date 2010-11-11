@@ -1,0 +1,349 @@
+CVSAnalY
+=========
+
+Description
+-----------
+This file documents the `CVSAnalY` tool, which extracts information out of source code repository logs and stores it into a database. 
+
+Copyright 2009 LibreSoft, 2010 University of California, Santa Cruz
+
+Authors
+-------
+* Original document: Carlos Garcia Campos
+* Conversion to Markdown, edits to install description: Chris Lewis
+
+Copyright/Copyleft
+------------------
+Permission is granted to copy, distribute and/or modify this document under the terms of the GNU Free Documentation License, Version 1.2 or any later version published by the Free Software Foundation; with no Invariant Sections.
+
+Overview of `CVSAnalY`
+---------------------
+
+The `CVSAnalY` tool extracts information out of source code
+repository logs and stores it into a database.
+
+How to install `CVSAnalY`
+-------------------------
+
+`CVSAnalY` uses [pip](http://pip.openplans.org/). If you don't care to use `pip`, you can also use the standard `python setup.py` (probably with `sudo` for root permissions), but you will need to install dependencies manually. You can also use `CVSAnalY` without installing it, just by running the `cvsanaly2` command from the directory sources. You'll still have to install `RepositoryHandler`, though!
+
+### Installing via pip (recommended)
+
+To download and install cvsanaly, just run:
+
+    pip -e git+https://github.com/Lewisham/cvsanaly@develop#egg=cvsanaly
+
+However, you'll need to get `RepositoryHandler` so `CVSAnalY` can interface with the source code repositories. To do this, run:
+
+    pip -e git+https://github.com/Lewisham/repositoryhandler#egg=repositoryhandler
+
+### Installing manually
+
+To download and install manually, you'll need to get the archive of both `CVSAnalY` and `RepositoryHandler`, by downloading:
+
+    https://github.com/Lewisham/cvsanaly/tarball/master
+    https://github.com/Lewisham/repositoryhandler/tarball/master
+
+Extract each one, then run `python setup.py`. Use `sudo` if you want Python to install to the default location. Here's an example of all the steps for `CVSAnalY`. Modification for `RepositoryHandler` is left to the user!
+
+    > curl -L https://github.com/Lewisham/cvsanaly/tarball/master -o cvsanaly.tar.gz
+    > tar -xvf cvsanaly.tar.gz
+    > cd Lewisham-cvsanaly-c5205a7/
+    > sudo python setup.py
+
+Note that `curl` requires the `-L` flag to follow the redirect that GitHub responds with, if you download from your browser the redirect is automatically followed.
+
+### Optional dependencies
+
+* [CVS](http://www.nongnu.org/cvs/) (for CVS support)
+* [Subversion](http://subversion.tigris.org/) (for SVN support)
+* [Git](http://git-scm.com/) (for Git support)
+* [Python MySQLdb](http://pypi.python.org/pypi/MySQL-python/) (for saving to a MySQL database. Note that this may require MySQL libraries to exist on your system that MySQLdb is not able to install for you. If running a Linux variant, it is usually easier to get this module from your Linux distribution's application repository, such as running `apt-get`, rather than using `easy_install`.)
+
+Running `CVSAnalY`
+-----------------
+
+Once `CVSAnalY` is installed you can use it just by running the
+executable `cvsanaly2`.
+
+The syntax to run `cvsanaly2` is the following:
+
+    cvsanaly2 [options] [URI]
+
+
+This will analyze the given URI. An URI can be a checked out local path directory, or a remote URL pointing to a repository. If the URI is omitted, the current working directory will be used as a checked out directory. The type of the repository will be automatically detected, so the only information you have to provide about the repository is this URI. `CVSAnalY` doesn't run checkouts, so if the repository doesn't support remote retrieving of the log, a checked out directory must be provided.
+
+**Note:** `CVSAnalY` currently does not understand how to check out a Git repository. You must *clone* the repository to the local file system first, then use the URI of the directory you checked out to.
+
+While `CVSAnalY` works quickly in the general case, certain extensions (such as Patches and Content) run very slowly on remote cvs/svn repositories. It would be advisable to try and get a full mirror of these repositories first, using a tool like [svnsync](http://svnbook.red-bean.com/en/1.4/svn.ref.svnsync.html). This doesn't apply if you are using Git, as the entire repository is downloaded when you check it out.
+
+The repository log will be parsed and stored in a database. `CVSAnalY` doesn't expect to have all privileges on the database server, so the database should be created before running `CVSAnalY` or it will fail. This is not relevant if you are using SQLite since there isn't any server. 
+
+
+### Global options
+
+* `-h`, `--help` : Show help information
+* `-V`, `--version` : Show the version number of `CVSAnalY`
+* `-g`, `--debug` : Enable debug mode. It shows useful information for debugging like the commands that are being executed, the SQL statements, parsing status and so on. 
+* `-q`, `--quiet` : Run silently, only important error messages is printed. 
+* `--profile` : Enable profiling mode. It shows information about how long some tasks take to run. 
+* `-f`, `--config-file` : Use a custom configuration file.
+* `-l`, `--repo-logfile` : Use the given log file as the input of the log parser instead of running
+the log command for the repository. 
+* `-s`, `--save-logfile` : Save the input log information to the given path.
+* `-n`, `--no-parse` : Skip the parsing process. This only makes sense in conjunction with --extensions
+* `--extensions=EXTENSION1,EXTENSION2,...` : Run the given extensions after the log parsing/storing process. It expects a comma-separated list with the name of the extensions to run. Dependencies among extensions are automatically resolved by `CVSAnalY`.
+
+### Database specific options
+
+* `--db-driver [mysql|sqlite`] : Use the given database system. MySQL is the default option.
+* `-u`, `--db-user` : The name of the user to connect to the database system. The given user should exist, since `CVSAnalY` will not try to create any user. This option doesn't make sense if you are using SQLite. The default option is `operator`.
+* `-p`, `--db-password` : The user's password to connect to the database system. If it's not provided, you will be prompted to enter it. 
+* `-d`, `--db-database` : The name of the database. I should exist, since `CVSAnalY` will not try to create any database. If you are using SQLite, this option is be a local path instead of just a name. Default option is `cvsanaly`.
+* `-H`, `--db-hostname` : The host name where database system is running. This option doesn't make sense when using SQLite. Default option is `localhost`.
+
+### Examples
+
+Running `CVSAnalY` with a CVS repository already checked out using the MySQL driver:
+
+    cvsanaly2 -u carlos -d gstreamer ~/src/cvs/gstreamer
+
+Running `CVSAnalY` with a SVN repository using the remote URI and SQLite as the database driver:
+
+    cvsanaly2 --db-driver sqlite -d ~/db/nautilus.db http://svn.gnome.org/svn/nautilus
+
+The `CVSAnalY` configuration file
+----------------------------------
+
+Running `CVSAnalY` might require to provide a lot of command line options. Some of such options such the hostname, database driver, database user name and so on, depend on the system where `CVSAnalY` is running and not on the repository to be analyzed. These options must always be provided, making the `CVSAnalY` execution command unwieldy for long strings. A configuration file can be used to avoid this situation. Before parsing the command line option provided by the user `CVSAnalY` reads its configuration file, taking the options found there to replace the default values. There are two possible configuration files:
+
+* System-wide configuration file: `/etc/cvsanaly2`
+* User configuration file: `~/.cvsanaly2/config`
+
+The system-wide configuration file is read first, then the user configuration file is read overriding the options already provided by the system-wide file, and finally the command line options are parsed overriding any other option already provided. For the options not provided by a configuration file or the command line interface, the default values will be taken. 
+
+The configuration file is just a file containing key-value pairs. 
+
+    # Run in debug mode
+    debug = True
+
+    # Run quiet
+    quiet = True
+
+    # Enable profiling
+    profile = True
+
+    # Database driver
+    db_driver = 'mysql'
+
+    # Database user
+    db_user = 'cvsanalyuser'
+
+    # Database user password
+    db_password = 'mysqlpassword'
+
+    # Database hostname
+    db_hostname = 'localhost'
+
+    # Always run the Metrics and CommitsLOC extensions
+    extensions = ['Metrics', 'CommitsLOC']
+
+The database design
+-------------------
+
+### Database schema overview
+
+The database is divided into two main parts. The first part consists of the set of tables that represents the history of the project based on the information from the repository log. These tables are filled by `CVSAnalY` during the parsing process exclusively with the information provided by the repository log. This is the main goal of `CVSAnalY` and, therefore, these tables will always be present in the schema independently of how `CVSAnalY` was executed or even what project has been analyzed. 
+
+The second part is composed by tables created and filled by `CVSAnalY` extensions. The information provided by these tables depends on every `CVSAnalY` Extension, however the main goal is common: to complete the `CVSAnalY` schema with additional information directly related to the existing tables but not provided by the repository log. 
+
+![Database schema](http://github.com/Lewisham/cvsanaly/develop/docs/images/db_schema.png)
+
+### General conventions
+
+The database has been designed according to the following rules:
+
+* Internal identifier: every table has an internal identifier called `id`. It's an auto-incremental integer and it's always the primary key of the table.
+
+* Foreign keys: all fields with the suffix `_id` are foreign keys so that it's easy to identify them quickly. **Note:** This is *not* the case for `scmlog`, where all foreign keys to this table are called `commit_id`. This may be fixed in a future release.
+
+* Character encoding: `CVSAnalY` uses always utf-8 so all the fields in the database that contain strings are utf-8 encoded.
+
+
+### `CVSAnalY` database schema details
+
+#### scmlog table
+
+The main table is `scmlog`. Every commit in the repository is represented by a record in the scmlog table.
+
+* `id`: Database identifier. **Note:** all foreign keys referring to this ID are called `commit_id` *not* `scmlog_id`. This may be fixed in a future release.
+* `rev`: The revision identifier in the repository. It's always unique in every repository. 
+* `committer_id`: The identifier in the database of the person who performed the commit.
+* `author_id`: Author identifier. Some source control management systems (only Git at this time), differentiate the person who performed the commit from the person who actually made the changes. When not supported by the repository, this field will be `NULL`.
+* `date`: The date when the commit was performed. 
+* `message`: The commit message. 
+* `composed_rev`: A boolean to indicate whether the rev field is composed or not. This is needed because the rev field must be unique in every repository which is not possible in CVS since it uses revision numbers per file. The combination of a file path and its revision is what make a commit unique in a system like CVS. For this particular case the rev field is represented by the concatenation of the revision number, the pipe character ('|') and the file path. Here is an example for a CVS repository: `1.1.2.1|/poppler/glib/demo/render.c`
+
+* `repository_id`: Identifier in the database of which repository this commit was to. 
+
+
+#### actions table
+
+The `actions` table describes the different actions performed in every commit. In systems like CVS, where the commit is limited to a single file, there will be only one record in the actions table for every commit. However, most of the version control systems support atomic commits, where several actions are carried out on several files/directories. 
+
+* `id`: Database identifier.
+* `type`: A character representing the type of the action. Currently supported actions are:
+    * `A`: The file has been added to the repository.
+    * `M`: The file has been modified.
+    * `D`: The file has been deleted.
+    * `V`: The file has been renamed. This might be a simple rename, or the file may have been moved to another path. In any case, the file identifier will not change after a move action.
+    * `C`: The file has been copied. This is similar to an addition, except the file was copied from an existing one.
+    * `R`: The file has been replaced, meaning an existing file has been removed and replaced by a new one with the same name. Additionally, another existing file might be used as a base for the replacement, meaning the new file is a copy from an existing file.
+* `commit_id`: The identifier of the commit where the action was
+performed. It's a foreign key that references the `id` field of the `scmlog` table.
+* `branch_id`: The identifier of the branch where the action was performed. It's a foreign key that references the `id` field of the `branches` table. 
+
+**Note:** Not all of the action types are always supported, for example, CVS repositories only support the `A`, `M` and `D` actions.
+
+#### files table
+
+The `files` table contains an identifier for every file or directory found in the repository.
+
+* `id`: Database identifier.
+* `file_name`: The name of the file or directory. **Note:** this is *not* a path. 
+* `repository_id`: The identifier of the repository to which the file belongs. It allows to easily get the list of files of the repository. It's a foreign key that references the `id` field of the `repositories` table.
+
+#### file_links table
+
+This table contains relationships between files. The relationship
+between two files is always parent -> child. 
+
+* `id`: Database identifier.
+* `parent_id`: the identifier of parent file or -1 if the file is in the root of the repository. It's a foreign key that references the `id` field of the `files` table.
+* `file_id`: the identifier of the file. It's a foreign key that references the `id` field of the `files` table.
+* `commit_id`: the identifier of the commit where the relationship appears for the first time. When a file or directory is moved, a new link is created with the ID of the commit where the move action as performed. There will be, therefore, two links for the same file each one with a different parent. In order to know which parent is the right one at a certain point (revision), the `commit_id` field is used to choose the link that contains the latest commit. It's a foreign key that references the `id` field of the `scmlog` table.
+
+#### The file_copies table
+
+The `file_copies` table is used to store additional information about actions that involve more than one file. Copies, moves, renames and replacements are actions performed over two or more files. The `file_id` field of the `actions` table refers always to the file that is the object of the action. 
+
+* `id`: Database identifier.
+* `to_id`: identifier of the file that is the destination of the action. In a move or copy operation, this field is the same than the `file_id` in the `actions` table. However, when a file is replaced, the `file_id` stored in the `actions` table is the existing file being replaced, and this field contains the `file_id` of the new file that replaces the existing one. It's a foreign key that references the `id` field of the `files` table.
+* `from_id`: identifier of the file that is the source of the action. In a move or copy operation this is the `file_id` of the file from which the move or copy is done. It's a foreign key that references the `id` field of the `files` table.
+* `from_commit_id`: identifier of the commit from which the operation is carried out. The source file contents are taken from the revision associated to this commit identifier. It's a foreign key that references the `id` field of the `scmlog` table
+* `new_file_name`: contains the new name of the file for rename actions or `NULL` for other actions. 
+* `action_id`: the identifier of the action. It's a foreign key that references the `id` field of the `actions` table.
+
+#### branches table
+
+This table contains the list of branches found in the repository.
+
+* `id`: Database identifier.
+* `name`: The name of the branch.
+
+#### tags and tag_revisions tables
+
+The combination of these two tables represents the list of tags found in the repository. The `tags` table contains the names of the tags while the `tag_revisions` tables contains the list of revisions pointing to every tag.
+
+* `id`: Database identifier.
+* `name`: The name of the tag.
+* `tag_id`: the identifier of the tag associated to this revision. It's a foreign key that references the `id` field of the `tags` table.
+* `commit_id`: the identifier of the commit representing the revision. It's a foreign key that references the `id` field of the `scmlog` table. 
+
+#### people table
+
+This table contains the name and email (when available) of the people involved in the repository.
+
+* `id`: Database identifier.
+* `name`: the person's name or nickname. Depending on the repository type this field contains the real name (or at least the name provided by the user) or the user name for repositories that have authentication like CVS or SVN.
+* `email`: The email of the person or `NULL` if it's not provided by the repository.
+
+#### The action_files and actions_file_names views
+
+The database design tries to represent all the logic behind the output given by a repository log. Because of this, the complexity of the schema makes difficult to write queries. In order to help the users of the database, `CVSAnalY` provides these two views.
+
+**Note:** these views are not created for SQLite databases.
+
+* `action_files`: the `file_id` field of the `actions` table might be confusing. Depending on the situation you might want the `file_id` of the `actions` table or the `to_id` field of the @`file_copies` table. For example, if you are interested on the new files added, you need the `to_id` field, while if you want to know what files have been deleted, you need the `file_id` field, since a replace operation implies that the replaced file is not available anymore. This view is useful when you are in the first case. The view is just a "clone" of the `actions` table, but using the `to_id` as `file_id` for replace actions.
+
+* `actions_file_names`: since the name of a file may change during the history, we usually need to get the new file name given to a file as a result of a rename action. The new file name is stored in the `file_copies` tables which means we always need to add an extra join in the queries. This view is a "clone" of the `actions` table including the `new_file_name` field of the `file_copies` tables.
+
+### `CVSAnalY` extensions schema details
+
+A `CVSAnalY` Extension adds one or more tables with additional information directly related to the existing tables, but not provided by the repository log. 
+
+#### FileTypes extension
+
+This extension adds the `file_types` table containing the file type associated of every file found in the repository. The file type is not the MIME type of the file but one of the following categories:
+
+* code: source code files (C/C++, Python, Java, etc.)
+* build: files used to build and configure the source code (Makefile,configure, cvsignore, etc.)
+* ui: files containing graphical user interface definitions (glade, gtkbuilder, ui files, etc.)
+* i18n: translation files (.po, .mo, etc.)
+* documentation: documentation files
+* devel-doc: documentation for developers (HACKING, ChangeLog, etc.)
+* package: package files (.tar.gz, .deb, .rmp, etc.)
+* image: icons and other image files (.png, .jpeg, etc.)
+* multimedia: audio and video files (.ogg, .avi, .mp3, etc.)
+* unknown: files with an unknown type, generally files that don't have extension
+
+
+The file type is based on the file extension and it's assumed that a file doesn't change its type during the history. 
+
+The `file_types` table contains the following fields:
+
+* `id`: Database identifier.
+* `file_id`: the file identifier. It's a foreign key that references the `id` field of the `files` table.
+* `type`: the name of the type (as described above)
+
+#### Metrics extension
+
+This extension provides simple source code metrics for every revision of every single file found in the repository. Since this extension is about source code, it uses the FileTypes extension to get only source code files.
+
+* `id`: Identifier in the database.
+* `file_id`: the identifier of the file. It's a foreign key that references the `id` field of the `files` table.
+* `commit_id`: the identifier of the commit (revision). It's a foreign key
+that references the `id` field of the `scmlog` table.
+* `lang`: the programming language (as given by the `sloccount` tool).
+* `sloc`: number of source code lines of code.
+* `loc`: number of lines of code.
+* `ncomment`: number of comments.
+* `lcomment`: number of commented lines.
+* `lblank`: number of blank lines.
+* `nfunctions`: number of functions.
+* `mccabe_*`: all fields starting with mccabe correspond to McCabe cyclomatic complexity.
+* `halstead_*`: all fields starting with halstead correspond to Halstead software science metrics.
+
+#### CommitsLOC extension
+
+This extension adds a table with the number of lines added and removed for every commit. 
+
+* `id`: Database identifier.
+* `commit_id`: the commit identifier. It's a foreign key that references the `id` field of the `scmlog` table.
+* `added`: number of lines added in the given commit.
+* `removed`: number of lines removed in the given commit.
+
+Frequently Asked Questions
+--------------------------
+
+### Why aren't branches associated to commits instead of actions?
+
+While it's logical to think that a commit is always associated to a single branch, that's not true in SVN repositories. The fact that branches don't really exist in SVN (they are just paths in the repository), makes possible to find commits involving files from different branches for the same revision. It happens, indeed, more often than expected. So, in most of the cases, all actions referencing the same commit will reference the same branch too, but we need to keep the relationship between action and branch in order to support all other cases. 
+
+### Why doesn't files table contain full paths for files?
+
+`CVSAnalY` stores the whole history of the project in the database. Paths do change quite often during the history of a project as a result of a rename or a move operation. We are interested in files independently of their paths, but we also need to be able to get the full path of a file at any point in the history. Assigning identifiers to the files instead of the paths we can follow the history of any given file even if it's renamed or moved. Additionally, relationships between files are stored in the `file_links` table. When, for example, a directory is moved to another path, we only need to create a new relationship between two existing files.
+
+Inside the extensions directory is a script called `FilePaths.py`. This provides utility functions for re-building a file's path at any point in the repository's history.
+
+### Why are there two tables, `files` and `file_links`, instead of a single files table with a pointer to its parent file?
+
+That was the first approach we followed. Since we are trying to represent a tree, it sounds reasonable to use a single table where every record is a node of the tree containing a pointer to its parent node. This approach works indeed, but makes quite hard to build paths, since it requires multiple recursive queries for every file path. We use instead a graph schema, where there's a table containing the vertices (files table) and another table containing edges (`file_links` table). A tree is indeed a graph without cycles. With this approach it's possible to get the adjacency matrix for any given revision with only two queries. Building paths for the files once we have the adjacency matrix is trivial. 
+
+### Why are there two tables for tags?
+
+Despite it to representing the same concept, tags are implemented in a different way in every source code management system. Theoretically, a tag is just a label that points to a snapshot of the repository. In CVS is not possible to take a snapshot of the repository with only one revision, since revisions are per file. In CVS a tag is actually a list of pairs file-revision which is represented by `CVSAnalY` with the `tags` and `tag_revisions` tables. For SVN and Git repositories there will be only on revision for every tag.
+
+### Why is CommitsLOC and extension if that information is provided by the cvs log command?
+
+Because it's only available in the log output of CVS repositories. For the other repositories we have to get. In the case of SVN getting such information might take a long time depending on the number of revisions. Since the lines added/removed per commit is not the most important information provided by `CVSAnalY` and it makes the parsing process quite longer, we decided to move it to an extension, so that it will be optionally executed.
