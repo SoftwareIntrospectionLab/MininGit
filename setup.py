@@ -37,7 +37,7 @@ setup(
     packages=['pycvsanaly2', 'pycvsanaly2.extensions'],
     long_description=read('README.mdown'),
     data_files = [('share/man/man1',['help/cvsanaly2.1'])],
-    scripts = ["cvsanaly2"]
+    scripts = ["cvsanaly2"],
     classifiers=[
         "Development Status :: 4 - Beta",
         "Topic :: Software Development :: Version Control",
