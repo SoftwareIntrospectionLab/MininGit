@@ -27,7 +27,7 @@ def read(fname):
 
 setup(
     name = "cvsanaly",
-    version = "2.1.1",
+    version = "2.2",
     author = "Chris Lewis",
     author_email = "cflewis@soe.ucsc.edu",
     description = ("A Python library for analyzing source control repositories"),
