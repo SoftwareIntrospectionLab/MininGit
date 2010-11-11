@@ -38,7 +38,7 @@ setup(
     long_description=read('README.mdown'),
     data_files = [('share/man/man1',['help/cvsanaly2.1'])],
     scripts = ["cvsanaly2"],
-    classifiers=[
+    classifiers = [
         "Development Status :: 4 - Beta",
         "Topic :: Software Development :: Version Control",
         "License :: OSI Approved :: GNU General Public License (GPL)",
