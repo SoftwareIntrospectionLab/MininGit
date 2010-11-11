@@ -157,7 +157,7 @@ The database is divided into two main parts. The first part consists of the set 
 
 The second part is composed by tables created and filled by `CVSAnalY` extensions. The information provided by these tables depends on every `CVSAnalY` Extension, however the main goal is common: to complete the `CVSAnalY` schema with additional information directly related to the existing tables but not provided by the repository log. 
 
-![Database schema](http://github.com/Lewisham/cvsanaly/develop/docs/images/db_schema.png)
+![Database schema](http://github.com/Lewisham/cvsanaly/raw/develop/docs/images/db_schema.png)
 
 ### General conventions
 
