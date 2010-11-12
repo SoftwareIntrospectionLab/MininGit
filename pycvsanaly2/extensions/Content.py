@@ -146,7 +146,7 @@ class ContentJob(Job):
         # TODO: I should really throw a "not source" exception,
         # but just doing None is fine for now.
         try:
-            return to_utf8(self.file_contents).decode("utf-8")
+            return self.file_contents.encode("utf-8")
         except:
             return None
 
@@ -225,14 +225,14 @@ class Content(Extension):
     def __process_finished_jobs(self, job_pool, write_cursor, db):
         finished_job = job_pool.get_next_done()
 
-        # scmlog_id is the commit ID. For some reason, the 
+        # commit_id is the commit ID. For some reason, the 
         # documentaion advocates tablename_id as the reference,
         # but in the source, these are referred to as commit IDs.
         # Don't ask me why!
         while finished_job is not None:
             if finished_job.get_file_contents() is not None:
                 try:
-                    query = "insert into content(scmlog_id, file_id, content) values(?,?,?)"
+                    query = "insert into content(commit_id, file_id, content) values(?,?,?)"
 
                     write_cursor.execute(statement(query, db.place_holder), \
                             (finished_job.get_commit_id(), \
