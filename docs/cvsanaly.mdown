@@ -323,6 +323,41 @@ This extension adds a table with the number of lines added and removed for every
 * `added`: number of lines added in the given commit.
 * `removed`: number of lines removed in the given commit.
 
+#### Content extension
+
+This extension adds a `content` table with the content of all source files at each revision. This can be used if you are interested in code evolution. **Note:** this extension runs very slowly (on the order of *hours*) for remote repositories. Where possible, the repository should be local, and preferably Git. This extension can also blow up the size of the database considerably.
+
+Depends on FileTypes in order to find out whether a file is source code or not.
+
+* `id`: Database identifier.
+* `commit_id`: Foreign key to `scmlog` indicating which commit this file is from.
+* `file_id`: Foreign key to `files` indicating which file this is.
+* `content`: The entire contents of the file.
+
+#### Patches extension
+
+This extension adds a `patches` table, with the raw diffs of every commit. **Note:** this extension runs very slowly (on the order of *days*) for remote repositories. Where possible, the repository should be local, and preferably Git. This extension can also blow up the size of the database considerably.
+
+* `id`: Database identifier.
+* `commit_id`: The commit to which this patch refers. This is a foreign key to `scmlog.id`.
+* `patch`: The raw diff from the repository. Each source control manager has a slightly different output, but where possible, each output should be a [unified diff](http://www.gnu.org/software/hello/manual/diff/Unified-Format.html).
+
+#### Hunks extension
+
+This extension adds a `hunks` table, which tracks where the start and end lines of diffs are. This tracks what the old file line numbers are, and what the new file numbers are.
+
+If the diff only *deletes* lines, the hunk only stores changes in the `old_start_number` and `old_end_number` fields. If the diff *adds* lines, the hunk stores changes in the `new_start_number` and `new_end_number` fields also. Another common pattern is when the line numbers match for both old and new: this means the hunk was a change (which the unified diff stores as a line removal and then a line addition at the same place).
+
+* `id`: Database identifier
+* `file_id`: ID for file that was changed. This is a foreign key to `files.id`.
+* `commit_id`: The commit for when the change took place. This is a foreign key to `scmlog.id`.
+* `old_start_line`: The start line of the hunk from the original file.
+* `old_end_line`: The end line of the hunk from the original file.
+* `old_start_line`: The start line of the hunk from the changed file.
+* `old_end_line`: The end line of the hunk from the changed file.
+* `bug_introducing`: Boolean used by [UCSC](http://users.soe.ucsc.edu/~ejw) research project.
+
+
 Frequently Asked Questions
 --------------------------
 
@@ -347,3 +382,9 @@ Despite it to representing the same concept, tags are implemented in a different
 ### Why is CommitsLOC and extension if that information is provided by the cvs log command?
 
 Because it's only available in the log output of CVS repositories. For the other repositories we have to get. In the case of SVN getting such information might take a long time depending on the number of revisions. Since the lines added/removed per commit is not the most important information provided by `CVSAnalY` and it makes the parsing process quite longer, we decided to move it to an extension, so that it will be optionally executed.
+
+
+### Why are the commit IDs out of order in some extensions? I thought the extension would parse each commit one by one! Are there missing commits?
+
+No commits are missing! For speed, `CVSAnalY` threads accesses to repositories with some extensions. Every so often, the thread pool is joined and written out to the database. Threads that ended first will appear first in the database. Doing an `order by commit_id` should help you read the table better!
+

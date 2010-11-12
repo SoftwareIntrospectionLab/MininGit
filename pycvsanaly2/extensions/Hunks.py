@@ -90,11 +90,13 @@ class Hunks(Extension):
                     id INTEGER PRIMARY KEY,
                     file_id INTEGER,
                     commit_id INTEGER NOT NULL,
-                    start_line INTEGER NOT NULL,
-                    end_line INTEGER NOT NULL,
+                    old_start_line INTEGER,
+                    old_end_line INTEGER,
+                    new_start_line INTEGER,
+                    new_end_line INTEGER,
                     bug_introducing INTEGER NOT NULL default 0,
                     bug_introducing_hunk INTEGER,
-                    UNIQUE (file_id, commit_id, start_line, end_line))""")
+                    UNIQUE (file_id, commit_id, old_start_line, old_end_line, new_start_line, new_end_line))""")
             except sqlite3.dbapi2.OperationalError:
                 # It's OK if the table already exists
                 pass
@@ -116,12 +118,13 @@ class Hunks(Extension):
                     id int(11) NOT NULL auto_increment,
                     file_id int(11),
                     commit_id int(11) NOT NULL,
-                    start_line int(11) NOT NULL,
-                    end_line int(11) NOT NULL,
+                    old_start_line int(11),
+                    old_end_line int(11),
+                    new_start_line int(11),
+                    new_end_line int(11),
                     bug_introducing bool NOT NULL default false,
-                    bug_introducing_hunk int(11),
                     PRIMARY KEY(id),
-                    UNIQUE (file_id, commit_id, start_line, end_line)
+                    UNIQUE (file_id, commit_id, old_start_line, old_end_line, new_start_line, new_end_line)
                     ) ENGINE=InnoDB CHARACTER SET=utf8""")
             except _mysql_exceptions.OperationalError, e:
                 if e.args[0] == 1050:
@@ -280,8 +283,8 @@ class Hunks(Extension):
                 # revised code, not the original. New start/end lines won't
                 # be created if the change is simply removed lines.
                 # These hunks are skipped.
-                if hunk.new_start_line is None:
-                    continue
+                #if hunk.new_start_line is None:
+                #    continue
 
                 # Get the file ID from the database for linking
                 # TODO: This isn't going to work if two files are committed
@@ -337,13 +340,11 @@ class Hunks(Extension):
                         continue
                 
                 insert = """insert into hunks(file_id, commit_id, 
-                            start_line, end_line)
-                            values(?,?,?,?)"""
-                printdbg("Inserting into Hunks File ID: %s, Commit ID: %s, Start Line: %d, End Line: %d" % (file_id, commit_id, \
-                                                    hunk.new_start_line, \
-                                                    hunk.new_end_line))
+                            old_start_line, old_end_line, new_start_line, new_end_line)
+                            values(?,?,?,?,?,?)"""
                 write_cursor.execute(statement(insert, db.place_holder), \
-                        (file_id, commit_id, hunk.new_start_line, \
+                        (file_id, commit_id, hunk.old_start_line, \
+                        hunk.old_end_line, hunk.new_start_line, \
                         hunk.new_end_line))
 
         read_cursor.close()
