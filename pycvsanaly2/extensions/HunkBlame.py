@@ -79,15 +79,14 @@ class HunkBlame(Extension):
         job_pool = JobPool (repo, path or repo.get_uri (), queuesize=100)
 
         query = "select h.id, h.file_id, h.commit_id, h.start_line, h.end_line, s.rev from hunks h join scmlog s on h.commit_id=s.id " + \
-            "where s.repository_id=?"
+            "where s.repository_id=? limit 10"
         read_cursor.execute(statement (query, db.place_holder), (repoid,))
         hunk =read_cursor.fetchone()
         n_blames = 0
         fp = FilePaths(db)
-        aux_cursor = cnn.cursor()
+        fp.update_all(repoid)
         while hunk!=None:
             hunk_id, file_id, commit_id, start_line, end_line, rev = hunk
-            fp.update_all(repoid)
             relative_path = fp.get_path(file_id, commit_id, repoid)
             printdbg ("Path for %d at %s -> %s", (file_id, rev, relative_path))
             job = HunkBlameJob (file_id, commit_id, relative_path, rev, start_line, end_line)
@@ -98,7 +97,6 @@ class HunkBlame(Extension):
                 self.__process_finished_jobs (job_pool, write_cursor)
                 n_blames = 0
             hunk=read_cursor.fetchone()
-        aux_cursor.close();
 
         job_pool.join ()
         self.__process_finished_jobs (job_pool, write_cursor, True)

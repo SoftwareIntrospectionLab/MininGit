@@ -43,39 +43,6 @@ class FilePaths:
         self.__dict__ = self.__shared_state
         self.__dict__['db'] = db
         
-    def update_for_file_revision(self, cursor, file_id, commit_id):
-        db = self.__dict__['db']
-        
-        if self.__dict__['adj'] is None:
-            adj = FilePaths.Adj ()
-            self.__dict__['adj'] = adj
-        else:
-            adj = self.__dict__['adj']
-            
-        while(file_id!=None and file_id!=-1):
-            query = "select file_name from files where id=?"
-            cursor.execute(statement(query, db.place_holder),(file_id,))
-            file_name = cursor.fetchone()[0]
-            adj.files[file_id] = file_name
-            query = "select parent_id, commit_id from file_links where file_id=?"
-            cursor.execute(statement(query, db.place_holder),(file_id,))
-            rs = cursor.fetchall()
-            parent_id = None
-            
-            if(len(rs)>1):
-                query = "select s1.id from scmlog s1, scmlog s2 where s2.id=? and s1.id in ? and s1.date<=s2.date order by s1.date desc"
-                revs = tuple([row[1] for row in rs])
-                cursor.execute(statement(query, db.place_holder),(commit_id, revs))
-                latest_link_rev_id = cursor.fetchone()[0]
-                parent_id = [row[0] for row in rs if row[1]==latest_link_rev_id][0]
-            elif len(rs)>0:
-                parent_id = rs[0][0]
-                
-            adj.adj[file_id] = parent_id
-            file_id = parent_id
-        
-        
-
     def update_for_revision (self, cursor, commit_id, repo_id):
         db = self.__dict__['db']
 
@@ -85,7 +52,7 @@ class FilePaths:
         prev_commit_id = self.__dict__['rev']
         self.__dict__['rev'] = commit_id
 
-        profiler_start ("Updating adjacency matrix for commit %d", (commit_id,))
+        profiler_start ("Updating adjacency matrix for commit %d", commit_id)
 
         if self.__dict__['adj'] is None:
             adj = FilePaths.Adj ()
@@ -124,9 +91,9 @@ class FilePaths:
                 "and af.commit_id = ? " + \
                 "and af.type = 'V' " + \
                 "and f.repository_id = ?"
-        profiler_start ("Getting new file names for commit %d", (commit_id,))
+        profiler_start ("Getting new file names for commit %d", commit_id)
         cursor.execute (statement (query, db.place_holder), (commit_id, repo_id))
-        profiler_stop ("Getting new file names for commit %d", (commit_id,), True)
+        profiler_stop ("Getting new file names for commit %d", commit_id, True)
         rs = cursor.fetchmany ()
         while rs:
             for id, file_name in rs:
@@ -204,7 +171,7 @@ class FilePaths:
         cursor = cnn.cursor ()
         cursor.execute ("select s.id from scmlog s, actions a where s.id = a.commit_id")
         old_id = -1
-        for id in cursor.fetchall ():
+        for id in cursor.fetchall ()[0]:
             if old_id != id:
                 self.update_for_revision (cursor, id, repo_id)
                 old_id = id
