@@ -3,8 +3,8 @@ Created on Nov 4, 2010
 
 @author: linzhp
 '''
-from Blame import BlameJob
-from pycvsanaly2.extensions import Extension, register_extension, ExtensionRunError
+from Blame import BlameJob, Blame
+from pycvsanaly2.extensions import register_extension, ExtensionRunError
 from pycvsanaly2.profile import profiler_start, profiler_stop
 from pycvsanaly2.utils import printdbg, printerr, uri_to_filename
 from pycvsanaly2.Database import (SqliteDatabase, MysqlDatabase, TableAlreadyExists,
@@ -28,8 +28,10 @@ class HunkBlameJob(BlameJob):
         def end_file (self):
             pass
 
-    def __init__ (self, file_id, commit_id, path, rev, start_line, end_line):
-        BlameJob.__init__(self, file_id, commit_id, path, rev)
+    def __init__ (self, hunk_id, path, rev, start_line, end_line):
+        self.hunk_id = hunk_id
+        self.path = path
+        self.rev = rev
         self.start_line = start_line
         self.end_line = end_line
         
@@ -38,21 +40,70 @@ class HunkBlameJob(BlameJob):
         return self.BlameContentHandler(self.start_line, self.end_line)
     
     def collect_results(self, content_handler):
-        print "in HunkBlameJob"
+        print "in HunkBlameJob.collect_results"
+        
+    def get_bug_revs(self):
+        return self.bug_revs
             
-class HunkBlame(Extension):
+class HunkBlame(Blame):
     '''
     classdocs
     '''
 
     MAX_BLAMES = 1
 
+    # Insert query
+    __insert__ = 'INSERT INTO hunk_blames (id, file_id, commit_id, author_id, n_lines) ' + \
+                 'VALUES (?,?,?,?,?)'
     def __init__(self):
         '''
         Constructor
         '''
-    def __process_finished_jobs (self, job_pool, write_cursor, unlocked = False):
-        pass
+    def __create_table(self, cnn):
+        cursor = cnn.cursor ()
+
+        if isinstance (self.db, SqliteDatabase):
+            import sqlite3.dbapi2
+            try:
+                cursor.execute ("CREATE TABLE hunk_blames (" +
+                                "id integer primary key," +
+                                "hunk_id integer," +
+                                "bug_rev string"
+                                ")")
+            except sqlite3.dbapi2.OperationalError:
+                cursor.close ()
+                raise TableAlreadyExists
+            except:
+                raise
+        elif isinstance (self.db, MysqlDatabase):
+            import _mysql_exceptions
+
+            try:
+                cursor.execute ("CREATE TABLE hunk_blames (" +
+                                "id integer primary key auto_increment," +
+                                "hunk_id integer REFERENCES hunks(id)," +
+                                "bug_rev mediumtext REFERENCES scmlog(rev)"+
+                                ") CHARACTER SET=utf8")
+            except _mysql_exceptions.OperationalError, e:
+                if e.args[0] == 1050:
+                    cursor.close ()
+                    raise TableAlreadyExists
+                raise
+            except:
+                raise
+
+        cnn.commit ()
+        cursor.close ()
+
+    def __get_hunk_blames(self, cursor, repoid):
+        query = """select distinct b.hunk_id 
+            from hunk_blames b 
+            join hunks h on b.hunk_id=h.id
+            join files f on h.file_id=f.id
+            where f.repository_id=?"""
+        cursor.execute (statement (query, self.db.place_holder), (repoid,))
+        return [h[0] for h in cursor.fetchall()]
+
     
     def run (self, repo, uri, db):
         profiler_start ("Running HunkBlame extension")
@@ -76,6 +127,15 @@ class HunkBlame(Extension):
         except Exception, e:
             raise ExtensionRunError ("Error creating repository %s. Exception: %s" % (repo.get_uri (), str (e)))
 
+        try:
+            self.__create_table (cnn)
+        except TableAlreadyExists:
+            pass
+        except Exception, e:
+            raise ExtensionRunError (str(e))
+        
+        blames = self.__get_hunk_blames (read_cursor, repoid)
+
         job_pool = JobPool (repo, path or repo.get_uri (), queuesize=100)
 
         query = "select h.id, h.file_id, h.commit_id, h.start_line, h.end_line, s.rev from hunks h join scmlog s on h.commit_id=s.id " + \
@@ -87,19 +147,22 @@ class HunkBlame(Extension):
         fp.update_all(repoid)
         while hunk!=None:
             hunk_id, file_id, commit_id, start_line, end_line, rev = hunk
-            relative_path = fp.get_path(file_id, commit_id, repoid)
-            printdbg ("Path for %d at %s -> %s", (file_id, rev, relative_path))
-            job = HunkBlameJob (file_id, commit_id, relative_path, rev, start_line, end_line)
-            job_pool.push (job)
-            n_blames += 1
-
-            if n_blames >= self.MAX_BLAMES:
-                self.__process_finished_jobs (job_pool, write_cursor)
-                n_blames = 0
+            if hunk_id in blames:
+                printdbg ("Blame for hunk %d is already in the database, skip it", hunk_id)
+            else:
+                relative_path = fp.get_path(file_id, commit_id, repoid)
+                printdbg ("Path for %d at %s -> %s", (file_id, rev, relative_path))
+                job = HunkBlameJob (hunk_id, relative_path, rev, start_line, end_line)
+                job_pool.push (job)
+                n_blames += 1
+    
+                if n_blames >= self.MAX_BLAMES:
+                    self.process_finished_jobs (job_pool, write_cursor)
+                    n_blames = 0
             hunk=read_cursor.fetchone()
 
         job_pool.join ()
-        self.__process_finished_jobs (job_pool, write_cursor, True)
+        self.process_finished_jobs (job_pool, write_cursor, True)
 
         read_cursor.close ()
         write_cursor.close ()
