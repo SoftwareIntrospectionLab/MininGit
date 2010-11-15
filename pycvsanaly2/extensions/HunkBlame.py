@@ -43,7 +43,7 @@ class HunkBlameJob(BlameJob):
     
     def collect_results(self, content_handler):
         self.bug_revs = content_handler.bug_revs
-        assert len(self.bug_revs)<2
+        #assert len(self.bug_revs)<2
         
     def get_bug_revs(self):
         return self.bug_revs
@@ -148,7 +148,7 @@ class HunkBlame(Blame):
         job_pool = JobPool (repo, path or repo.get_uri (), queuesize=100)
 
         query = "select h.id, h.file_id, h.commit_id, h.start_line, h.end_line, s.rev from hunks h join scmlog s on h.commit_id=s.id " + \
-            "where s.repository_id=? limit 100"
+            "where s.repository_id=?"
         read_cursor.execute(statement (query, db.place_holder), (repoid,))
         hunk =read_cursor.fetchone()
         n_blames = 0
