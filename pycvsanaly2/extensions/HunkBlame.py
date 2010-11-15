@@ -18,10 +18,11 @@ class HunkBlameJob(BlameJob):
         def __init__(self, start_line, end_line):
             self.start_line = start_line
             self.end_line = end_line
+            self.bug_revs = set()
 
         def line(self,blame_line):
             if(blame_line.line>=self.start_line and blame_line.line<=self.end_line):
-                print blame_line
+                self.bug_revs.add(blame_line.rev)
 
         def start_file (self, filename):
             pass
@@ -34,16 +35,21 @@ class HunkBlameJob(BlameJob):
         self.rev = rev
         self.start_line = start_line
         self.end_line = end_line
+        self.bug_revs = set()
         
 
     def get_content_handler(self):
         return self.BlameContentHandler(self.start_line, self.end_line)
     
     def collect_results(self, content_handler):
-        print "in HunkBlameJob.collect_results"
+        self.bug_revs = content_handler.bug_revs
+        assert len(self.bug_revs)<2
         
     def get_bug_revs(self):
         return self.bug_revs
+    
+    def get_hunk_id(self):
+        return self.hunk_id
             
 class HunkBlame(Blame):
     '''
@@ -53,12 +59,11 @@ class HunkBlame(Blame):
     MAX_BLAMES = 1
 
     # Insert query
-    __insert__ = 'INSERT INTO hunk_blames (id, file_id, commit_id, author_id, n_lines) ' + \
-                 'VALUES (?,?,?,?,?)'
+    __insert__ = 'INSERT INTO hunk_blames (hunk_id, bug_rev) ' + \
+                 'VALUES (?,?)'
     def __init__(self):
-        '''
-        Constructor
-        '''
+        self.id_counter = 1 #Only to conform the interface of superclass
+        
     def __create_table(self, cnn):
         cursor = cnn.cursor ()
 
@@ -104,7 +109,11 @@ class HunkBlame(Blame):
         cursor.execute (statement (query, self.db.place_holder), (repoid,))
         return [h[0] for h in cursor.fetchall()]
 
-    
+    def populate_insert_args(self, job):
+        bug_revs = job.get_bug_revs ()
+        hunk_id = job.get_hunk_id ()
+        return [(hunk_id, rev) for rev in bug_revs]
+        
     def run (self, repo, uri, db):
         profiler_start ("Running HunkBlame extension")
         
@@ -139,7 +148,7 @@ class HunkBlame(Blame):
         job_pool = JobPool (repo, path or repo.get_uri (), queuesize=100)
 
         query = "select h.id, h.file_id, h.commit_id, h.start_line, h.end_line, s.rev from hunks h join scmlog s on h.commit_id=s.id " + \
-            "where s.repository_id=? limit 10"
+            "where s.repository_id=? limit 100"
         read_cursor.execute(statement (query, db.place_holder), (repoid,))
         hunk =read_cursor.fetchone()
         n_blames = 0
@@ -148,7 +157,7 @@ class HunkBlame(Blame):
         while hunk!=None:
             hunk_id, file_id, commit_id, start_line, end_line, rev = hunk
             if hunk_id in blames:
-                printdbg ("Blame for hunk %d is already in the database, skip it", hunk_id)
+                printdbg ("Blame for hunk %d is already in the database, skip it", (hunk_id,))
             else:
                 relative_path = fp.get_path(file_id, commit_id, repoid)
                 printdbg ("Path for %d at %s -> %s", (file_id, rev, relative_path))
@@ -171,3 +180,8 @@ class HunkBlame(Blame):
         profiler_stop ("Running HunkBlame extension", delete = True)
 
 register_extension ("HunkBlame", HunkBlame)
+#from repositoryhandler.Command import Command
+#import os
+#cmd = ['git', 'blame', '--root', '-l', '-t', '-f', u'd7ff3d94fab443e31f573d98af0f0438252a6c91', '--', u'/home/lzp/data/voldemort/build_number.txt']
+#command = Command (cmd, os.getcwd(), env = {'PAGER' : ''})
+#command.run()
