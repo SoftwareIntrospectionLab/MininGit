@@ -1,1 +1,1 @@
--e "git+git://github.com/Lewisham/repositoryhandler.git#egg=repositoryhandler"
+-e "git+https://github.com/Lewisham/repositoryhandler#egg=repositoryhandler"
