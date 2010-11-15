@@ -219,9 +219,11 @@ class Patches (Extension):
                 else:
                     i = i + 1
 
-	    cnn.commit()
+	        cnn.commit()
             rs = icursor.fetchmany ()
 
+        job_pool.join()
+        self.__process_finished_jobs(job_pool, write_cursor, db)
         cnn.commit ()
         write_cursor.close ()
         cursor.close ()
