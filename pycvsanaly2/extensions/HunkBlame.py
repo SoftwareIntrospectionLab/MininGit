@@ -147,17 +147,18 @@ class HunkBlame(Blame):
 
         job_pool = JobPool (repo, path or repo.get_uri (), queuesize=100)
 
-        query = """select h.id, h.file_id, h.commit_id, h.start_line, h.end_line, s.rev 
+        query = """select h.id, h.file_id, h.commit_id, h.new_start_line, h.new_end_line, s.rev 
                     from hunks h, scmlog s
                     where h.commit_id=s.id and s.repository_id=?"""
         read_cursor.execute(statement (query, db.place_holder), (repoid,))
-        hunk =read_cursor.fetchone()
+        hunk = read_cursor.fetchone()
         n_blames = 0
         fp = FilePaths(db)
         fp.update_all(repoid)
         
         while hunk is not None:
             hunk_id, file_id, commit_id, start_line, end_line, rev = hunk
+            
             if hunk_id in blames:
                 printdbg ("Blame for hunk %d is already in the database, skip it", (hunk_id,))
             else:
@@ -170,7 +171,8 @@ class HunkBlame(Blame):
                 if n_blames >= self.MAX_BLAMES:
                     self._process_finished_jobs (job_pool, write_cursor)
                     n_blames = 0
-            hunk=read_cursor.fetchone()
+            
+            hunk = read_cursor.fetchone()
 
         job_pool.join ()
         self._process_finished_jobs (job_pool, write_cursor, True)
