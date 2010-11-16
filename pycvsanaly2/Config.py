@@ -39,7 +39,9 @@ class Config:
                        'extensions'    : [],
                        # Metrics extension options
                        'metrics_all'   : False,
-                       'metrics_noerr' : False}
+                       'metrics_noerr' : False,
+                       # Threading options
+                       'max_threads' : 10}
     
     def __init__ (self):
         self.__dict__ = self.__shared_state

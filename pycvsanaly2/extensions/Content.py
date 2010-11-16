@@ -21,6 +21,7 @@ from pycvsanaly2.extensions import Extension, register_extension, \
         ExtensionRunError
 from pycvsanaly2.Database import SqliteDatabase, MysqlDatabase, \
         TableAlreadyExists, statement, DBFile
+from pycvsanaly2.Config import Config
 from pycvsanaly2.utils import printdbg, printerr, printout, \
         remove_directory, uri_to_filename, to_utf8
 from pycvsanaly2.profile import profiler_start, profiler_stop
@@ -285,7 +286,7 @@ class Content(Extension):
         except Exception as e:
             raise ExtensionRunError("Couldn't prepare table because " + str(e))
 
-        queuesize = int(os.getenv("CVSANALY_THREADS", 10))
+        queuesize = Config().max_threads
         printdbg("Setting queuesize to " + str(queuesize))
 
         # This is where the threading stuff comes in, I expect

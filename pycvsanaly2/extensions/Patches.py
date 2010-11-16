@@ -25,6 +25,7 @@ from repositoryhandler.backends.watchers import DIFF
 from pycvsanaly2.Database import (SqliteDatabase, MysqlDatabase, TableAlreadyExists,
                                   statement, ICursor)
 from pycvsanaly2.Log import LogReader
+from pycvsanaly2.Config import Config
 from pycvsanaly2.extensions import Extension, register_extension, ExtensionRunError
 from pycvsanaly2.utils import to_utf8, printerr, printdbg, uri_to_filename
 from pycvsanaly2.FindProgram import find_program
@@ -188,7 +189,7 @@ class Patches (Extension):
         except Exception, e:
             raise ExtensionRunError (str (e))
 
-        queuesize = int(os.getenv("CVSANALY_THREADS", 10))
+        queuesize = Config().max_threads
         job_pool = JobPool(repo, path or repo.get_uri(), queuesize=queuesize)        
         i = 0
 
@@ -199,7 +200,7 @@ class Patches (Extension):
         rs = icursor.fetchmany ()
         while rs:
             for commit_id, revision, composed_rev in rs:
-                if commit_id in commits or (commit_id < int(os.getenv("CVSANALY_PATCHSTART", 0))):
+                if commit_id in commits: 
                     continue
 
                 if composed_rev:
@@ -219,7 +220,7 @@ class Patches (Extension):
                 else:
                     i = i + 1
 
-	        cnn.commit()
+            cnn.commit()
             rs = icursor.fetchmany ()
 
         job_pool.join()

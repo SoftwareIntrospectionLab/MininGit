@@ -172,6 +172,8 @@ class HunkBlame(Blame):
                     n_blames += 1
                 else:
                     printerr("Couldn't find path for file ID %d", (file_id,))
+                    break
+                    continue
                 
                 if n_blames >= self.MAX_BLAMES:
                     self._process_finished_jobs (job_pool, write_cursor)
