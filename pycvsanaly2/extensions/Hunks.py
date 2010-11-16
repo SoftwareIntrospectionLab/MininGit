@@ -67,7 +67,7 @@ class CommitData:
 # This class holds a single repository retrieve task,
 # and keeps the source code until the object is garbage-collected
 class Hunks(Extension):
-    deps = ['Patches']
+    #deps = ['Patches']
 
     def __prepare_table(self, connection, drop_table=False):
         cursor = connection.cursor()
@@ -272,7 +272,7 @@ class Hunks(Extension):
 
         self.__prepare_table(connection)
         fp = FilePaths(db)
-        fp.update_all()
+        fp.update_all(repo_id)
 
         for row in read_cursor:
             commit_id = row[0]
@@ -313,14 +313,15 @@ class Hunks(Extension):
                 else:
                     for possible_file in possible_files:
                         # Get the paths of the possible matches
-                        path = fp.get_path(possible_file[0], commit_id, repo_id).strip()
+                        path = fp.get_path(possible_file[0], commit_id, repo_id)
 
-                        printdbg("Comparing " + path + " to " + hunk_file_name)
-                        if path == ("/" + hunk_file_name):
-                            printdbg("Match found")
-                            file_id = possible_file[0]
-                            break
-                            break
+                        if path is not None:
+                            printdbg("Comparing " + path.strip() + " to " + hunk_file_name)
+                            if path.strip() == ("/" + hunk_file_name):
+                                printdbg("Match found")
+                                file_id = possible_file[0]
+                                break
+                                break
 
                         printdbg("No match for old paths, is file name current?")
 
