@@ -143,9 +143,6 @@ class Hunks(Extension):
 
     def get_commit_data(self, patch_content):
         lines = [l + "\n" for l in patch_content.splitlines() if l]
-        printdbg(">>>>>>>>>")
-        printdbg(str(lines))
-        printdbg("<<<<<<<<<")
         hunks = []
 
         for patch in [p for p in parse_patches(lines, allow_dirty=True, allow_continue=True) if isinstance(p, Patch)]:
