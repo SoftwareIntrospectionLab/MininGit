@@ -165,10 +165,14 @@ class HunkBlame(Blame):
             else:
                 relative_path = fp.get_path(file_id, commit_id, repoid)
                 printdbg ("Path for %d at %s -> %s", (file_id, rev, relative_path))
-                job = HunkBlameJob (hunk_id, relative_path, rev, start_line, end_line)
-                job_pool.push (job)
-                n_blames += 1
-    
+
+                if path is not None:
+                    job = HunkBlameJob (hunk_id, relative_path, rev, start_line, end_line)
+                    job_pool.push (job)
+                    n_blames += 1
+                else:
+                    printerr("Couldn't find path for file ID %d", (file_id,))
+                
                 if n_blames >= self.MAX_BLAMES:
                     self._process_finished_jobs (job_pool, write_cursor)
                     n_blames = 0
