@@ -52,7 +52,7 @@ class FilePaths:
         prev_commit_id = self.__dict__['rev']
         self.__dict__['rev'] = commit_id
 
-        profiler_start ("Updating adjacency matrix for commit %d", commit_id)
+        profiler_start ("Updating adjacency matrix for commit %d", (commit_id,))
 
         if self.__dict__['adj'] is None:
             adj = FilePaths.Adj ()
@@ -91,9 +91,9 @@ class FilePaths:
                 "and af.commit_id = ? " + \
                 "and af.type = 'V' " + \
                 "and f.repository_id = ?"
-        profiler_start ("Getting new file names for commit %d", commit_id)
+        profiler_start ("Getting new file names for commit %d", (commit_id,))
         cursor.execute (statement (query, db.place_holder), (commit_id, repo_id))
-        profiler_stop ("Getting new file names for commit %d", commit_id, True)
+        profiler_stop ("Getting new file names for commit %d", (commit_id,), True)
         rs = cursor.fetchmany ()
         while rs:
             for id, file_name in rs:
@@ -133,9 +133,10 @@ class FilePaths:
         tokens = []
         id = file_id
         
-        while id != None and id !=-1:
+        while id is not None and id !=-1:
             tokens.insert (0, adj.files[id])
-            id = adj.adj.get(id) #use get instead of index to avoid key error
+            #use get instead of index to avoid key error
+            id = adj.adj.get(id) 
 
         profiler_stop ("Building path for file %d", (file_id,), True)
 

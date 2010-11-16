@@ -147,14 +147,16 @@ class HunkBlame(Blame):
 
         job_pool = JobPool (repo, path or repo.get_uri (), queuesize=100)
 
-        query = "select h.id, h.file_id, h.commit_id, h.start_line, h.end_line, s.rev from hunks h join scmlog s on h.commit_id=s.id " + \
-            "where s.repository_id=?"
+        query = """select h.id, h.file_id, h.commit_id, h.start_line, h.end_line, s.rev 
+                    from hunks h, scmlog s
+                    where h.commit_id=s.id and s.repository_id=?"""
         read_cursor.execute(statement (query, db.place_holder), (repoid,))
         hunk =read_cursor.fetchone()
         n_blames = 0
         fp = FilePaths(db)
         fp.update_all(repoid)
-        while hunk!=None:
+        
+        while hunk is not None:
             hunk_id, file_id, commit_id, start_line, end_line, rev = hunk
             if hunk_id in blames:
                 printdbg ("Blame for hunk %d is already in the database, skip it", (hunk_id,))
@@ -166,12 +168,12 @@ class HunkBlame(Blame):
                 n_blames += 1
     
                 if n_blames >= self.MAX_BLAMES:
-                    self.process_finished_jobs (job_pool, write_cursor)
+                    self._process_finished_jobs (job_pool, write_cursor)
                     n_blames = 0
             hunk=read_cursor.fetchone()
 
         job_pool.join ()
-        self.process_finished_jobs (job_pool, write_cursor, True)
+        self._process_finished_jobs (job_pool, write_cursor, True)
 
         read_cursor.close ()
         write_cursor.close ()
@@ -180,8 +182,3 @@ class HunkBlame(Blame):
         profiler_stop ("Running HunkBlame extension", delete = True)
 
 register_extension ("HunkBlame", HunkBlame)
-#from repositoryhandler.Command import Command
-#import os
-#cmd = ['git', 'blame', '--root', '-l', '-t', '-f', u'd7ff3d94fab443e31f573d98af0f0438252a6c91', '--', u'/home/lzp/data/voldemort/build_number.txt']
-#command = Command (cmd, os.getcwd(), env = {'PAGER' : ''})
-#command.run()
