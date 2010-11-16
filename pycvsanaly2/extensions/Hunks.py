@@ -336,14 +336,18 @@ class Hunks(Extension):
                         # missing ID from some data screwup.
                         # We'll just continue and throw this away
                         continue
-                
-                insert = """insert into hunks(file_id, commit_id, 
+
+                insert = """insert into hunks(file_id, commit_id,
                             old_start_line, old_end_line, new_start_line, new_end_line)
                             values(?,?,?,?,?,?)"""
-                write_cursor.execute(statement(insert, db.place_holder), \
-                        (file_id, commit_id, hunk.old_start_line, \
-                        hunk.old_end_line, hunk.new_start_line, \
-                        hunk.new_end_line))
+                try:
+                    write_cursor.execute(statement(insert, db.place_holder), \
+                            (file_id, commit_id, hunk.old_start_line, \
+                            hunk.old_end_line, hunk.new_start_line, \
+                            hunk.new_end_line))
+                except Exception, e:
+                    printerr("Couldn't insert hunk, duplicate record? " + str(e))
+                    continue
 
         read_cursor.close()
         read_cursor_1.close()
