@@ -55,7 +55,7 @@ class HunkBlame(Blame):
     '''
     classdocs
     '''
-    #deps = ['FileTypes', 'Content', 'Hunks']
+    deps = ['Hunks']
 
     MAX_BLAMES = 1
 
