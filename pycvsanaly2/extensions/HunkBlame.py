@@ -172,7 +172,7 @@ class HunkBlame(Blame):
                     n_blames += 1
                 else:
                     printerr("Couldn't find path for file ID %d", (file_id,))
-                    break
+                    hunk = read_cursor.fetchone()
                     continue
                 
                 if n_blames >= self.MAX_BLAMES:
