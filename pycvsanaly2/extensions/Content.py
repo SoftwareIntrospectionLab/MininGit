@@ -30,6 +30,7 @@ from repositoryhandler.backends import RepositoryCommandError
 from tempfile import mkdtemp, NamedTemporaryFile
 from repositoryhandler.backends.watchers import CAT
 from Jobs import JobPool, Job
+from cStringIO import StringIO
 import os
 import re
 
@@ -43,10 +44,10 @@ class ContentJob(Job):
         self.path = path
         self.file_contents = ""
 
-    def write_file(self, line, fd):
-        fd.write(line)
-    
     def run(self, repo, repo_uri):
+        def write_line (data, io):
+            io.write (data)
+        
         self.repo = repo
         self.repo_uri = repo_uri
         self.repo_type = self.repo.get_type()
@@ -69,11 +70,9 @@ class ContentJob(Job):
         if ext_ptr != -1:
             suffix = filename[ext_ptr:]
 
-        # Write out to a temporary file
-        fd = NamedTemporaryFile('w', suffix=suffix)
+        io = StringIO()
 
-        # Not sure what this does yet
-        wid = self.repo.add_watch(CAT, self.write_file, fd.file)
+        wid = self.repo.add_watch(CAT, write_line, io)
         
         # Git doesn't need retries because all of the revisions
         # are already on disk
@@ -95,7 +94,7 @@ class ContentJob(Job):
                     printerr("Command %s returned %d(%s), try again",\
                             (e.cmd, e.returncode, e.error))
                     retries -= 1
-                    fd.file.seek(0)
+                    io.seek(0)
                 elif retries == 0:
                     failed = True
                     printerr("Error obtaining %s@%s. " +
@@ -110,21 +109,14 @@ class ContentJob(Job):
         self.repo.remove_watch(CAT, wid)
 
         if failed:
-            #self.measures.set_error()
             printerr("Failure due to error")
         else:
             try:
-                f = open(fd.name)
-                #print "Dump: " + str(f.readlines())
-                for line in f:
-                    self.file_contents = self.file_contents + line
-
-                f.close()
-                #fm = create_file_metrics(fd.name)
-                #self.__measure_file(fm, self.measures, fd.name, self.rev)
+                self.file_contents = io.getvalue()
+                io.close()
             except Exception, e:
-                printerr("Error getting contents for for %s@%s. " +
-                            "Exception: %s",(fd.name, self.rev, str(e)))
+                printerr("Error getting contents." +
+                            "Exception: %s",(str(e),))
             finally:
                 #TODO: This should close, but it throws an error
                 # sometimes. It's fixable using an algorithm like
@@ -342,8 +334,8 @@ class Content(Extension):
             else:
                 i = i + 1
 
-        #job_pool.join()
-        #self.__process_finished_jobs(job_pool, write_cursor, True)
+        job_pool.join()
+        self.__process_finished_jobs(job_pool, write_cursor, db)
                 
         profiler_start("Inserting results in db")
         #self.__insert_many(write_cursor)
