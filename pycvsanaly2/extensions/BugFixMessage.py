@@ -79,7 +79,7 @@ class BugFixMessage(Extension):
     # fixes, references to bug numbers like #1234, and JIRA style
     # comments, like HARMONY-1234 or GH-2.
     def fixes_bug(self, commit_message):
-        patterns = ["defect(es)?", "patch(ing)?", "bug(s|fix(es)?)?", 
+        patterns = ["defect(es)?", "patch(ing|es)?", "bug(s|fix(es)?)?", 
                 "fix(es|ed)?", "\#\d+", "[A-Z]+-\d+"]
 
         for p in patterns:
