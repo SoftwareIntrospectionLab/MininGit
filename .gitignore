@@ -6,5 +6,6 @@ MANIFEST
 dist/
 *.sqlite
 *.sqllite-journal
-config
+config*
 test.sh
+nbproject/
