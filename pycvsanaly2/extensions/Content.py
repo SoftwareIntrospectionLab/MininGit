@@ -151,32 +151,34 @@ class Content(Extension):
     deps = ['FileTypes']
     
     def __prepare_table(self, connection, drop_table=False):
-        cursor = connection.cursor()
-
         # Drop the table's old data
         if drop_table:
+            cursor = connection.cursor()
+            
             try:
                 cursor.execute("DROP TABLE content")
             except Exception, e:
                 printerr("Couldn't drop content table because %s", (e,))
+            finally:
+                cursor.close()
 
         if isinstance(self.db, SqliteDatabase):
             import sqlite3.dbapi2
+            cursor = connection.cursor()
             
             # Note that we can't guarentee sqlite is going
             # to provide foreign key support (it was only
             # introduced in 3.6.19), so no constraints are set
             try:
-                cursor.execute("CREATE TABLE content(" +
-                    "id INTEGER PRIMARY KEY," +
-                    "commit_id INTEGER NOT NULL," +
-                    "file_id INTEGER NOT NULL," +
-                    "content CLOB NOT NULL," +
-                    "UNIQUE (commit_id, file_id))")
+                cursor.execute("""CREATE TABLE content(
+                    id INTEGER PRIMARY KEY,
+                    commit_id INTEGER NOT NULL,
+                    file_id INTEGER NOT NULL,
+                    content CLOB NOT NULL,
+                    UNIQUE (commit_id, file_id))""")
             except sqlite3.dbapi2.OperationalError:
                 # It's OK if the table already exists
                 pass
-                #raise TableAlreadyExists
             except:
                 raise
             finally:
@@ -185,35 +187,48 @@ class Content(Extension):
         elif isinstance(self.db, MysqlDatabase):
             import _mysql_exceptions
 
-            # I commented out foreign key constraints because
+            cursor = connection.cursor()
+            
+            # I removed foreign key constraints because
             # cvsanaly uses MyISAM, which doesn't enforce them.
             # MySQL was giving errno:150 when trying to create with
             # them anyway
             try:
-                cursor.execute("CREATE TABLE content(" +
-                    "id int(11) NOT NULL auto_increment," +
-                    "commit_id int(11) NOT NULL," +
-                    "file_id int(11) NOT NULL," +
-                    "content mediumtext NOT NULL," +
-                    "PRIMARY KEY(id)," +
-                    "UNIQUE (commit_id, file_id)" +
-                    #"FOREIGN KEY (scmlog_id) references scmlog(id), " +
-                    #"FOREIGN KEY (file_id) references files(id) " +
-                    ") ENGINE=InnoDB CHARACTER SET=utf8")
+                cursor.execute("""CREATE TABLE content(
+                    id int(11) NOT NULL auto_increment,
+                    commit_id int(11) NOT NULL,
+                    file_id int(11) NOT NULL,
+                    content mediumtext NOT NULL,
+                    PRIMARY KEY(id),
+                    UNIQUE (commit_id, file_id)
+                    ) ENGINE=InnoDB CHARACTER SET=utf8""")
+
             except _mysql_exceptions.OperationalError, e:
                 if e.args[0] == 1050:
                     # It's OK if the table already exists
                     pass
-                    #raise TableAlreadyExists
                 else:
                     raise
             except:
                 raise
             finally:
                 cursor.close()
+        
+        # This one works regardless of DB
+        try:
+            cursor = connection.cursor()
             
+            cursor.execute("""CREATE VIEW content_loc as
+            SELECT c.*, LENGTH(content) - 
+            LENGTH(REPLACE(c.content, x'0a', '')) as loc 
+            from content c""")
+        except Exception, e:
+            # Not getting a view created isn't the end of the world
+            pass
+        finally:
+            cursor.close()
+
         connection.commit()
-        cursor.close()
 
     def __process_finished_jobs(self, job_pool, write_cursor, db):
         finished_job = job_pool.get_next_done()
