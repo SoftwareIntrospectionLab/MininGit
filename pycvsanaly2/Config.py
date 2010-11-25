@@ -41,7 +41,10 @@ class Config:
                        'metrics_all'   : False,
                        'metrics_noerr' : False,
                        # Threading options
-                       'max_threads' : 10}
+                       'max_threads' : 10,
+                       # Regex for matching bug fixes in BugFixMessage
+                       'bug_fix_regexes' : ["defect(es)?", "patch(ing|es)?", "bug(s|fix(es)?)?", 
+                "fix(es|ed)?", "\#\d+", "[A-Z]+-\d+"],}
     
     def __init__ (self):
         self.__dict__ = self.__shared_state
@@ -116,6 +119,14 @@ class Config:
             pass
         try:
             self.metrics_noerr = config.metrics_noerr
+        except:
+            pass
+        try:
+            self.max_threads = config.max_threads
+        except:
+            pass
+        try:
+            self.bug_fix_regexes = config.bug_fix_regexes
         except:
             pass
 

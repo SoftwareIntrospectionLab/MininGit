@@ -27,6 +27,7 @@ from pycvsanaly2.utils import printdbg, printerr, printout, \
 from pycvsanaly2.profile import profiler_start, profiler_stop
 from pycvsanaly2.PatchParser import parse_patches, RemoveLine, InsertLine, \
         ContextLine, Patch, BinaryPatch
+from pycvsanaly2.Config import Config
 import os
 import re
 
@@ -79,10 +80,8 @@ class BugFixMessage(Extension):
     # fixes, references to bug numbers like #1234, and JIRA style
     # comments, like HARMONY-1234 or GH-2.
     def fixes_bug(self, commit_message):
-        patterns = ["defect(es)?", "patch(ing|es)?", "bug(s|fix(es)?)?", 
-                "fix(es|ed)?", "\#\d+", "[A-Z]+-\d+"]
-
-        for p in patterns:
+        for p in Config().bug_fix_regexes:
+            print "Checking " + str(p)
             if re.search(p, commit_message, re.DOTALL | re.IGNORECASE):
                 return True
 
@@ -133,16 +132,21 @@ class BugFixMessage(Extension):
             row_id = row[0]
             commit_message = row[1]
             
+            update = """update scmlog
+                        set is_bug_fix = ?
+                        where id = ?"""
+
             if self.fixes_bug(commit_message):
-                update = """update scmlog
-                            set is_bug_fix= 1
-                            where id = ?"""
-                try:
-                    write_cursor.execute(statement(update, db.place_holder), \
-                            (row_id,))
-                except Exception, e:
-                    printerr("Couldn't update scmlog: " + str(e))
-                    continue
+                is_bug_fix = 1
+            else:
+                is_bug_fix = 0
+
+            try:
+                write_cursor.execute(statement(update, db.place_holder), \
+                        (is_bug_fix, row_id))
+            except Exception, e:
+                printerr("Couldn't update scmlog: " + str(e))
+                continue
 
         read_cursor.close()
         connection.commit()
