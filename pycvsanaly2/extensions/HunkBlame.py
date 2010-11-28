@@ -35,38 +35,70 @@ from FilePaths import FilePaths
 
 class HunkBlameJob(BlameJob):
     class BlameContentHandler(BlameJob.BlameContentHandler):
-        def __init__(self, start_line, end_line):
-            self.start_line = start_line
-            self.end_line = end_line
-            self.bug_revs = set()
+        def __init__(self, job):
+            self.db = job.db
+            self.cnn = job.cnn
+            self.cursor = job.cnn.cursor()
+            self.start_line = job.start_line
+            self.end_line = job.end_line
+            self.bug_hunk_ids = set()
+            
+            self.rev_hunks_cache = {}
+            self.hunk_content_cache = {}
 
         def line(self,blame_line):
-            if(blame_line.line>=self.start_line and blame_line.line<=self.end_line):
-                self.bug_revs.add(blame_line.rev)
+            if blame_line.line>=self.start_line and blame_line.line<=self.end_line:
+                rev = blame_line.rev
+                hunks = self.rev_hunks_cache.get(rev)
+                if hunks is None:
+                    sql = """select h.id, h.file_id, h.commit_id, h.new_start_line, h.new_end_line 
+                        from hunks h, scmlog s 
+                        where h.commit_id=s.id and s.rev=?
+                    """
+                    self.cursor.execute(statement(sql, self.db.place_holder), (rev,))
+                    hunks = self.cursor.fetchall()
+                    self.rev_hunks_cache[rev] = hunks
+                for h in hunks:
+                    hunk_id = h[0]
+                    content_lines = self.hunk_content_cache.get(hunk_id)
+                    if content_lines is None:
+                        sql = "select content from content where file_id=? and scmlog_id=?"
+                        self.cursor.execute(statement(sql, self.db.place_holder), (h[1], h[2]))
+                        print "file_id:%d,scmlog_id=%d"%(h[1],h[2])
+                        content_str = self.cursor.fetchone()[0]
+                        content_lines = content_str.splitlines()[h[3]-1:h[4]]
+                        self.hunk_content_cache[hunk_id] = content_lines
+                    for line in content_lines:
+                        if blame_line.line == line:
+                            self.bug_hunk_ids.add(hunk_id)
+                            return
+                
 
         def start_file (self, filename):
             pass
         def end_file (self):
             pass
 
-    def __init__ (self, hunk_id, path, rev, start_line, end_line):
+    def __init__ (self, hunk_id, path, rev, start_line, end_line, cnn, db):
         self.hunk_id = hunk_id
         self.path = path
         self.rev = rev
         self.start_line = start_line
         self.end_line = end_line
-        self.bug_revs = set()
+        self.cnn = cnn
+        self.db = db
+        self.bug_hunk_ids = set()
         
 
     def get_content_handler(self):
-        return self.BlameContentHandler(self.start_line, self.end_line)
+        return self.BlameContentHandler(self)
     
     def collect_results(self, content_handler):
-        self.bug_revs = content_handler.bug_revs
-        #assert len(self.bug_revs)<2
+        self.bug_hunk_ids = content_handler.bug_hunk_ids
         
-    def get_bug_revs(self):
-        return self.bug_revs
+    def get_bug_hunk_ids(self):
+        print self.bug_hunk_ids
+        return self.bug_hunk_ids
     
     def get_hunk_id(self):
         return self.hunk_id
@@ -75,12 +107,12 @@ class HunkBlame(Blame):
     '''
     classdocs
     '''
-    deps = ['Hunks']
+ #   deps = ['Hunks']
 
     MAX_BLAMES = 1
 
     # Insert query
-    __insert__ = 'INSERT INTO hunk_blames (hunk_id, bug_rev) ' + \
+    __insert__ = 'INSERT INTO hunk_blames (hunk_id, bug_hunk_id) ' + \
                  'VALUES (?,?)'
     def __init__(self):
         self.id_counter = 1 #Only to conform the interface of superclass
@@ -94,7 +126,7 @@ class HunkBlame(Blame):
                 cursor.execute ("CREATE TABLE hunk_blames (" +
                                 "id integer primary key," +
                                 "hunk_id integer," +
-                                "bug_rev string"
+                                "bug_hunk_id integer"
                                 ")")
             except sqlite3.dbapi2.OperationalError:
                 cursor.close ()
@@ -108,7 +140,7 @@ class HunkBlame(Blame):
                 cursor.execute ("CREATE TABLE hunk_blames (" +
                                 "id integer primary key auto_increment," +
                                 "hunk_id integer REFERENCES hunks(id)," +
-                                "bug_rev mediumtext REFERENCES scmlog(rev)"+
+                                "bug_hunk_id integer REFERENCES hunks(id)"+
                                 ") CHARACTER SET=utf8")
             except _mysql_exceptions.OperationalError, e:
                 if e.args[0] == 1050:
@@ -131,9 +163,9 @@ class HunkBlame(Blame):
         return [h[0] for h in cursor.fetchall()]
 
     def populate_insert_args(self, job):
-        bug_revs = job.get_bug_revs ()
+        bug_hunk_ids = job.get_bug_hunk_ids ()
         hunk_id = job.get_hunk_id ()
-        return [(hunk_id, rev) for rev in bug_revs]
+        return [(hunk_id, bh) for bh in bug_hunk_ids]        
         
     def run (self, repo, uri, db):
         profiler_start ("Running HunkBlame extension")
@@ -187,7 +219,7 @@ class HunkBlame(Blame):
                 printdbg ("Path for %d at %s -> %s", (file_id, rev, relative_path))
 
                 if relative_path is not None:
-                    job = HunkBlameJob (hunk_id, relative_path, rev, start_line, end_line)
+                    job = HunkBlameJob (hunk_id, relative_path, rev, start_line, end_line, cnn, db)
                     job_pool.push (job)
                     n_blames += 1
                 else:
