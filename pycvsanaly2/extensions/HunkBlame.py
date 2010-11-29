@@ -45,34 +45,45 @@ class HunkBlameJob(BlameJob):
             
             self.rev_hunks_cache = {}
             self.hunk_content_cache = {}
-
+        #TODO detect memory leak in this method
         def line(self,blame_line):
             if blame_line.line>=self.start_line and blame_line.line<=self.end_line:
                 rev = blame_line.rev
+                cursor = self.cursor
                 hunks = self.rev_hunks_cache.get(rev)
                 if hunks is None:
                     sql = """select h.id, h.file_id, h.commit_id, h.new_start_line, h.new_end_line 
                         from hunks h, scmlog s 
                         where h.commit_id=s.id and s.rev=?
                     """
-                    self.cursor.execute(statement(sql, self.db.place_holder), (rev,))
-                    hunks = self.cursor.fetchall()
+                    cursor.execute(statement(sql, self.db.place_holder), (rev,))
+                    hunks = cursor.fetchall()
                     self.rev_hunks_cache[rev] = hunks
                 for h in hunks:
-                    hunk_id = h[0]
+                    (hunk_id, file_id, commit_id, new_start_line, new_end_line) = h
+                    if (file_id and commit_id and new_start_line and new_end_line) is None:
+                        continue
+                    
                     content_lines = self.hunk_content_cache.get(hunk_id)
                     if content_lines is None:
                         sql = "select content from content where file_id=? and scmlog_id=?"
-                        self.cursor.execute(statement(sql, self.db.place_holder), (h[1], h[2]))
-                        print "file_id:%d,scmlog_id=%d"%(h[1],h[2])
-                        content_str = self.cursor.fetchone()[0]
-                        content_lines = content_str.splitlines()[h[3]-1:h[4]]
+                        cursor.execute(statement(sql, self.db.place_holder), (file_id, commit_id))
+                        result = cursor.fetchone()
+                        if result is None:
+                            printerr("No content for file_id=%d, scmlog_id=%d",(file_id,commit_id))
+                            #Save the null result to avoid touching database again
+                            content_lines = ()
+                        else:
+                            content_str = result[0]
+                            content_lines = content_str.splitlines()[new_start_line-1:new_end_line]
                         self.hunk_content_cache[hunk_id] = content_lines
                     for line in content_lines:
-                        if blame_line.line == line:
+                        if blame_line.content == line.strip():
+                            print("find bug introducing hunk!")
                             self.bug_hunk_ids.add(hunk_id)
                             return
-                
+                else:
+                    printerr("No bug introducing hunk found")
 
         def start_file (self, filename):
             pass
@@ -97,7 +108,6 @@ class HunkBlameJob(BlameJob):
         self.bug_hunk_ids = content_handler.bug_hunk_ids
         
     def get_bug_hunk_ids(self):
-        print self.bug_hunk_ids
         return self.bug_hunk_ids
     
     def get_hunk_id(self):
