@@ -84,6 +84,7 @@ class BlameJob (Job):
         except RepositoryCommandError, e:
             printerr ("Command %s returned %d (%s)", (e.cmd, e.returncode, e.error))
         p.end ()
+        repo.remove_watch(BLAME, wid)
         
 
     def collect_results(self, content_handler):

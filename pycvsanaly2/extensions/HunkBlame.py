@@ -45,7 +45,7 @@ class HunkBlameJob(BlameJob):
             
             self.rev_hunks_cache = {}
             self.hunk_content_cache = {}
-        #TODO detect memory leak in this method
+
         def line(self,blame_line):
             if blame_line.line>=self.start_line and blame_line.line<=self.end_line:
                 rev = blame_line.rev
