@@ -117,7 +117,7 @@ class HunkBlame(Blame):
     '''
     classdocs
     '''
- #   deps = ['Hunks']
+    deps = ['Hunks']
 
     MAX_BLAMES = 1
 
