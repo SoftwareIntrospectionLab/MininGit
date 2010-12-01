@@ -117,7 +117,7 @@ class HunkBlame(Blame):
     '''
     classdocs
     '''
-    deps = ['Hunks']
+#    deps = ['Hunks']
 
     MAX_BLAMES = 1
 
@@ -217,7 +217,6 @@ class HunkBlame(Blame):
         hunk = read_cursor.fetchone()
         n_blames = 0
         fp = FilePaths(db)
-        fp.update_all(repoid)
         
         while hunk is not None:
             hunk_id, file_id, commit_id, start_line, end_line, rev = hunk

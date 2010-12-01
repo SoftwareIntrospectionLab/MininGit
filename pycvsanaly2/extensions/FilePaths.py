@@ -42,10 +42,11 @@ class FilePaths:
     def __init__ (self, db):
         self.__dict__ = self.__shared_state
         self.__dict__['db'] = db
-        
+  
     def update_for_revision (self, cursor, commit_id, repo_id):
         db = self.__dict__['db']
 
+        #TODO check all places using this method to remove this if statement
         if commit_id == self.__dict__['rev']:
             return
 
@@ -144,10 +145,15 @@ class FilePaths:
 
     def get_path (self, file_id, commit_id, repo_id):
         profiler_start ("Getting path for file %d at commit %d", (file_id, commit_id))
+        #Test here if avoid unnecessary database connection
+        if commit_id != self.__dict__['rev']:
+            cnn = self.__dict__['db'].connect()
+            cursor = cnn.cursor()
+            self.update_for_revision(cursor, commit_id, repo_id)
+            cursor.close()
+            self.__dict__['rev'] = commit_id
 
         adj = self.__dict__['adj']
-        assert adj is not None, "Matrix no updated"
-
         path = self.__build_path (file_id, adj)
 
         profiler_stop ("Getting path for file %d at commit %d", (file_id, commit_id), True)
@@ -166,6 +172,7 @@ class FilePaths:
         return self.__dict__['rev']
 
     def update_all(self, repo_id):
+        print("Deprecation warning: FilePath.update_all has discovered defects!")
         db = self.__dict__['db']
         cnn = db.connect ()
 
