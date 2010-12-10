@@ -37,17 +37,19 @@ class HunkBlameJob(BlameJob):
     class BlameContentHandler(BlameJob.BlameContentHandler):
         def __init__(self, job):
             self.db = job.db
-            self.cnn = job.cnn
-            self.cursor = job.cnn.cursor()
-            self.start_line = job.start_line
-            self.end_line = job.end_line
+            self.cnn = job.db.connect()
+            self.cursor = self.cnn.cursor()
+            self.start_line = job.hunk[3]
+            self.end_line = job.hunk[4]
+            self.file_id = job.hunk[1]
             self.bug_hunk_ids = set()
             
             self.rev_hunks_cache = {}
             self.hunk_content_cache = {}
 
         def line(self,blame_line):
-            if blame_line.line>=self.start_line and blame_line.line<=self.end_line and len(blame_line.content)>0:
+            # The minimal characters in a line in order for that line to be considered need to be verified in future
+            if blame_line.line>=self.start_line and blame_line.line<=self.end_line and len(blame_line.content)>5:
                 rev = blame_line.rev
                 cursor = self.cursor
                 hunks = self.rev_hunks_cache.get(rev)
@@ -61,6 +63,8 @@ class HunkBlameJob(BlameJob):
                     self.rev_hunks_cache[rev] = hunks
                 for h in hunks:
                     (hunk_id, file_id, commit_id, new_start_line, new_end_line) = h
+                    if file_id != self.file_id:
+                        continue
                     if (file_id and commit_id and new_start_line and new_end_line) is None:
                         continue
                     
@@ -79,7 +83,7 @@ class HunkBlameJob(BlameJob):
                         self.hunk_content_cache[hunk_id] = content_lines
                     for line in content_lines:
                         if blame_line.content == line.strip():
-                            print("find bug introducing hunk!")
+                            printdbg("find bug introducing hunk for: %s", (blame_line.content,))
                             self.bug_hunk_ids.add(hunk_id)
                             return
                 else:
@@ -88,15 +92,12 @@ class HunkBlameJob(BlameJob):
         def start_file (self, filename):
             pass
         def end_file (self):
-            pass
+            self.cursor.close()
 
-    def __init__ (self, hunk_id, path, rev, start_line, end_line, cnn, db):
-        self.hunk_id = hunk_id
+    def __init__ (self, hunk, path, rev, db):
+        self.hunk = hunk
         self.path = path
         self.rev = rev
-        self.start_line = start_line
-        self.end_line = end_line
-        self.cnn = cnn
         self.db = db
         self.bug_hunk_ids = set()
         
@@ -111,7 +112,7 @@ class HunkBlameJob(BlameJob):
         return self.bug_hunk_ids
     
     def get_hunk_id(self):
-        return self.hunk_id
+        return self.hunk[0]
             
 class HunkBlame(Blame):
     '''
@@ -269,7 +270,7 @@ class HunkBlame(Blame):
                 continue
 
             printdbg ("Path for %d at %s -> %s", (file_id, pre_rev, relative_path))
-            job = HunkBlameJob (hunk_id, relative_path, pre_rev, start_line, end_line, cnn, db)
+            job = HunkBlameJob (hunk, relative_path, pre_rev, db)
             job_pool.push (job)
             n_blames += 1
                 
