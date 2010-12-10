@@ -47,7 +47,7 @@ class HunkBlameJob(BlameJob):
             self.hunk_content_cache = {}
 
         def line(self,blame_line):
-            if blame_line.line>=self.start_line and blame_line.line<=self.end_line:
+            if blame_line.line>=self.start_line and blame_line.line<=self.end_line and len(blame_line.content)>0:
                 rev = blame_line.rev
                 cursor = self.cursor
                 hunks = self.rev_hunks_cache.get(rev)
@@ -171,6 +171,37 @@ class HunkBlame(Blame):
             where f.repository_id=?"""
         cursor.execute (statement (query, self.db.place_holder), (repoid,))
         return [h[0] for h in cursor.fetchall()]
+    
+    # It is also possible to get previous commit by modifying
+    # PatchParser.iter_file_patch
+    def __find_previous_commit(self, file_id, commit_id):
+        query = """select a.commit_id, a.action_type, c.rev from action_files a,scmlog c
+            where a.commit_id=c.id and a.file_id=?
+            order by c.date
+        """
+        cnn = self.db.connect ()
+        aux_cursor = cnn.cursor()
+        aux_cursor.execute(statement(query, self.db.place_holder),(file_id))
+        all_commits=aux_cursor.fetchall()
+        aux_cursor.close()
+        pre_commit_id = None
+        pre_rev = None
+        for cur_commit_id,type, cur_rev in all_commits:
+            if cur_commit_id == commit_id:
+                #Nothing to blame for other types
+                if type != 'M' and type != 'R':
+                    printerr("Wrong commit to blame: commit type: %s",(type,))
+                    pre_commit_id = None
+                    pre_rev = None
+                break
+            else:
+                pre_commit_id = cur_commit_id
+                pre_rev = cur_rev
+        else:
+            printerr("No previous commit found")
+            pre_commit_id = None
+            pre_rev = None
+        return pre_commit_id,pre_rev
 
     def populate_insert_args(self, job):
         bug_hunk_ids = job.get_bug_hunk_ids ()
@@ -210,7 +241,7 @@ class HunkBlame(Blame):
 
         job_pool = JobPool (repo, path or repo.get_uri (), queuesize=100)
 
-        query = """select h.id, h.file_id, h.commit_id, h.new_start_line, h.new_end_line, s.rev 
+        query = """select h.id, h.file_id, h.commit_id, h.old_start_line, h.old_end_line
                     from hunks h, scmlog s
                     where h.commit_id=s.id and s.repository_id=?"""
         read_cursor.execute(statement (query, db.place_holder), (repoid,))
@@ -219,27 +250,32 @@ class HunkBlame(Blame):
         fp = FilePaths(db)
         
         while hunk is not None:
-            hunk_id, file_id, commit_id, start_line, end_line, rev = hunk
+            hunk_id, file_id, commit_id, start_line, end_line = hunk
             
             if hunk_id in blames:
                 printdbg ("Blame for hunk %d is already in the database, skip it", (hunk_id,))
-            else:
-                relative_path = fp.get_path(file_id, commit_id, repoid)
-                printdbg ("Path for %d at %s -> %s", (file_id, rev, relative_path))
-
-                if relative_path is not None:
-                    job = HunkBlameJob (hunk_id, relative_path, rev, start_line, end_line, cnn, db)
-                    job_pool.push (job)
-                    n_blames += 1
-                else:
-                    printerr("Couldn't find path for file ID %d", (file_id,))
-                    hunk = read_cursor.fetchone()
-                    continue
-                
-                if n_blames >= self.MAX_BLAMES:
-                    self._process_finished_jobs (job_pool, write_cursor)
-                    n_blames = 0
+                hunk = read_cursor.fetchone()
+                continue
             
+            pre_commit_id, pre_rev = self.__find_previous_commit(file_id, commit_id)
+            if pre_commit_id is None:
+                hunk = read_cursor.fetchone()
+                continue
+            
+            relative_path = fp.get_path(file_id, pre_commit_id, repoid)
+            if relative_path is None:
+                printerr("Couldn't find path for file ID %d", (file_id,))
+                hunk = read_cursor.fetchone()
+                continue
+
+            printdbg ("Path for %d at %s -> %s", (file_id, pre_rev, relative_path))
+            job = HunkBlameJob (hunk_id, relative_path, pre_rev, start_line, end_line, cnn, db)
+            job_pool.push (job)
+            n_blames += 1
+                
+            if n_blames >= self.MAX_BLAMES:
+                self._process_finished_jobs (job_pool, write_cursor)
+                n_blames = 0
             hunk = read_cursor.fetchone()
 
         job_pool.join ()

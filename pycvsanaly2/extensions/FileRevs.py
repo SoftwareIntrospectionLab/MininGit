@@ -28,7 +28,9 @@ class FileRevs:
 
     INTERVAL_SIZE = 1000
     __query__ = '''select s.rev rev, s.id commit_id, af.file_id, af.action_type, s.composed_rev 
-from scmlog s, action_files af where s.id = af.commit_id and s.repository_id = ? order by s.id'''
+        from scmlog s, action_files af 
+        where s.id = af.commit_id and s.repository_id = ? 
+        order by s.date'''
 
     def __init__ (self, db, cnn, cursor, repoid):
         self.db = db
