@@ -134,6 +134,7 @@ class HunkBlame(Blame):
         aux_cursor.execute(statement(query, self.db.place_holder),(file_id))
         all_commits=aux_cursor.fetchall()
         aux_cursor.close()
+        cnn.close()
         pre_commit_id = None
         pre_rev = None
         for cur_commit_id,type, cur_rev in all_commits:
@@ -163,6 +164,8 @@ class HunkBlame(Blame):
         for rev in bug_revs:
             cursor.execute(statement(query, self.db.place_holder),(rev,))
             args.append((hunk_id,cursor.fetchone()[0]))
+        cursor.close()
+        cnn.close()
         return args
         
     def run (self, repo, uri, db):
