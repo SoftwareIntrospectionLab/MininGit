@@ -42,7 +42,7 @@ def get_extension (extension_name):
     if extension_name not in _extensions:
         try:
             __import__ ("pycvsanaly2.extensions.%s" % extension_name)
-        except ImportError,e:
+        except ImportError as e:
             printerr("Error in importing extension %s: %s", (extension_name, str(e)))
 
     if extension_name not in _extensions:
