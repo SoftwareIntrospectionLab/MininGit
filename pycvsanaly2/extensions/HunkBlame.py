@@ -142,10 +142,10 @@ class HunkBlame(Blame):
                 #Nothing to blame for other types
                 if type != 'M' and type != 'R':
                     raise Exception("Wrong commit to blame: commit type: %s",(type,))
-                break
             else:
                 pre_commit_id = cur_commit_id
                 pre_rev = cur_rev
+                break
         else:
             raise Exception("No previous commit found")
         return pre_commit_id,pre_rev
