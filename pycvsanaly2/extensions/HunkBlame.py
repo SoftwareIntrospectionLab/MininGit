@@ -63,7 +63,9 @@ class HunkBlameJob(BlameJob):
     
     def get_hunk_id(self):
         return self.hunk_id
-            
+    
+class NotValidHunkWarning(Exception): pass
+
 class HunkBlame(Blame):
 
     deps = ['Hunks']
@@ -141,13 +143,13 @@ class HunkBlame(Blame):
             if cur_commit_id == commit_id:
                 #Nothing to blame for other types
                 if type != 'M' and type != 'R':
-                    raise Exception("Wrong commit to blame: commit type: %s",(type,))
+                    raise NotValidHunkWarning("Wrong commit to blame: commit type: %s",(type,))
             else:
                 pre_commit_id = cur_commit_id
                 pre_rev = cur_rev
                 break
         else:
-            raise Exception("No previous commit found")
+            raise NotValidHunkWarning("No previous commit found")
         return pre_commit_id,pre_rev
 
     def populate_insert_args(self, job):
@@ -209,14 +211,14 @@ class HunkBlame(Blame):
             hunk_id, file_id, commit_id, start_line, end_line = hunk
             try:
                 if hunk_id in blames:
-                    raise Exception("Blame for hunk %d is already in the database, skip it"%hunk_id)
+                    raise NotValidHunkWarning("Blame for hunk %d is already in the database, skip it"%hunk_id)
             
             
                 pre_commit_id, pre_rev = self.__find_previous_commit(file_id, commit_id)
             
                 relative_path = fp.get_path(file_id, pre_commit_id, repoid)
                 if relative_path is None:
-                    raise Exception("Couldn't find path for file ID %d"%file_id)
+                    raise NotValidHunkWarning("Couldn't find path for file ID %d"%file_id)
 
                 printdbg ("Path for %d at %s -> %s", (file_id, pre_rev, relative_path))
                 job = HunkBlameJob (hunk_id, relative_path, pre_rev, start_line, end_line)
@@ -226,7 +228,7 @@ class HunkBlame(Blame):
                 if n_blames >= self.MAX_BLAMES:
                     self._process_finished_jobs (job_pool, write_cursor)
                     n_blames = 0
-            except Exception as e:
+            except NotValidHunkWarning as e:
                 printerr(e.message)
             finally:
                 hunk = read_cursor.fetchone()
