@@ -64,7 +64,9 @@ class HunkBlameJob(BlameJob):
     def get_hunk_id(self):
         return self.hunk_id
     
-class NotValidHunkWarning(Exception): pass
+class NotValidHunkWarning(Exception):
+    def __init__(self, msg):
+        Exception.__init__(self, msg)
 
 class HunkBlame(Blame):
 
@@ -143,7 +145,7 @@ class HunkBlame(Blame):
             if cur_commit_id == commit_id:
                 #Nothing to blame for other types
                 if type != 'M' and type != 'R':
-                    raise NotValidHunkWarning("Wrong commit to blame: commit type: %s",(type,))
+                    raise NotValidHunkWarning("Wrong commit to blame: commit type: %s"%type)
             else:
                 pre_commit_id = cur_commit_id
                 pre_rev = cur_rev
