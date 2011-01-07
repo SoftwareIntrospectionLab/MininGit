@@ -203,7 +203,9 @@ class HunkBlame(Blame):
 
         query = """select h.id, h.file_id, h.commit_id, h.old_start_line, h.old_end_line
                     from hunks h, scmlog s
-                    where h.commit_id=s.id and s.repository_id=?"""
+                    where h.commit_id=s.id and s.repository_id=?
+                    and h.old_start_line is not null 
+                    and h.old_end_line is not null"""
         read_cursor.execute(statement (query, db.place_holder), (repoid,))
         hunk = read_cursor.fetchone()
         n_blames = 0
