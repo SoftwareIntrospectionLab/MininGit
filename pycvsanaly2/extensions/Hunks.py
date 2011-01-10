@@ -261,7 +261,7 @@ class Hunks(Extension):
                     %(repo.get_uri(), str(e)))
             
         # Get the patches from this repository
-        query = "select p.commit_id, p.patch from patches p, scmlog s " + \
+        query = "select p.commit_id, p.patch, s.rev from patches p, scmlog s " + \
                 "where p.commit_id = s.id and " + \
                 "s.repository_id = ? and " + \
                 "p.patch is not NULL"
@@ -269,11 +269,13 @@ class Hunks(Extension):
 
         self.__prepare_table(connection)
         fp = FilePaths(db)
-        fp.update_all(repo_id)
 
         for row in read_cursor:
             commit_id = row[0]
             patch_content = row[1]
+            rev = row[2]
+            
+            fp.update_for_revision(rev)
 
             for hunk in self.get_commit_data(patch_content):
                 # The original Java code seems to only pay attention to the
