@@ -47,13 +47,13 @@ class HunkBlameJob(BlameJob):
             pass
 
     def __init__ (self, hunk_id, path, rev, start_line, end_line):
+        Job.__init__(self)
         self.hunk_id = hunk_id
         self.path = path
         self.rev = rev
         self.start_line = start_line
         self.end_line = end_line
         self.bug_revs = set()
-        
 
     def get_content_handler(self):
         return self.BlameContentHandler(self.start_line, self.end_line)
@@ -70,6 +70,7 @@ class HunkBlameJob(BlameJob):
     
 class CachedBlameJob(Job):
     def __init__(self, hunk_id, cached_blame, start_line, end_line):
+        Job.__init__(self)
         self.cached_blame = cached_blame
         self.start_line = start_line
         self.end_line = end_line
