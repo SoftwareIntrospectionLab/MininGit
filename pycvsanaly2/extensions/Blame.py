@@ -172,7 +172,7 @@ class Blame (Extension):
         cursor.execute (statement (query, self.db.place_holder))
         self.authors = dict ([(name, id) for id, name in cursor.fetchall ()])
 
-    def _process_finished_jobs (self, job_pool, write_cursor, unlocked = False):
+    def process_finished_jobs (self, job_pool, write_cursor, unlocked = False):
         if unlocked:
             job = job_pool.get_next_done_unlocked ()
         else:
@@ -283,11 +283,11 @@ class Blame (Extension):
             n_blames += 1
 
             if n_blames >= self.MAX_BLAMES:
-                self._process_finished_jobs (job_pool, write_cursor)
+                self.process_finished_jobs (job_pool, write_cursor)
                 n_blames = 0
 
         job_pool.join ()
-        self._process_finished_jobs (job_pool, write_cursor, True)
+        self.process_finished_jobs (job_pool, write_cursor, True)
 
         read_cursor.close ()
         write_cursor.close ()
