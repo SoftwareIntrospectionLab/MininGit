@@ -219,8 +219,8 @@ class Content(Extension):
             cursor = connection.cursor()
             
             cursor.execute("""CREATE VIEW content_loc as
-            SELECT c.*, LENGTH(content) - 
-            LENGTH(REPLACE(c.content, x'0a', '')) as loc 
+            SELECT c.*, (LENGTH(content) - 
+            LENGTH(REPLACE(c.content, x'0a', ''))) + 1 as loc 
             from content c""")
         except Exception, e:
             # Not getting a view created isn't the end of the world
