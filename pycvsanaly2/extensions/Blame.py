@@ -50,6 +50,7 @@ class BlameJob (Job):
             return self.authors
 
     def __init__ (self, file_id, commit_id, path, rev):
+        Job.__init__(self)
         self.file_id = file_id
         self.commit_id = commit_id
         self.path = path
@@ -82,6 +83,7 @@ class BlameJob (Job):
             repo.blame (os.path.join (repo_uri, path), self.rev)
             self.collect_results(out)
         except RepositoryCommandError, e:
+            self.failed = True
             printerr ("Command %s returned %d (%s)", (e.cmd, e.returncode, e.error))
         p.end ()
         repo.remove_watch(BLAME, wid)
@@ -172,7 +174,7 @@ class Blame (Extension):
         cursor.execute (statement (query, self.db.place_holder))
         self.authors = dict ([(name, id) for id, name in cursor.fetchall ()])
 
-    def _process_finished_jobs (self, job_pool, write_cursor, unlocked = False):
+    def process_finished_jobs (self, job_pool, write_cursor, unlocked = False):
         if unlocked:
             job = job_pool.get_next_done_unlocked ()
         else:
@@ -181,9 +183,10 @@ class Blame (Extension):
         args = []
 
         while job is not None:
-            a = self.populate_insert_args(job)
-            args.extend (a)
-            self.id_counter += len (a)
+            if not job.failed:
+                a = self.populate_insert_args(job)
+                args.extend (a)
+                self.id_counter += len (a)
 
             if unlocked:
                 job = job_pool.get_next_done_unlocked ()
@@ -283,11 +286,11 @@ class Blame (Extension):
             n_blames += 1
 
             if n_blames >= self.MAX_BLAMES:
-                self._process_finished_jobs (job_pool, write_cursor)
+                self.process_finished_jobs (job_pool, write_cursor)
                 n_blames = 0
 
         job_pool.join ()
-        self._process_finished_jobs (job_pool, write_cursor, True)
+        self.process_finished_jobs (job_pool, write_cursor, True)
 
         read_cursor.close ()
         write_cursor.close ()

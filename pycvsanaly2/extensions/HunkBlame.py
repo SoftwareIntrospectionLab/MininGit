@@ -23,7 +23,7 @@ from pycvsanaly2.profile import profiler_start, profiler_stop
 from pycvsanaly2.utils import printdbg, printerr, uri_to_filename
 from pycvsanaly2.Database import (SqliteDatabase, MysqlDatabase, TableAlreadyExists,
                                   statement)
-from Jobs import JobPool
+from Jobs import JobPool, Job
 from FilePaths import FilePaths
 
 
@@ -33,8 +33,11 @@ class HunkBlameJob(BlameJob):
             self.start_line = start_line
             self.end_line = end_line
             self.bug_revs = set()
+            self.cached_blame = []
 
         def line(self,blame_line):
+            #Assume that line number is the same as the index of cached_blame+1
+            self.cached_blame.append(blame_line.rev)
             if(blame_line.line>=self.start_line and blame_line.line<=self.end_line):
                 self.bug_revs.add(blame_line.rev)
 
@@ -44,19 +47,20 @@ class HunkBlameJob(BlameJob):
             pass
 
     def __init__ (self, hunk_id, path, rev, start_line, end_line):
+        Job.__init__(self)
         self.hunk_id = hunk_id
         self.path = path
         self.rev = rev
         self.start_line = start_line
         self.end_line = end_line
         self.bug_revs = set()
-        
 
     def get_content_handler(self):
         return self.BlameContentHandler(self.start_line, self.end_line)
     
     def collect_results(self, content_handler):
         self.bug_revs = content_handler.bug_revs
+        self.cached_blame = content_handler.cached_blame
         
     def get_bug_revs(self):
         return self.bug_revs
@@ -64,13 +68,31 @@ class HunkBlameJob(BlameJob):
     def get_hunk_id(self):
         return self.hunk_id
     
+class CachedBlameJob(Job):
+    def __init__(self, hunk_id, cached_blame, start_line, end_line):
+        Job.__init__(self)
+        self.cached_blame = cached_blame
+        self.start_line = start_line
+        self.end_line = end_line
+        self.hunk_id = hunk_id
+        
+    def run (self, repo, repo_uri):
+        self.bug_revs = set(self.cached_blame[(self.start_line-1):self.end_line])
+        
+    def get_bug_revs(self):
+        return self.bug_revs
+    
+    def get_hunk_id(self):
+        return self.hunk_id   
+        
+    
 class NotValidHunkWarning(Exception):
     def __init__(self, msg):
         Exception.__init__(self, msg)
 
 class HunkBlame(Blame):
 
-    deps = ['Hunks']
+#    deps = ['Hunks']
 
     MAX_BLAMES = 1
 
@@ -152,9 +174,11 @@ class HunkBlame(Blame):
                 break
         else:
             raise NotValidHunkWarning("No previous commit found")
-        return pre_commit_id,pre_rev
+        return pre_commit_id,pre_rev    
 
     def populate_insert_args(self, job):
+        if isinstance(job, HunkBlameJob):
+            self.cached_blame = job.cached_blame 
         bug_revs = job.get_bug_revs ()
         cnn = self.db.connect()
         cursor = cnn.cursor()
@@ -201,44 +225,61 @@ class HunkBlame(Blame):
 
         job_pool = JobPool (repo, path or repo.get_uri (), queuesize=100)
 
+        #Order the result set so that hunks in the same file will appear adjacent to each other,
+        #which is good for caching blame results 
         query = """select h.id, h.file_id, h.commit_id, h.old_start_line, h.old_end_line
                     from hunks h, scmlog s
                     where h.commit_id=s.id and s.repository_id=?
+                    order by h.file_id, h.commit_id
                     and h.old_start_line is not null 
-                    and h.old_end_line is not null"""
+                    and h.old_end_line is not null
+                    and h.file_id is not null
+                    and h.commit_id is not null
+                    """
         read_cursor.execute(statement (query, db.place_holder), (repoid,))
         hunk = read_cursor.fetchone()
         n_blames = 0
         fp = FilePaths(db)
         
+        cached_file_id = None
+        cached_commit_id = None
+        
         while hunk is not None:
             hunk_id, file_id, commit_id, start_line, end_line = hunk
-            try:
+            try:                
                 if hunk_id in blames:
                     raise NotValidHunkWarning("Blame for hunk %d is already in the database, skip it"%hunk_id)
-            
-            
+                
                 pre_commit_id, pre_rev = self.__find_previous_commit(file_id, commit_id)
-            
-                relative_path = fp.get_path(file_id, pre_commit_id, repoid)
-                if relative_path is None:
-                    raise NotValidHunkWarning("Couldn't find path for file ID %d"%file_id)
-
-                printdbg ("Path for %d at %s -> %s", (file_id, pre_rev, relative_path))
-                job = HunkBlameJob (hunk_id, relative_path, pre_rev, start_line, end_line)
+                
+                if file_id == cached_file_id and pre_commit_id == cached_commit_id:
+                    job = CachedBlameJob(hunk_id, self.cached_blame, start_line, end_line)
+                else:
+                
+                    relative_path = fp.get_path(file_id, pre_commit_id, repoid)
+                    if relative_path is None:
+                        raise NotValidHunkWarning("Couldn't find path for file ID %d"%file_id)
+    
+                    printdbg ("Path for %d at %s -> %s", (file_id, pre_rev, relative_path))
+                    job = HunkBlameJob (hunk_id, relative_path, pre_rev, start_line, end_line)
+                
                 job_pool.push (job)
                 n_blames += 1
                 
                 if n_blames >= self.MAX_BLAMES:
-                    self._process_finished_jobs (job_pool, write_cursor)
+                    #This is not necessary when it is really multi-threaded
+                    job_pool.join ()
+                    self.process_finished_jobs (job_pool, write_cursor)
+                    cached_file_id = file_id
+                    cached_commit_id = pre_commit_id
                     n_blames = 0
             except NotValidHunkWarning as e:
-                printerr(e.message)
+                printerr(str(e))
             finally:
                 hunk = read_cursor.fetchone()
 
         job_pool.join ()
-        self._process_finished_jobs (job_pool, write_cursor, True)
+        self.process_finished_jobs (job_pool, write_cursor, True)
 
         read_cursor.close ()
         write_cursor.close ()

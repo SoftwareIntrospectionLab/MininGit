@@ -78,6 +78,8 @@ class JobPool:
         self.queue.join ()
 
 class Job:
+    def __init__(self):
+        self.failed = False
 
     def run (self, repo, repo_uri):
         raise NotImplementedError
