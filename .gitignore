@@ -1,4 +1,5 @@
 *~
+scripts/*
 .project
 .pydevproject
 *.pyc

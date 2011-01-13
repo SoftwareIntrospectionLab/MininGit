@@ -230,7 +230,12 @@ class HunkBlame(Blame):
         query = """select h.id, h.file_id, h.commit_id, h.old_start_line, h.old_end_line
                     from hunks h, scmlog s
                     where h.commit_id=s.id and s.repository_id=?
-                    order by h.file_id, h.commit_id"""
+                    order by h.file_id, h.commit_id
+                    and h.old_start_line is not null 
+                    and h.old_end_line is not null
+                    and h.file_id is not null
+                    and h.commit_id is not null
+                    """
         read_cursor.execute(statement (query, db.place_holder), (repoid,))
         hunk = read_cursor.fetchone()
         n_blames = 0
@@ -241,10 +246,7 @@ class HunkBlame(Blame):
         
         while hunk is not None:
             hunk_id, file_id, commit_id, start_line, end_line = hunk
-            try:
-                if file_id is None or commit_id is None or start_line is None or end_line is None:
-                    raise NotValidHunkWarning("Not sufficient information in hunk %d"%hunk_id)
-                
+            try:                
                 if hunk_id in blames:
                     raise NotValidHunkWarning("Blame for hunk %d is already in the database, skip it"%hunk_id)
                 
