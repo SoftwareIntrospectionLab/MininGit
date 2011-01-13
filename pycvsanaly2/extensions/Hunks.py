@@ -237,6 +237,7 @@ class Hunks(Extension):
         connection = self.db.connect()
         read_cursor = connection.cursor()
         read_cursor_1 = connection.cursor()
+        read_cursor_2 = connection.cursor()
         write_cursor = connection.cursor()
         
         # Try to get the repository and get its ID from the database
@@ -275,7 +276,7 @@ class Hunks(Extension):
             patch_content = row[1]
             rev = row[2]
             
-            fp.update_for_revision(rev)
+            fp.update_for_revision(read_cursor_2, commit_id, repo_id)
 
             for hunk in self.get_commit_data(patch_content):
                 # The original Java code seems to only pay attention to the
@@ -296,7 +297,7 @@ class Hunks(Extension):
 
                 hunk_file_name = re.sub(r'^[ab]\/', '', hunk.file_name.strip())
                
-                printdbg("Doing select with: " + str(commit_id) + "," +  re.search("[^\/]*$", hunk_file_name).group(0))
+                #printdbg("Doing select with: " + str(commit_id) + "," +  re.search("[^\/]*$", hunk_file_name).group(0))
 
                 read_cursor_1.execute(statement(file_id_query, db.place_holder), \
                         #(commit_id, re.search("[^\/]*$", hunk_file_name).group(0)))
@@ -315,14 +316,14 @@ class Hunks(Extension):
                         path = fp.get_path(possible_file[0], commit_id, repo_id)
 
                         if path is not None:
-                            printdbg("Comparing " + path.strip() + " to " + hunk_file_name)
+                            #printdbg("Comparing " + path.strip() + " to " + hunk_file_name)
                             if path.strip() == ("/" + hunk_file_name):
-                                printdbg("Match found")
+                                #printdbg("Match found")
                                 file_id = possible_file[0]
                                 break
                                 break
 
-                        printdbg("No match for old paths, is file name current?")
+                        #printdbg("No match for old paths, is file name current?")
 
                         printdbg("Comparing " + possible_file[1] + " to " + hunk_file_name)                        
                         if possible_file[1] == hunk_file_name:
@@ -332,12 +333,14 @@ class Hunks(Extension):
                             break
 
                 if file_id == None:
-                    printerr("No file ID found for hunk " + hunk_file_name)
                     if repo.type == "git":
                         # The liklihood is that this is a merge, not a
                         # missing ID from some data screwup.
                         # We'll just continue and throw this away
                         continue
+                    else:
+                        printerr("No file ID found for hunk " + hunk_file_name)
+                        
 
                 insert = """insert into hunks(file_id, commit_id,
                             old_start_line, old_end_line, new_start_line, new_end_line)
