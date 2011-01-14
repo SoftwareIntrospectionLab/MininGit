@@ -29,7 +29,10 @@ CVSAnalY has the following dependencies:
 * Python 2.5 or higher
 * RepositoryHandler (comes with `pip` installation)
 
-    `git clone http://git.libresoft.es/repositoryhandler` or `git clone git://git.libresoft.es/git/repositoryhandler`
+    `git clone https://github.com/Lewisham/repositoryhandler.git`
+* Guilty (If you need to run Blame or HunkBlame extensions
+
+	`git clone http://git.libresoft.es/guilty`
 * cvs (optional, for CVS support)
 * subversion (optional, for SVN support)
 * git (optional, for Git support)
