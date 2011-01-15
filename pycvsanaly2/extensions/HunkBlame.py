@@ -168,11 +168,14 @@ class HunkBlame(Blame):
                 #Nothing to blame for other types
                 if type != 'M' and type != 'R':
                     raise NotValidHunkWarning("Wrong commit to blame: commit type: %s"%type)
+                else:
+                    break
             else:
                 pre_commit_id = cur_commit_id
                 pre_rev = cur_rev
-                break
         else:
+            raise NotValidHunkWarning("No previous commit found")
+        if pre_commit_id is None or pre_rev is None:
             raise NotValidHunkWarning("No previous commit found")
         return pre_commit_id,pre_rev    
 
@@ -184,6 +187,7 @@ class HunkBlame(Blame):
         cursor = cnn.cursor()
         args = []
         hunk_id = job.get_hunk_id ()
+        printdbg("Hunk %d has %d bug commits"%(hunk_id,len(bug_revs)))
         query = "select id from scmlog where rev = ?"
         for rev in bug_revs:
             cursor.execute(statement(query, self.db.place_holder),(rev,))
@@ -253,9 +257,13 @@ class HunkBlame(Blame):
                 pre_commit_id, pre_rev = self.__find_previous_commit(file_id, commit_id)
                 
                 if file_id == cached_file_id and pre_commit_id == cached_commit_id:
+                    if self.cached_blame is None:
+                        raise NotValidHunkWarning("Blaming file %d at commit %d failed previously"%(file_id, pre_commit_id))
+                    printdbg("Going to Use cached blame")
                     job = CachedBlameJob(hunk_id, self.cached_blame, start_line, end_line)
                 else:
-                
+                    printdbg("Going to issue new blame")
+                    self.cached_blame = None
                     relative_path = fp.get_path(file_id, pre_commit_id, repoid)
                     if relative_path is None:
                         raise NotValidHunkWarning("Couldn't find path for file ID %d"%file_id)
@@ -263,6 +271,7 @@ class HunkBlame(Blame):
                     printdbg ("Path for %d at %s -> %s", (file_id, pre_rev, relative_path))
                     job = HunkBlameJob (hunk_id, relative_path, pre_rev, start_line, end_line)
                 
+                printdbg("Job created")
                 job_pool.push (job)
                 n_blames += 1
                 
@@ -274,7 +283,7 @@ class HunkBlame(Blame):
                     cached_commit_id = pre_commit_id
                     n_blames = 0
             except NotValidHunkWarning as e:
-                printerr(str(e))
+                printerr("Not a valid hunk: "+str(e))
             finally:
                 hunk = read_cursor.fetchone()
 
