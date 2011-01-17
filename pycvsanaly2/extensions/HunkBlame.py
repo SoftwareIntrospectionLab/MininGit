@@ -161,20 +161,17 @@ class HunkBlame(Blame):
         cnn = self.db.connect()
         cursor = cnn.cursor()
         args = []
-        hunk_id = job.get_hunk_id ()
-        printdbg("Hunk %d has %d bug commits"%(hunk_id,len(bug_revs)))
-        query = "select id from scmlog where rev = ?"
-
         for hunk_id in bug_revs:
             for rev in bug_revs[hunk_id]:
                 printdbg("Find id for rev %s"%rev)
                 query = "select id from scmlog where rev = ?"
                 cursor.execute(statement(query, self.db.place_holder),(rev,))
+                
                 fetched_row = cursor.fetchone()
                 
                 if fetched_row is not None:
                     args.append((hunk_id,fetched_row[0]))
-
+                    
         cursor.close()
         cnn.close()
         return args
