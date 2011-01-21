@@ -116,9 +116,9 @@ class HunkBlame(Blame):
         cnn.commit ()
         cursor.close ()
         
-    def __create_cache(self, cnn):
-        cursor = cnn.cursor ()
-
+    def __drop_cache(self, cnn):
+        cursor = cnn.cursor
+        
         if isinstance (self.db, SqliteDatabase):
             import sqlite3.dbapi2
             try:
@@ -138,6 +138,15 @@ class HunkBlame(Blame):
                 raise
             except:
                 raise
+    
+        
+    def __create_cache(self, cnn):
+        cursor = cnn.cursor ()
+
+        try:
+            self.__drop_cache(cnn)
+        except:
+            # Do nothing
 
         if isinstance (self.db, SqliteDatabase):
             import sqlite3.dbapi2
@@ -314,6 +323,11 @@ class HunkBlame(Blame):
 
         job_pool.join ()
         self.process_finished_jobs (job_pool, write_cursor, True)
+
+        try:
+            self.__drop_cache(cnn)
+        except:
+            # Do nothing
 
         read_cursor.close ()
         write_cursor.close ()
