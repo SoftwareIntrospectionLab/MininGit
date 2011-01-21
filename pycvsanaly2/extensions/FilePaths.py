@@ -22,7 +22,7 @@ if __name__ == '__main__':
     sys.path.insert (0, "../../")
 
 from pycvsanaly2.Database import statement
-from pycvsanaly2.utils import to_utf8
+from pycvsanaly2.utils import printdbg
 from pycvsanaly2.profile import profiler_start, profiler_stop
 
 class FilePaths:
@@ -37,6 +37,7 @@ class FilePaths:
     __shared_state = { 'rev'   : None,
                        'adj'   : None,
                        'files' : None,
+                       'cached_adj': {},
                        'db'    : None}
 
     def __init__ (self, db):
@@ -45,10 +46,7 @@ class FilePaths:
   
     def update_for_revision (self, cursor, commit_id, repo_id):
         db = self.__dict__['db']
-
-        #TODO check all places using this method to remove this if statement
-        if commit_id == self.__dict__['rev']:
-            return
+        
 
         prev_commit_id = self.__dict__['rev']
         self.__dict__['rev'] = commit_id
@@ -122,6 +120,7 @@ class FilePaths:
             rs = cursor.fetchmany ()
 
         self.__dict__['adj'] = adj
+        self.__dict__['cached_adj'][commit_id] = self.__dict__['adj']
 
         profiler_stop ("Updating adjacency matrix for commit %d", (commit_id,), True)
 
@@ -145,15 +144,16 @@ class FilePaths:
 
     def get_path (self, file_id, commit_id, repo_id):
         profiler_start ("Getting path for file %d at commit %d", (file_id, commit_id))
-        #Test here if avoid unnecessary database connection
-        if commit_id != self.__dict__['rev']:
+        adj = self.__dict__['cached_adj'].get(commit_id)
+        if adj is not None:
+            self.__dict__['adj'] = adj
+            self.__dict__['rev'] = commit_id
+        else:
             cnn = self.__dict__['db'].connect()
             cursor = cnn.cursor()
             self.update_for_revision(cursor, commit_id, repo_id)
             cursor.close()
-            self.__dict__['rev'] = commit_id
-
-        adj = self.__dict__['adj']
+            adj = self.__dict__['adj']
         path = self.__build_path (file_id, adj)
 
         profiler_stop ("Getting path for file %d at commit %d", (file_id, commit_id), True)
@@ -172,7 +172,6 @@ class FilePaths:
         return self.__dict__['rev']
 
     def update_all(self, repo_id):
-        print("Deprecation warning: FilePath.update_all has discovered defects!")
         db = self.__dict__['db']
         cnn = db.connect ()
 

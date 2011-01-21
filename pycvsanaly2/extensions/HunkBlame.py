@@ -36,7 +36,6 @@ class HunkBlameJob(BlameJob):
         def line(self,blame_line):
             for hunk_id, start_line, end_line in self.hunks:
                 if blame_line.line>= start_line and blame_line.line<= end_line:
-                    printdbg("Found a bug revision: %s"%blame_line.rev)
                     if self.bug_revs.get(hunk_id) is None:
                         self.bug_revs[hunk_id] = set()
                     self.bug_revs[hunk_id].add(blame_line.rev)
@@ -45,7 +44,8 @@ class HunkBlameJob(BlameJob):
         def start_file (self, filename):
             pass
         def end_file (self):
-            pass
+            if len(self.bug_revs)==0:
+                printdbg("No bug revision found in this file")
 
     def __init__ (self, hunks, path, rev):
         Job.__init__(self)
@@ -222,6 +222,7 @@ class HunkBlame(Blame):
         file_rev = read_cursor.fetchone()
         n_blames = 0
         fp = FilePaths(db)
+        fp.update_all(repoid)
         while file_rev is not None:
             try:
                 file_id, commit_id = file_rev
@@ -233,6 +234,10 @@ class HunkBlame(Blame):
                 with cnn as inner_cursor:
                     inner_query = """select h.id, h.old_start_line, h.old_end_line from hunks h
                         where h.file_id = ? and h.commit_id = ?
+                            and h.old_start_line is not null 
+                            and h.old_end_line is not null
+                            and h.file_id is not null
+                            and h.commit_id is not null
                     """
                     inner_cursor.execute(statement(inner_query, db.place_holder), (file_id, commit_id))
                     hunks = inner_cursor.fetchall()
