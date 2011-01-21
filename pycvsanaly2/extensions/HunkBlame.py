@@ -115,6 +115,56 @@ class HunkBlame(Blame):
 
         cnn.commit ()
         cursor.close ()
+        
+    def __create_cache(self, cnn):
+        cursor = cnn.cursor ()
+
+        if isinstance (self.db, SqliteDatabase):
+            import sqlite3.dbapi2
+            try:
+                cursor.execute ("drop table action_files_cache")
+            except sqlite3.dbapi2.OperationalError:
+                # Do nothing, thats OK
+            except:
+                raise
+        elif isinstance (self.db, MysqlDatabase):
+            import _mysql_exceptions
+
+            try:
+                cursor.execute ("drop table action_files_cache")
+            except _mysql_exceptions.OperationalError, e:
+                if e.args[0] == 1050:
+                    # Do nothing
+                raise
+            except:
+                raise
+
+        if isinstance (self.db, SqliteDatabase):
+            import sqlite3.dbapi2
+            try:
+                cursor.execute ("""CREATE TABLE action_files_cache 
+                    select * from action_files""")
+            except sqlite3.dbapi2.OperationalError:
+                cursor.close ()
+                raise TableAlreadyExists
+            except:
+                raise
+        elif isinstance (self.db, MysqlDatabase):
+            import _mysql_exceptions
+
+            try:
+                cursor.execute ("""CREATE TABLE action_files_cache 
+                    select * from action_files""")
+            except _mysql_exceptions.OperationalError, e:
+                if e.args[0] == 1050:
+                    cursor.close ()
+                    raise TableAlreadyExists
+                raise
+            except:
+                raise
+
+        cnn.commit ()
+        cursor.close ()
 
     def __get_hunk_blames(self, cursor, repoid):
         query = """select distinct b.hunk_id 
@@ -128,7 +178,7 @@ class HunkBlame(Blame):
     # It is also possible to get previous commit by modifying
     # PatchParser.iter_file_patch
     def __find_previous_commit(self, file_id, commit_id):
-        query = """select a.commit_id, a.action_type, c.rev from action_files a,scmlog c
+        query = """select a.commit_id, a.action_type, c.rev from action_files_cache a,scmlog c
             where a.commit_id=c.id and a.file_id=?
             order by c.date
         """
@@ -200,6 +250,13 @@ class HunkBlame(Blame):
 
         try:
             self.__create_table (cnn)
+        except TableAlreadyExists:
+            pass
+        except Exception, e:
+            raise ExtensionRunError (str(e))
+            
+        try:
+            self.__create_cache(cnn)
         except TableAlreadyExists:
             pass
         except Exception, e:
