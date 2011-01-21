@@ -303,11 +303,12 @@ class Content(Extension):
         # This filters files if they're not source files.
         # I'm pretty sure "unknown" is returning binary files too, but
         # these are implicitly left out when trying to convert to utf-8
-        # after download
+        # after download. However, ignore them for now to speed things up
         query = "select f.id from file_types ft, files f " + \
                 "where f.id = ft.file_id and " + \
-                "ft.type in('code', 'unknown') and " + \
+                "ft.type in('code') and " + \
                 "f.repository_id = ?"
+                # "ft.type in('code', 'unknown') and " + \
         read_cursor.execute(statement(query, db.place_holder),(repo_id,))
         code_files = [item[0] for item in read_cursor.fetchall()]
 

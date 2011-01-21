@@ -117,24 +117,26 @@ class HunkBlame(Blame):
         cursor.close ()
         
     def __drop_cache(self, cnn):
-        cursor = cnn.cursor
+        cursor = cnn.cursor()
         
         if isinstance (self.db, SqliteDatabase):
             import sqlite3.dbapi2
             try:
-                cursor.execute ("drop table action_files_cache")
+                cursor.execute ("drop table _action_files_cache")
             except sqlite3.dbapi2.OperationalError:
                 # Do nothing, thats OK
+                pass
             except:
                 raise
         elif isinstance (self.db, MysqlDatabase):
             import _mysql_exceptions
 
             try:
-                cursor.execute ("drop table action_files_cache")
+                cursor.execute ("drop table _action_files_cache")
             except _mysql_exceptions.OperationalError, e:
                 if e.args[0] == 1050:
                     # Do nothing
+                    pass
                 raise
             except:
                 raise
@@ -145,13 +147,13 @@ class HunkBlame(Blame):
 
         try:
             self.__drop_cache(cnn)
-        except:
-            # Do nothing
+        except Exception, e:
+            printdbg("Couldn't drop cache because of " + str(e))
 
         if isinstance (self.db, SqliteDatabase):
             import sqlite3.dbapi2
             try:
-                cursor.execute ("""CREATE TABLE action_files_cache 
+                cursor.execute ("""CREATE TABLE _action_files_cache 
                     select * from action_files""")
             except sqlite3.dbapi2.OperationalError:
                 cursor.close ()
@@ -162,7 +164,7 @@ class HunkBlame(Blame):
             import _mysql_exceptions
 
             try:
-                cursor.execute ("""CREATE TABLE action_files_cache 
+                cursor.execute ("""CREATE TABLE _action_files_cache 
                     select * from action_files""")
             except _mysql_exceptions.OperationalError, e:
                 if e.args[0] == 1050:
@@ -187,7 +189,7 @@ class HunkBlame(Blame):
     # It is also possible to get previous commit by modifying
     # PatchParser.iter_file_patch
     def __find_previous_commit(self, file_id, commit_id):
-        query = """select a.commit_id, a.action_type, c.rev from action_files_cache a,scmlog c
+        query = """select a.commit_id, a.action_type, c.rev from _action_files_cache a,scmlog c
             where a.commit_id=c.id and a.file_id=?
             order by c.date
         """
@@ -327,7 +329,7 @@ class HunkBlame(Blame):
         try:
             self.__drop_cache(cnn)
         except:
-            # Do nothing
+            printdbg("Couldn't drop cache because of " + str(e))
 
         read_cursor.close ()
         write_cursor.close ()

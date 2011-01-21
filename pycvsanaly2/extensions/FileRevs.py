@@ -68,23 +68,24 @@ class FileRevs:
             self.current = self.__get_next ()
             revision, commit_id, file_id, action_type, composed = self.current
 
-            if action_type in ('V', 'C'):
-                if self.prev_commit != commit_id:
-                    # Get the matrix for revision
-                    self.prev_commit = commit_id
-                    aux_cursor = self.cnn.cursor ()
-                    self.fp.update_for_revision (aux_cursor, commit_id, self.repoid)
-                    aux_cursor.close ()
-                    continue
-            elif action_type == 'D':
-                continue
-            elif action_type in  ('A', 'R'):
-                if self.prev_commit != commit_id:
-                    # Get the matrix for revision
-                    self.prev_commit = commit_id
-                    aux_cursor = self.cnn.cursor ()
-                    self.fp.update_for_revision (aux_cursor, commit_id, self.repoid)
-                    aux_cursor.close ()
+            # Should not need to update_for_revision anymore, delete if OK
+            # if action_type in ('V', 'C'):
+            #     if self.prev_commit != commit_id:
+            #         # Get the matrix for revision
+            #         self.prev_commit = commit_id
+            #         aux_cursor = self.cnn.cursor ()
+            #         self.fp.update_for_revision (aux_cursor, commit_id, self.repoid)
+            #         aux_cursor.close ()
+            #         continue
+            # elif action_type == 'D':
+            #     continue
+            # elif action_type in  ('A', 'R'):
+            #     if self.prev_commit != commit_id:
+            #         # Get the matrix for revision
+            #         self.prev_commit = commit_id
+            #         aux_cursor = self.cnn.cursor ()
+            #         self.fp.update_for_revision (aux_cursor, commit_id, self.repoid)
+            #         aux_cursor.close ()
 
             return self.current
 
@@ -102,9 +103,10 @@ class FileRevs:
             relative_path = self.fp.get_path (file_id, commit_id, self.repoid).strip ("/")
         except AttributeError, e:
             if self.fp.get_commit_id () != commit_id:
-                aux_cursor = self.cnn.cursor ()
-                self.fp.update_for_revision (aux_cursor, commit_id, self.repoid)
-                aux_cursor.close ()
+                # Commented out as update_for_all exists, delete if OK
+                # aux_cursor = self.cnn.cursor ()
+                #                 self.fp.update_for_revision (aux_cursor, commit_id, self.repoid)
+                #                 aux_cursor.close ()
 
                 relative_path = self.fp.get_path (file_id, commit_id, self.repoid).strip ("/")
             else:

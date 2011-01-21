@@ -277,7 +277,8 @@ class Hunks(Extension):
             patch_content = row[1]
             rev = row[2]
             
-            fp.update_for_revision(read_cursor_2, commit_id, repo_id)
+            # No longer needed according to Zhongpeng's updates, delete if OK
+            #fp.update_for_revision(read_cursor_2, commit_id, repo_id)
 
             for hunk in self.get_commit_data(patch_content):
                 # The original Java code seems to only pay attention to the
@@ -326,9 +327,9 @@ class Hunks(Extension):
 
                         #printdbg("No match for old paths, is file name current?")
 
-                        printdbg("Comparing " + possible_file[1] + " to " + hunk_file_name)                        
+                       # printdbg("Comparing " + possible_file[1] + " to " + hunk_file_name)                        
                         if possible_file[1] == hunk_file_name:
-                            printdbg("Match found")
+                            #printdbg("Match found")
                             file_id = possible_file[0]
                             break
                             break
