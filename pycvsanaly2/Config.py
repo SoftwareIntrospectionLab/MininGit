@@ -44,7 +44,9 @@ class Config:
                        'max_threads' : 10,
                        # Regex for matching bug fixes in BugFixMessage
                        'bug_fix_regexes' : ["defect(es)?", "patch(ing|es)?", "bug(s|fix(es)?)?", 
-                "fix(es|ed)?", "\#\d+", "[A-Z]+-\d+"],}
+                "fix(es|ed)?", "\#\d+", ],
+                       'bug_fix_regexes_case_sensitive' : ["[A-Z]+-\d+",],
+                       }
     
     def __init__ (self):
         self.__dict__ = self.__shared_state

@@ -74,17 +74,28 @@ class BugFixMessage(Extension):
             
         connection.commit()
         cursor.close()
+        
+    def __match_bug(self, regexes, flags, commit_message):
+        for p in regexes:
+            printdbg("Checking " + str(p))
+            if re.search(p, commit_message, flags):
+                printdbg("[BUG] matched on " + str(p) + " " + commit_message)
+                return True
+                
+        return False
 
 
     # This matches comments about defects, patching, bugs, bugfixes,
     # fixes, references to bug numbers like #1234, and JIRA style
     # comments, like HARMONY-1234 or GH-2.
     def fixes_bug(self, commit_message):
-        for p in Config().bug_fix_regexes:
-            printdbg("Checking " + str(p))
-            if re.search(p, commit_message, re.DOTALL | re.IGNORECASE):
-                printdbg("[BUG] matched on " + str(p) + " " + commit_message)
-                return True
+        if self.__match_bug(Config().bug_fix_regexes, \
+        re.DOTALL | re.IGNORECASE, commit_message):
+            return True
+        
+        if self.__match_bug(Config().bug_fix_regexes_case_sensitive, \
+        re.DOTALL, commit_message):
+            return True
 
         return False
 
