@@ -44,6 +44,7 @@ class FileRevs:
         self.current = None
 
         self.fp = FilePaths (db)
+        self.fp.update_all(repoid)
 
     def __iter__ (self):
         return self

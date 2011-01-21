@@ -81,8 +81,9 @@ class BugFixMessage(Extension):
     # comments, like HARMONY-1234 or GH-2.
     def fixes_bug(self, commit_message):
         for p in Config().bug_fix_regexes:
-            print "Checking " + str(p)
+            printdbg("Checking " + str(p))
             if re.search(p, commit_message, re.DOTALL | re.IGNORECASE):
+                printdbg("[BUG] matched on " + str(p) + " " + commit_message)
                 return True
 
         return False

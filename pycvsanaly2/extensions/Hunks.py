@@ -270,6 +270,7 @@ class Hunks(Extension):
 
         self.__prepare_table(connection)
         fp = FilePaths(db)
+        fp.update_all(repo_id)
 
         for row in read_cursor:
             commit_id = row[0]
