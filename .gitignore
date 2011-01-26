@@ -1,5 +1,12 @@
 *~
+scripts/*
+.project
+.pydevproject
 *.pyc
 MANIFEST
 dist/
 *.sqlite
+*.sqllite-journal
+config*
+test.sh
+nbproject/

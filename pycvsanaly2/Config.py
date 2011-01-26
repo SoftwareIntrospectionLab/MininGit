@@ -39,7 +39,14 @@ class Config:
                        'extensions'    : [],
                        # Metrics extension options
                        'metrics_all'   : False,
-                       'metrics_noerr' : False}
+                       'metrics_noerr' : False,
+                       # Threading options
+                       'max_threads' : 10,
+                       # Regex for matching bug fixes in BugFixMessage
+                       'bug_fix_regexes' : ["defect(es)?", "patch(ing|es)?", "bug(s|fix(es)?)?", 
+                "fix(es|ed)?", "\#\d+", ],
+                       'bug_fix_regexes_case_sensitive' : ["[A-Z]+-\d+",],
+                       }
     
     def __init__ (self):
         self.__dict__ = self.__shared_state
@@ -114,6 +121,14 @@ class Config:
             pass
         try:
             self.metrics_noerr = config.metrics_noerr
+        except:
+            pass
+        try:
+            self.max_threads = config.max_threads
+        except:
+            pass
+        try:
+            self.bug_fix_regexes = config.bug_fix_regexes
         except:
             pass
 

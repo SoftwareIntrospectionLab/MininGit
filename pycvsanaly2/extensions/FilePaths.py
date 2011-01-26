@@ -22,7 +22,7 @@ if __name__ == '__main__':
     sys.path.insert (0, "../../")
 
 from pycvsanaly2.Database import statement
-from pycvsanaly2.utils import to_utf8
+from pycvsanaly2.utils import printdbg
 from pycvsanaly2.profile import profiler_start, profiler_stop
 
 class FilePaths:
@@ -37,17 +37,16 @@ class FilePaths:
     __shared_state = { 'rev'   : None,
                        'adj'   : None,
                        'files' : None,
+                       'cached_adj': {},
                        'db'    : None}
 
     def __init__ (self, db):
         self.__dict__ = self.__shared_state
         self.__dict__['db'] = db
-
+  
     def update_for_revision (self, cursor, commit_id, repo_id):
         db = self.__dict__['db']
-
-        if commit_id == self.__dict__['rev']:
-            return
+        
 
         prev_commit_id = self.__dict__['rev']
         self.__dict__['rev'] = commit_id
@@ -121,6 +120,7 @@ class FilePaths:
             rs = cursor.fetchmany ()
 
         self.__dict__['adj'] = adj
+        self.__dict__['cached_adj'][commit_id] = self.__dict__['adj']
 
         profiler_stop ("Updating adjacency matrix for commit %d", (commit_id,), True)
 
@@ -133,9 +133,10 @@ class FilePaths:
         tokens = []
         id = file_id
         
-        while id != -1:
+        while id is not None and id !=-1:
             tokens.insert (0, adj.files[id])
-            id = adj.adj[id]
+            #use get instead of index to avoid key error
+            id = adj.adj.get(id) 
 
         profiler_stop ("Building path for file %d", (file_id,), True)
 
@@ -143,10 +144,16 @@ class FilePaths:
 
     def get_path (self, file_id, commit_id, repo_id):
         profiler_start ("Getting path for file %d at commit %d", (file_id, commit_id))
-
-        adj = self.__dict__['adj']
-        assert adj is not None, "Matrix no updated"
-
+        adj = self.__dict__['cached_adj'].get(commit_id)
+        if adj is not None:
+            self.__dict__['adj'] = adj
+            self.__dict__['rev'] = commit_id
+        else:
+            cnn = self.__dict__['db'].connect()
+            cursor = cnn.cursor()
+            self.update_for_revision(cursor, commit_id, repo_id)
+            cursor.close()
+            adj = self.__dict__['adj']
         path = self.__build_path (file_id, adj)
 
         profiler_stop ("Getting path for file %d at commit %d", (file_id, commit_id), True)
@@ -164,6 +171,18 @@ class FilePaths:
     def get_commit_id (self):
         return self.__dict__['rev']
 
+    def update_all(self, repo_id):
+        db = self.__dict__['db']
+        cnn = db.connect ()
+
+        cursor = cnn.cursor ()
+        cursor.execute ("select s.id from scmlog s, actions a where s.id = a.commit_id")
+        old_id = -1
+        for id in cursor.fetchall ()[0]:
+            if old_id != id:
+                self.update_for_revision (cursor, id, repo_id)
+                old_id = id
+        cursor.close()
 
 if __name__ == '__main__':
     import sys

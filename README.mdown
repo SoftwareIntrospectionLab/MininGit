@@ -4,20 +4,22 @@ CVSAnalY
 Description
 -----------
 
-The CVSAnalY tool extracts information out of source code repository logs and stores it into a database.
+The cvsanaly tool extracts information out of source code repository logs and stores it into a database.
 
 About this fork
 ---------------
-This fork of CVSAnalY looks to bring the tool up-to-date (such as removing dependencies on SQLite when it's bundled with Python 2.5 and up), as well as add some extra functionality (such as storing the code of revisions into tables). It is being developed by the [Augmented Design Lab](http://users.soe.ucsc.edu/~ejw) at the [University of California, Santa Cruz](http://www.ucsc.edu). It is **not an official fork**, and does not guarantee that it will maintain parity with the original CVSAnalY2. That said, releases to the master branch should be stable for use.
+This fork of cvsanaly looks to bring the tool up-to-date (such as removing dependencies on SQLite by changing the base requirement to at least Python 2.5), as well as add some extra functionality (such as storing the code of revisions into tables). It is being developed by the [Software Introspection Lab](http://users.soe.ucsc.edu/~ejw) at the [University of California, Santa Cruz](http://www.ucsc.edu). It is **not an official fork**, and does not guarantee that it will maintain parity with the original cvsanaly2. 
+
+All releases to the master branch should be stable for use.
 
 Differences to original
 -----------------------
 * Added an extension called Content, which will save the content of source files at each revision (this takes a long time).
+* Added an extension called Hunks, which will parse diffs and find the start/end lines of changes, changes with just removed lines are ignored (this takes a *really long time* unless using git).
 * Updated to use `sqlite3`, bundled with Python 2.5+
+* Fixed Unicode handling of git repositories
+* Installable, with required repositoryhandler dependency, via [pip](http://pip.openplans.org/), rather than requiring checking out multiple projects from source and performing manual installation.
 
-Noted problems
---------------
-* We are not certain that CVSAnalY2's handling of git repositories works correctly, but your mileage may vary. We haven't changed that functionality from the original.
 
 Requirements
 ------------
@@ -25,9 +27,12 @@ Requirements
 CVSAnalY has the following dependencies:
 
 * Python 2.5 or higher
-* RepositoryHandler
-    git clone http://git.libresoft.es/repositoryhandler
-    git clone git://git.libresoft.es/git/repositoryhandler
+* RepositoryHandler (comes with `pip` installation)
+
+    `git clone https://github.com/Lewisham/repositoryhandler.git`
+* Guilty (If you need to run Blame or HunkBlame extensions
+
+	`git clone http://git.libresoft.es/guilty`
 * cvs (optional, for CVS support)
 * subversion (optional, for SVN support)
 * git (optional, for Git support)

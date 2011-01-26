@@ -21,33 +21,35 @@ from pycvsanaly2.extensions import Extension, register_extension, \
         ExtensionRunError
 from pycvsanaly2.Database import SqliteDatabase, MysqlDatabase, \
         TableAlreadyExists, statement, DBFile
+from pycvsanaly2.Config import Config
 from pycvsanaly2.utils import printdbg, printerr, printout, \
-        remove_directory, uri_to_filename
+        remove_directory, uri_to_filename, to_utf8
 from pycvsanaly2.profile import profiler_start, profiler_stop
 from FileRevs import FileRevs
 from repositoryhandler.backends import RepositoryCommandError
 from tempfile import mkdtemp, NamedTemporaryFile
 from repositoryhandler.backends.watchers import CAT
 from Jobs import JobPool, Job
+from cStringIO import StringIO
 import os
 import re
 
 # This class holds a single repository retrieve task,
 # and keeps the source code until the object is garbage-collected
 class ContentJob(Job):
-    def __init__(self, repo, commit_id, file_id, repo_uri, rev, path):
-        self.repo = repo
+    def __init__(self, commit_id, file_id, rev, path):
         self.commit_id = commit_id
         self.file_id = file_id
-        self.repo_uri = repo_uri
         self.rev = rev
         self.path = path
         self.file_contents = ""
 
-    def write_file(self, line, fd):
-        fd.write(line)
-    
     def run(self, repo, repo_uri):
+        def write_line (data, io):
+            io.write (data)
+        
+        self.repo = repo
+        self.repo_uri = repo_uri
         self.repo_type = self.repo.get_type()
 
         if self.repo_type == 'cvs':
@@ -68,11 +70,9 @@ class ContentJob(Job):
         if ext_ptr != -1:
             suffix = filename[ext_ptr:]
 
-        # Write out to a temporary file
-        fd = NamedTemporaryFile('w', suffix=suffix)
+        io = StringIO()
 
-        # Not sure what this does yet
-        wid = self.repo.add_watch(CAT, self.write_file, fd.file)
+        wid = self.repo.add_watch(CAT, write_line, io)
         
         # Git doesn't need retries because all of the revisions
         # are already on disk
@@ -94,7 +94,7 @@ class ContentJob(Job):
                     printerr("Command %s returned %d(%s), try again",\
                             (e.cmd, e.returncode, e.error))
                     retries -= 1
-                    fd.file.seek(0)
+                    io.seek(0)
                 elif retries == 0:
                     failed = True
                     printerr("Error obtaining %s@%s. " +
@@ -109,21 +109,14 @@ class ContentJob(Job):
         self.repo.remove_watch(CAT, wid)
 
         if failed:
-            #self.measures.set_error()
             printerr("Failure due to error")
         else:
             try:
-                f = open(fd.name)
-                #print "Dump: " + str(f.readlines())
-                for line in f:
-                    self.file_contents = self.file_contents + line
-
-                f.close()
-                #fm = create_file_metrics(fd.name)
-                #self.__measure_file(fm, self.measures, fd.name, self.rev)
+                self.file_contents = io.getvalue()
+                io.close()
             except Exception, e:
-                printerr("Error getting contents for for %s@%s. " +
-                            "Exception: %s",(fd.name, self.rev, str(e)))
+                printerr("Error getting contents." +
+                            "Exception: %s",(str(e),))
             finally:
                 #TODO: This should close, but it throws an error
                 # sometimes. It's fixable using an algorithm like
@@ -147,7 +140,7 @@ class ContentJob(Job):
         # but just doing None is fine for now.
         try:
             return self.file_contents.encode("utf-8")
-        except UnicodeDecodeError, e:
+        except:
             return None
 
     def get_file_id(self):
@@ -158,32 +151,34 @@ class Content(Extension):
     deps = ['FileTypes']
     
     def __prepare_table(self, connection, drop_table=False):
-        cursor = connection.cursor()
-
         # Drop the table's old data
         if drop_table:
+            cursor = connection.cursor()
+            
             try:
                 cursor.execute("DROP TABLE content")
             except Exception, e:
                 printerr("Couldn't drop content table because %s", (e,))
+            finally:
+                cursor.close()
 
         if isinstance(self.db, SqliteDatabase):
             import sqlite3.dbapi2
+            cursor = connection.cursor()
             
             # Note that we can't guarentee sqlite is going
             # to provide foreign key support (it was only
             # introduced in 3.6.19), so no constraints are set
             try:
-                cursor.execute("CREATE TABLE content(" +
-                    "id INTEGER PRIMARY KEY," +
-                    "scmlog_id INTEGER NOT NULL," +
-                    "file_id INTEGER NOT NULL," +
-                    "content CLOB NOT NULL," +
-                    "UNIQUE (scmlog_id, file_id))")
+                cursor.execute("""CREATE TABLE content(
+                    id INTEGER PRIMARY KEY,
+                    commit_id INTEGER NOT NULL,
+                    file_id INTEGER NOT NULL,
+                    content CLOB NOT NULL,
+                    UNIQUE (commit_id, file_id))""")
             except sqlite3.dbapi2.OperationalError:
                 # It's OK if the table already exists
                 pass
-                #raise TableAlreadyExists
             except:
                 raise
             finally:
@@ -192,47 +187,60 @@ class Content(Extension):
         elif isinstance(self.db, MysqlDatabase):
             import _mysql_exceptions
 
-            # I commented out foreign key constraints because
+            cursor = connection.cursor()
+            
+            # I removed foreign key constraints because
             # cvsanaly uses MyISAM, which doesn't enforce them.
             # MySQL was giving errno:150 when trying to create with
             # them anyway
             try:
-                cursor.execute("CREATE TABLE content(" +
-                    "id int(11) NOT NULL auto_increment," +
-                    "scmlog_id int(11) NOT NULL," +
-                    "file_id int(11) NOT NULL," +
-                    "content mediumtext NOT NULL," +
-                    "PRIMARY KEY(id)," +
-                    "UNIQUE (scmlog_id, file_id)" +
-                    #"FOREIGN KEY (scmlog_id) references scmlog(id), " +
-                    #"FOREIGN KEY (file_id) references files(id) " +
-                    ") ENGINE=InnoDB CHARACTER SET=utf8")
+                cursor.execute("""CREATE TABLE content(
+                    id int(11) NOT NULL auto_increment,
+                    commit_id int(11) NOT NULL,
+                    file_id int(11) NOT NULL,
+                    content mediumtext NOT NULL,
+                    PRIMARY KEY(id),
+                    UNIQUE (commit_id, file_id)
+                    ) ENGINE=InnoDB CHARACTER SET=utf8""")
+
             except _mysql_exceptions.OperationalError, e:
                 if e.args[0] == 1050:
                     # It's OK if the table already exists
                     pass
-                    #raise TableAlreadyExists
                 else:
                     raise
             except:
                 raise
             finally:
                 cursor.close()
+        
+        # This one works regardless of DB
+        try:
+            cursor = connection.cursor()
             
+            cursor.execute("""CREATE VIEW content_loc as
+            SELECT c.*, (LENGTH(content) - 
+            LENGTH(REPLACE(c.content, x'0a', ''))) + 1 as loc 
+            from content c""")
+        except Exception, e:
+            # Not getting a view created isn't the end of the world
+            pass
+        finally:
+            cursor.close()
+
         connection.commit()
-        cursor.close()
 
     def __process_finished_jobs(self, job_pool, write_cursor, db):
         finished_job = job_pool.get_next_done()
 
-        # scmlog_id is the commit ID. For some reason, the 
+        # commit_id is the commit ID. For some reason, the 
         # documentaion advocates tablename_id as the reference,
         # but in the source, these are referred to as commit IDs.
         # Don't ask me why!
         while finished_job is not None:
             if finished_job.get_file_contents() is not None:
                 try:
-                    query = "insert into content(scmlog_id, file_id, content) values(?,?,?)"
+                    query = "insert into content(commit_id, file_id, content) values(?,?,?)"
 
                     write_cursor.execute(statement(query, db.place_holder), \
                             (finished_job.get_commit_id(), \
@@ -285,7 +293,8 @@ class Content(Extension):
         except Exception as e:
             raise ExtensionRunError("Couldn't prepare table because " + str(e))
 
-        queuesize = 10
+        queuesize = Config().max_threads
+        printdbg("Setting queuesize to " + str(queuesize))
 
         # This is where the threading stuff comes in, I expect
         # Commenting out as I don't really want to mess with this right now
@@ -294,11 +303,12 @@ class Content(Extension):
         # This filters files if they're not source files.
         # I'm pretty sure "unknown" is returning binary files too, but
         # these are implicitly left out when trying to convert to utf-8
-        # after download
+        # after download. However, ignore them for now to speed things up
         query = "select f.id from file_types ft, files f " + \
                 "where f.id = ft.file_id and " + \
-                "ft.type in('code', 'unknown') and " + \
+                "ft.type in('code') and " + \
                 "f.repository_id = ?"
+                # "ft.type in('code', 'unknown') and " + \
         read_cursor.execute(statement(query, db.place_holder),(repo_id,))
         code_files = [item[0] for item in read_cursor.fetchall()]
 
@@ -328,8 +338,7 @@ class Content(Extension):
                 printdbg("Skipping file %s",(relative_path,))
                 continue
 
-            # Threading stuff commented out
-            job = ContentJob(repo, commit_id, file_id, uri, rev, relative_path)
+            job = ContentJob(commit_id, file_id, rev, relative_path)
             job_pool.push(job)
 
             if i >= queuesize:
@@ -341,8 +350,8 @@ class Content(Extension):
             else:
                 i = i + 1
 
-        #job_pool.join()
-        #self.__process_finished_jobs(job_pool, write_cursor, True)
+        job_pool.join()
+        self.__process_finished_jobs(job_pool, write_cursor, db)
                 
         profiler_start("Inserting results in db")
         #self.__insert_many(write_cursor)

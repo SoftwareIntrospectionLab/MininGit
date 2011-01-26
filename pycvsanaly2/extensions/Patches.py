@@ -25,11 +25,43 @@ from repositoryhandler.backends.watchers import DIFF
 from pycvsanaly2.Database import (SqliteDatabase, MysqlDatabase, TableAlreadyExists,
                                   statement, ICursor)
 from pycvsanaly2.Log import LogReader
+from pycvsanaly2.Config import Config
 from pycvsanaly2.extensions import Extension, register_extension, ExtensionRunError
-from pycvsanaly2.utils import to_utf8, printerr, uri_to_filename
+from pycvsanaly2.utils import to_utf8, printerr, printdbg, uri_to_filename
 from pycvsanaly2.FindProgram import find_program
 from pycvsanaly2.Command import Command, CommandError
 from cStringIO import StringIO
+from Jobs import JobPool, Job
+
+class PatchJob(Job):
+    def __init__(self, rev, commit_id):
+        self.rev = rev
+        self.commit_id = commit_id
+        self.data = None
+
+    def get_patch_for_commit (self):
+        def diff_line (data, io):
+            io.write (data)
+
+        io = StringIO ()
+        wid = self.repo.add_watch (DIFF, diff_line, io)
+        try:
+            self.repo.show (self.repo_uri, self.rev)
+            self.data = io.getvalue ()
+        except Exception, e:
+            printerr ("Error running show command: %s", (str(e),))
+            self.data = None
+
+        self.repo.remove_watch (DIFF, wid)
+        io.close ()
+
+        return self.data
+
+    def run(self, repo, repo_uri):
+        self.repo = repo
+        self.repo_uri = repo_uri
+        self.get_patch_for_commit()
+
 
 class DBPatch:
 
@@ -46,6 +78,10 @@ class DBPatch:
 
         self.commit_id = commit_id
         self.patch = data
+
+    def __str__(self):
+        return "<Patch ID: " + str(self.id) + ", commit_id: " + str(self.commit_id) + \
+                ", data: " + to_utf8(self.patch).decode("utf-8") + ">" 
 
 class Patches (Extension):
 
@@ -64,7 +100,7 @@ class Patches (Extension):
                 cursor.execute ("CREATE TABLE patches (" +
                                 "id integer primary key," +
                                 "commit_id integer," +
-                                "patch blob" +
+                                "patch text" +
                                 ")")
             except sqlite3.dbapi2.OperationalError:
                 cursor.close ()
@@ -78,7 +114,7 @@ class Patches (Extension):
                 cursor.execute ("CREATE TABLE patches (" +
                                 "id INT primary key," +
                                 "commit_id integer," +
-                                "patch LONGBLOB," +
+                                "patch LONGTEXT," +
                                 "FOREIGN KEY (commit_id) REFERENCES scmlog(id)" +
                                 ") CHARACTER SET=utf8")
             except _mysql_exceptions.OperationalError, e:
@@ -100,23 +136,23 @@ class Patches (Extension):
 
         return commits
 
-    def get_patch_for_commit (self, rev):
-        def diff_line (data, io):
-            io.write (data)
+    def __process_finished_jobs(self, job_pool, write_cursor, db):
+        finished_job = job_pool.get_next_done()
 
-        io = StringIO ()
-        wid = self.repo.add_watch (DIFF, diff_line, io)
-        try:
-            self.repo.show (self.repo_uri, rev)
-            data = io.getvalue ()
-        except Exception, e:
-            printerr ("Error running show command: %s", (str (e)))
-            data = None
+        # scmlog_id is the commit ID. For some reason, the 
+        # documentaion advocates tablename_id as the reference,
+        # but in the source, these are referred to as commit IDs.
+        # Don't ask me why!
+        while finished_job is not None:
+            try:
+                p = DBPatch (None, finished_job.commit_id, finished_job.data)
+                write_cursor.execute (statement (DBPatch.__insert__, self.db.place_holder), \
+                    (p.id, p.commit_id, to_utf8(p.patch).decode("utf-8")))
 
-        self.repo.remove_watch (DIFF, wid)
-        io.close ()
+            except Exception as e:
+                printerr("Couldn't insert, duplicate record?: %s", (e,))
 
-        return data
+            finished_job = job_pool.get_next_done(0.5)
 
     def run (self, repo, uri, db):
         self.db = db
@@ -153,6 +189,10 @@ class Patches (Extension):
         except Exception, e:
             raise ExtensionRunError (str (e))
 
+        queuesize = Config().max_threads
+        job_pool = JobPool(repo, path or repo.get_uri(), queuesize=queuesize)        
+        i = 0
+
         write_cursor = cnn.cursor ()
         icursor = ICursor (cursor, self.INTERVAL_SIZE)
         icursor.execute (statement ("SELECT id, rev, composed_rev from scmlog where repository_id = ?",
@@ -160,7 +200,7 @@ class Patches (Extension):
         rs = icursor.fetchmany ()
         while rs:
             for commit_id, revision, composed_rev in rs:
-                if commit_id in commits:
+                if commit_id in commits: 
                     continue
 
                 if composed_rev:
@@ -168,12 +208,23 @@ class Patches (Extension):
                 else:
                     rev = revision
 
-                p = DBPatch (None, commit_id, self.get_patch_for_commit (rev))
-                write_cursor.execute (statement (DBPatch.__insert__, self.db.place_holder),
-                                      (p.id, p.commit_id, self.db.to_binary (p.patch)))
+                job = PatchJob(rev, commit_id)
+                job_pool.push(job)
 
+                if i >= queuesize:
+                    printdbg("Queue is now at %d, flushing to database", (i,))
+                    job_pool.join()
+                    self.__process_finished_jobs(job_pool, write_cursor, db)
+                    cnn.commit()
+                    i = 0
+                else:
+                    i = i + 1
+
+            cnn.commit()
             rs = icursor.fetchmany ()
 
+        job_pool.join()
+        self.__process_finished_jobs(job_pool, write_cursor, db)
         cnn.commit ()
         write_cursor.close ()
         cursor.close ()

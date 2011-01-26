@@ -28,7 +28,9 @@ class FileRevs:
 
     INTERVAL_SIZE = 1000
     __query__ = '''select s.rev rev, s.id commit_id, af.file_id, af.action_type, s.composed_rev 
-from scmlog s, action_files af where s.id = af.commit_id and s.repository_id = ? order by s.id'''
+        from scmlog s, action_files af 
+        where s.id = af.commit_id and s.repository_id = ? 
+        order by s.date'''
 
     def __init__ (self, db, cnn, cursor, repoid):
         self.db = db
@@ -42,6 +44,7 @@ from scmlog s, action_files af where s.id = af.commit_id and s.repository_id = ?
         self.current = None
 
         self.fp = FilePaths (db)
+        self.fp.update_all(repoid)
 
     def __iter__ (self):
         return self
@@ -65,23 +68,24 @@ from scmlog s, action_files af where s.id = af.commit_id and s.repository_id = ?
             self.current = self.__get_next ()
             revision, commit_id, file_id, action_type, composed = self.current
 
-            if action_type in ('V', 'C'):
-                if self.prev_commit != commit_id:
-                    # Get the matrix for revision
-                    self.prev_commit = commit_id
-                    aux_cursor = self.cnn.cursor ()
-                    self.fp.update_for_revision (aux_cursor, commit_id, self.repoid)
-                    aux_cursor.close ()
-                    continue
-            elif action_type == 'D':
-                continue
-            elif action_type in  ('A', 'R'):
-                if self.prev_commit != commit_id:
-                    # Get the matrix for revision
-                    self.prev_commit = commit_id
-                    aux_cursor = self.cnn.cursor ()
-                    self.fp.update_for_revision (aux_cursor, commit_id, self.repoid)
-                    aux_cursor.close ()
+            # Should not need to update_for_revision anymore, delete if OK
+            # if action_type in ('V', 'C'):
+            #     if self.prev_commit != commit_id:
+            #         # Get the matrix for revision
+            #         self.prev_commit = commit_id
+            #         aux_cursor = self.cnn.cursor ()
+            #         self.fp.update_for_revision (aux_cursor, commit_id, self.repoid)
+            #         aux_cursor.close ()
+            #         continue
+            # elif action_type == 'D':
+            #     continue
+            # elif action_type in  ('A', 'R'):
+            #     if self.prev_commit != commit_id:
+            #         # Get the matrix for revision
+            #         self.prev_commit = commit_id
+            #         aux_cursor = self.cnn.cursor ()
+            #         self.fp.update_for_revision (aux_cursor, commit_id, self.repoid)
+            #         aux_cursor.close ()
 
             return self.current
 
@@ -99,9 +103,10 @@ from scmlog s, action_files af where s.id = af.commit_id and s.repository_id = ?
             relative_path = self.fp.get_path (file_id, commit_id, self.repoid).strip ("/")
         except AttributeError, e:
             if self.fp.get_commit_id () != commit_id:
-                aux_cursor = self.cnn.cursor ()
-                self.fp.update_for_revision (aux_cursor, commit_id, self.repoid)
-                aux_cursor.close ()
+                # Commented out as update_for_all exists, delete if OK
+                # aux_cursor = self.cnn.cursor ()
+                #                 self.fp.update_for_revision (aux_cursor, commit_id, self.repoid)
+                #                 aux_cursor.close ()
 
                 relative_path = self.fp.get_path (file_id, commit_id, self.repoid).strip ("/")
             else:
