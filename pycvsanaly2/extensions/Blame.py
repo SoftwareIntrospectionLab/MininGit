@@ -18,7 +18,7 @@
 #       Carlos Garcia Campos  <carlosgc@gsyc.escet.urjc.es>
 
 from pycvsanaly2.Database import (SqliteDatabase, MysqlDatabase, TableAlreadyExists,
-                                  statement, DBFile, ICursor)
+                                  statement, ICursor)
 from pycvsanaly2.extensions import Extension, register_extension, ExtensionRunError
 from pycvsanaly2.profile import profiler_start, profiler_stop
 from pycvsanaly2.utils import printdbg, printerr, uri_to_filename
@@ -193,7 +193,7 @@ class Blame (Extension):
             if unlocked:
                 job = job_pool.get_next_done_unlocked ()
             else:
-                job = job_pool.get_next_done (0.5)
+                job = job_pool.get_next_done (0)
 
         if len(args)>0:
             printdbg("Inserting results")

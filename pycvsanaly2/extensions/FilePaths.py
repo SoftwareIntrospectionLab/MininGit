@@ -16,6 +16,7 @@
 #
 # Authors :
 #       Carlos Garcia Campos <carlosgc@gsyc.escet.urjc.es>
+#        Zhongpeng Lin  <zlin5@ucsc.edu>
 
 if __name__ == '__main__':
     import sys
@@ -47,6 +48,9 @@ class FilePaths:
         
   
     def update_for_revision (self, cursor, commit_id, repo_id):
+        adj = self.__dict__['cached_adj'].get(commit_id)
+        if adj is not None:
+            return
         db = self.__dict__['db']
         
 
