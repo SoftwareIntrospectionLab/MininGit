@@ -348,9 +348,12 @@ class Content(Extension):
                 printdbg("Queue is now at %d, flushing to database", (i,))
                 print "Before __process_finished_jobs: %s"%(datetime.now()-loop_start)
                 processed_jobs=self.__process_finished_jobs(job_pool, write_cursor, db)
-                print "Jobs processed:%d at time %s"%(processed_jobs, datetime.now()-loop_start)
+                print "%d jobs processed at %s"%(processed_jobs, datetime.now()-loop_start)
                 connection.commit()
                 i = i-processed_jobs
+                if processed_jobs<queuesize/5:
+                    print "Before joining jobs: %s"%(datetime.now()-loop_start)
+                    job_pool.join()
                 
             print "End of loop: %s"%(datetime.now()-loop_start)
 
