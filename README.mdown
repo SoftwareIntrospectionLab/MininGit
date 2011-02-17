@@ -41,12 +41,13 @@ CVSAnalY has the following dependencies:
 Install
 -------
 
-You can install cvsanaly2 running setup.py script:
+You don't need to do anything if you are happy using CVSAnalY from the path you downloaded it to. 
+
+If you want to install it to a system location, you can do this by running the `setup.py` script:
 
     python setup.py install
 
-If you don't install CVSAnalY with root privileges, add to your $PATH
-the directory which contains cvsanaly (cvsanalydir is the directory
+If you don't have root privledges, you can just add CVSAnalY to your $PATH (cvsanalydir is the directory
 where CVSAnalY is installed):
 
     export PATH=$PATH:cvsanalydir
