@@ -30,7 +30,6 @@ Main funcion of cvsanaly. Fun starts here!
 
 import os
 import getopt
-
 from repositoryhandler.backends import create_repository, create_repository_from_path, RepositoryUnknownError
 from ParserFactory import create_parser_from_logfile, create_parser_from_repository
 from Database import (create_database, TableAlreadyExists, AccessDenied, DatabaseNotFound,

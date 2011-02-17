@@ -152,7 +152,7 @@ class Patches (Extension):
             except Exception as e:
                 printerr("Couldn't insert, duplicate record?: %s", (e,))
 
-            finished_job = job_pool.get_next_done(0.5)
+            finished_job = job_pool.get_next_done(0)
 
     def run (self, repo, uri, db):
         self.db = db

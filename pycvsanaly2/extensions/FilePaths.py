@@ -16,6 +16,7 @@
 #
 # Authors :
 #       Carlos Garcia Campos <carlosgc@gsyc.escet.urjc.es>
+#        Zhongpeng Lin  <zlin5@ucsc.edu>
 
 if __name__ == '__main__':
     import sys
@@ -24,6 +25,7 @@ if __name__ == '__main__':
 from pycvsanaly2.Database import statement
 from pycvsanaly2.utils import printdbg
 from pycvsanaly2.profile import profiler_start, profiler_stop
+from copy import deepcopy
 
 class FilePaths:
 
@@ -43,8 +45,12 @@ class FilePaths:
     def __init__ (self, db):
         self.__dict__ = self.__shared_state
         self.__dict__['db'] = db
+        
   
     def update_for_revision (self, cursor, commit_id, repo_id):
+        adj = self.__dict__['cached_adj'].get(commit_id)
+        if adj is not None:
+            return
         db = self.__dict__['db']
         
 
@@ -119,8 +125,7 @@ class FilePaths:
                 adj.adj[f2] = f1
             rs = cursor.fetchmany ()
 
-        self.__dict__['adj'] = adj
-        self.__dict__['cached_adj'][commit_id] = self.__dict__['adj']
+        self.__dict__['cached_adj'][commit_id] = deepcopy(adj)
 
         profiler_stop ("Updating adjacency matrix for commit %d", (commit_id,), True)
 
@@ -176,13 +181,18 @@ class FilePaths:
         cnn = db.connect ()
 
         cursor = cnn.cursor ()
-        cursor.execute ("select s.id from scmlog s, actions a where s.id = a.commit_id")
+        query = """select distinct(s.id) from scmlog s, actions a
+                    where s.id = a.commit_id and repository_id=?
+                    order by s.id"""
+        cursor.execute (statement (query, db.place_holder), (repo_id,))        
         old_id = -1
-        for id in cursor.fetchall ()[0]:
+        all_commits = [i[0] for i in cursor.fetchall ()]
+        for id in all_commits:
             if old_id != id:
                 self.update_for_revision (cursor, id, repo_id)
                 old_id = id
         cursor.close()
+        cnn.close()
 
 if __name__ == '__main__':
     import sys

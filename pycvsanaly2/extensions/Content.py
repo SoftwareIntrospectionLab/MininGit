@@ -20,7 +20,7 @@
 from pycvsanaly2.extensions import Extension, register_extension, \
         ExtensionRunError
 from pycvsanaly2.Database import SqliteDatabase, MysqlDatabase, \
-        TableAlreadyExists, statement, DBFile
+        TableAlreadyExists, statement
 from pycvsanaly2.Config import Config
 from pycvsanaly2.utils import printdbg, printerr, printout, \
         remove_directory, uri_to_filename, to_utf8
@@ -232,9 +232,9 @@ class Content(Extension):
 
     def __process_finished_jobs(self, job_pool, write_cursor, db):
         finished_job = job_pool.get_next_done()
-
+        processed_jobs = 0
         # commit_id is the commit ID. For some reason, the 
-        # documentaion advocates tablename_id as the reference,
+        # documentation advocates tablename_id as the reference,
         # but in the source, these are referred to as commit IDs.
         # Don't ask me why!
         while finished_job is not None:
@@ -249,8 +249,10 @@ class Content(Extension):
 
                 except Exception as e:
                     printerr("Couldn't insert, duplicate record?: %s", (e,))
-
-            finished_job = job_pool.get_next_done(0.5)
+            processed_jobs+=1
+            finished_job = job_pool.get_next_done(0)
+            
+        return processed_jobs
             
 
 
@@ -315,9 +317,10 @@ class Content(Extension):
         fr = FileRevs(db, connection, read_cursor, repo_id)
 
         i = 0
-
+        from datetime import datetime
         # Loop through each file and its revision
         for revision, commit_id, file_id, action_type, composed in fr:
+            loop_start = datetime.now()
             if file_id not in code_files:
                 continue
 
@@ -325,7 +328,7 @@ class Content(Extension):
                 relative_path = fr.get_path()
             except AttributeError, e:
                 raise e
-
+            print "After getting path: %s"%(datetime.now()-loop_start)
             if composed:
                 rev = revision.split("|")[0]
             else:
@@ -340,15 +343,19 @@ class Content(Extension):
 
             job = ContentJob(commit_id, file_id, rev, relative_path)
             job_pool.push(job)
-
+            i = i + 1
             if i >= queuesize:
                 printdbg("Queue is now at %d, flushing to database", (i,))
-                job_pool.join()
-                self.__process_finished_jobs(job_pool, write_cursor, db)
+                print "Before __process_finished_jobs: %s"%(datetime.now()-loop_start)
+                processed_jobs=self.__process_finished_jobs(job_pool, write_cursor, db)
+                print "%d jobs processed at %s"%(processed_jobs, datetime.now()-loop_start)
                 connection.commit()
-                i = 0
-            else:
-                i = i + 1
+                i = i-processed_jobs
+                if processed_jobs<queuesize/5:
+                    print "Before joining jobs: %s"%(datetime.now()-loop_start)
+                    job_pool.join()
+                
+            print "End of loop: %s"%(datetime.now()-loop_start)
 
         job_pool.join()
         self.__process_finished_jobs(job_pool, write_cursor, db)
