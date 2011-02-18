@@ -75,6 +75,13 @@ version of your repository, and then run cvsanaly2:
 More options, and a more detailed info about the options, can be
 learnt by running `cvsanaly2 --help`
 
+If you're having problems
+-------------------------
+### Packet bigger than max_allowed_packet
+Sometimes, a lot of data can pass between CVSAnalY and MySQL, and packet limits are set too small.
+
+Follow the instructions [here](http://stackoverflow.com/questions/93128/mysql-got-a-packet-bigger-than-max-allowed-packet-bytes/104176#104176).
+
 How to get the original CVSAnalY2
 ---------------------------------
 
