@@ -25,10 +25,7 @@ from pycvsanaly2.Database import SqliteDatabase, MysqlDatabase, \
 from pycvsanaly2.utils import printdbg, printerr, printout, \
         remove_directory, uri_to_filename
 from pycvsanaly2.profile import profiler_start, profiler_stop
-from pycvsanaly2.PatchParser import parse_patches, RemoveLine, InsertLine, \
-        ContextLine, Patch, BinaryPatch
 from pycvsanaly2.Config import Config
-import os
 import re
 
 # This class holds a single repository retrieve task,
@@ -74,12 +71,16 @@ class BugFixMessage(Extension):
             
         connection.commit()
         cursor.close()
-        
-    def __match_bug(self, regexes, flags, commit_message):
-        for p in regexes:
-            printdbg("Checking " + str(p))
-            if re.search(p, commit_message, flags):
-                printdbg("[BUG] matched on " + str(p) + " " + commit_message)
+    
+    def __match_string(self, regexes, flags, string):
+        """Checks whether a string matches a series of regexes"""
+        for r in regexes:
+            printdbg("Checking " + str(r))
+            # The bit at the beginning and end matches whitespace, punctuation
+            # or the start or end of a line.
+            delimiters = "[\s\.,;]"
+            if re.search("(" + delimiters + "+|^)" + r + "(" + delimiters + "+|$)", string, flags):
+                printdbg("[STRING] matched on " + str(r) + " " + string)
                 return True
                 
         return False
@@ -89,11 +90,84 @@ class BugFixMessage(Extension):
     # fixes, references to bug numbers like #1234, and JIRA style
     # comments, like HARMONY-1234 or GH-2.
     def fixes_bug(self, commit_message):
-        if self.__match_bug(Config().bug_fix_regexes, \
+        """Check whether a commit message indicated a bug was present.
+        
+        # This is set in the config. Uncomment if you wish to try out
+        # specific regexes
+        #>>> Config().bug_fix_regexes = ["defect(s)?", "patch(ing|es|ed)?", \
+                "bug(s|fix(es)?)?", "debug(ged)?", "fix(es|ed)?", "\#\d+"]
+        #>>> Config().bug_fix_regexes_case_sensitive = ["[A-Z]+-\d+",]
+        >>> b = BugFixMessage()
+        
+        # Easy ones
+        >>> b.fixes_bug("Bug")
+        True
+        >>> b.fixes_bug("Bugs")
+        True
+        >>> b.fixes_bug("Fix")
+        True
+        >>> b.fixes_bug("Fixed")
+        True
+        >>> b.fixes_bug("Defect")
+        True
+        >>> b.fixes_bug("Defects")
+        True
+        >>> b.fixes_bug("Patches")
+        True
+        >>> b.fixes_bug("Patching")
+        True
+        
+        # Embeds in sentences
+        >>> b.fixes_bug("Fixed a bug")
+        True
+        >>> b.fixes_bug("Debugged this one")
+        True
+        >>> b.fixes_bug("Found a hole, which I patched, shouldn't be a problem")
+        True
+        >>> b.fixes_bug("Put in a couple of fixes in x.java")
+        True
+        >>> b.fixes_bug("Implemented a bugfix")
+        True
+        >>> b.fixes_bug("References #1234")
+        True
+        >>> b.fixes_bug("Defect X is no more")
+        True
+        >>> b.fixes_bug("Closes JENKINS-1234")
+        True
+        
+        # Embeds in long commit messages
+        >>> b.fixes_bug("This was tough. Fixed now.")
+        True
+        >>> b.fixes_bug("Found X; debugged and solved.")
+        True
+        
+        # Things that shouldn't match
+        >>> b.fixes_bug("Added method print_debug()")
+        False
+        >>> b.fixes_bug("Altered debug_log()")
+        False
+        >>> b.fixes_bug("NETWORK_PATCH_FIX")
+        False
+        >>> b.fixes_bug("Rename ap_debug_assert() to AP_DEBUG_ASSERT()")
+        False
+        >>> b.fixes_bug("Use bread() etc instead of fread() for reading/writing")
+        False
+        >>> b.fixes_bug("Refactored to look cleaner")
+        False
+        >>> b.fixes_bug("Rewrite this yucky file")
+        False
+        >>> b.fixes_bug("Edited this file on 2010-12-01")
+        False
+        >>> b.fixes_bug("This file pertains to the A80-154 spec")
+        False
+        >>> b.fixes_bug("This is for March-28")
+        False
+        """
+        if self.__match_string(Config().bug_fix_regexes, \
         re.DOTALL | re.IGNORECASE, commit_message):
             return True
         
-        if self.__match_bug(Config().bug_fix_regexes_case_sensitive, \
+        if self.__match_string(Config().bug_fix_regexes_case_sensitive, \
         re.DOTALL, commit_message):
             return True
 
