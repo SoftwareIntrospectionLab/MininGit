@@ -69,7 +69,7 @@ class NotValidHunkWarning(Exception):
 
 class HunkBlame(Blame):
 
-#    deps = ['Hunks']
+#    deps = ['BugFixMessage']
 
     MAX_BLAMES = 20
 
@@ -316,7 +316,7 @@ class HunkBlame(Blame):
                 n_blames += 1
         
                 if n_blames >= self.MAX_BLAMES:
-                    job_pool.join ()#FIXME
+                    job_pool.join ()
                     self.process_finished_jobs (job_pool, write_cursor)
                     n_blames = 0
             except NotValidHunkWarning as e:

@@ -58,7 +58,6 @@ class BlameJob (Job):
         self.authors = None
 
     def run (self, repo, repo_uri):
-        printdbg("Start to run BlameJob")
         def blame_line (line, p):
             p.feed (line)
 
@@ -184,7 +183,6 @@ class Blame (Extension):
         args = []
 
         while job is not None:
-            printdbg("Processing a finished job")
             if not job.failed:
                 a = self.populate_insert_args(job)
                 args.extend (a)
@@ -196,7 +194,6 @@ class Blame (Extension):
                 job = job_pool.get_next_done (0)
 
         if len(args)>0:
-            printdbg("Inserting results")
             write_cursor.executemany (statement (self.__insert__, self.db.place_holder), args)
             del args
 

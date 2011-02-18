@@ -177,6 +177,7 @@ class FilePaths:
         return self.__dict__['rev']
 
     def update_all(self, repo_id):
+        profiler_start("Update all file paths")
         db = self.__dict__['db']
         cnn = db.connect ()
 
@@ -193,6 +194,7 @@ class FilePaths:
                 old_id = id
         cursor.close()
         cnn.close()
+        profiler_stop("Update all file paths", delete=True)
 
 if __name__ == '__main__':
     import sys
