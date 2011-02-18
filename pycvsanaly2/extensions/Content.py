@@ -19,20 +19,16 @@
 
 from pycvsanaly2.extensions import Extension, register_extension, \
         ExtensionRunError
-from pycvsanaly2.Database import SqliteDatabase, MysqlDatabase, \
-        TableAlreadyExists, statement
+from pycvsanaly2.Database import SqliteDatabase, MysqlDatabase, statement
 from pycvsanaly2.Config import Config
-from pycvsanaly2.utils import printdbg, printerr, printout, \
-        remove_directory, uri_to_filename, to_utf8
+from pycvsanaly2.utils import printdbg, printerr, uri_to_filename, to_utf8
 from pycvsanaly2.profile import profiler_start, profiler_stop
 from FileRevs import FileRevs
 from repositoryhandler.backends import RepositoryCommandError
-from tempfile import mkdtemp, NamedTemporaryFile
 from repositoryhandler.backends.watchers import CAT
 from Jobs import JobPool, Job
 from cStringIO import StringIO
 import os
-from datetime import datetime
 
 # This class holds a single repository retrieve task,
 # and keeps the source code until the object is garbage-collected
@@ -135,6 +131,7 @@ class ContentJob(Job):
         return self.commit_id
 
     def get_file_contents(self):
+        """Returns contents of the file, stripped of whitespace at either end"""
         # An encode will fail if the source code can't be converted to
         # utf-8, ie. it's not already unicode, or latin-1, or something
         # obvious. This almost always means that the file isn't source
@@ -142,9 +139,39 @@ class ContentJob(Job):
         # TODO: I should really throw a "not source" exception,
         # but just doing None is fine for now.
         try:
-            return self.file_contents.encode("utf-8")
+            return self.file_contents.encode("utf-8").strip()
         except:
             return None
+        
+    
+    def get_number_of_lines(self):
+        """Return the number of lines contained within the file, stripped
+        of whitespace at either end.
+        
+        >>> cj = ContentJob(None, None, None, None)
+        >>> cj.file_contents = "Hello"
+        >>> cj.get_number_of_lines()
+        1
+        >>> cj.file_contents = "Hello \\n world"
+        >>> cj.get_number_of_lines()
+        2
+        >>> cj.file_contents = ""
+        >>> cj.get_number_of_lines()
+        0
+        >>> cj.file_contents = None
+        >>> cj.get_number_of_lines()
+        
+        >>> cj.file_contents = "\\n\\n Hello \\n\\n"
+        >>> cj.get_number_of_lines()
+        1
+        """
+        contents = self.get_file_contents()
+        
+        if contents is None:
+            return None
+        
+        return len(contents.splitlines())
+        
 
     def get_file_id(self):
         return self.file_id
@@ -178,6 +205,7 @@ class Content(Extension):
                     commit_id INTEGER NOT NULL,
                     file_id INTEGER NOT NULL,
                     content CLOB NOT NULL,
+                    loc INTEGER,
                     UNIQUE (commit_id, file_id))""")
             except sqlite3.dbapi2.OperationalError:
                 # It's OK if the table already exists
@@ -202,6 +230,7 @@ class Content(Extension):
                     commit_id int(11) NOT NULL,
                     file_id int(11) NOT NULL,
                     content mediumtext NOT NULL,
+                    loc int(11),
                     PRIMARY KEY(id),
                     UNIQUE (commit_id, file_id)
                     ) ENGINE=InnoDB CHARACTER SET=utf8""")
@@ -216,20 +245,6 @@ class Content(Extension):
                 raise
             finally:
                 cursor.close()
-        
-        # This one works regardless of DB
-        try:
-            cursor = connection.cursor()
-            
-            cursor.execute("""CREATE VIEW content_loc as
-            SELECT c.*, (LENGTH(content) - 
-            LENGTH(REPLACE(c.content, x'0a', ''))) + 1 as loc 
-            from content c""")
-        except Exception, e:
-            # Not getting a view created isn't the end of the world
-            pass
-        finally:
-            cursor.close()
 
         connection.commit()
 
@@ -245,12 +260,13 @@ class Content(Extension):
         while finished_job is not None:
             if finished_job.get_file_contents() is not None:
                 try:
-                    query = "insert into content(commit_id, file_id, content) values(?,?,?)"
+                    query = "insert into content(commit_id, file_id, content, loc) values(?,?,?,?)"
 
                     write_cursor.execute(statement(query, db.place_holder), \
                             (finished_job.get_commit_id(), \
                                 finished_job.get_file_id(), \
-                                str(finished_job.get_file_contents())))
+                                str(finished_job.get_file_contents()), \
+                                finished_job.get_number_of_lines()))
 
                 except Exception as e:
                     printerr("Couldn't insert, duplicate record?: %s", (e,))

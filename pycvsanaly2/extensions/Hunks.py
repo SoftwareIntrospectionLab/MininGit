@@ -20,14 +20,11 @@
 from pycvsanaly2.extensions import Extension, register_extension, \
         ExtensionRunError
 from pycvsanaly2.extensions.FilePaths import FilePaths
-from pycvsanaly2.Database import SqliteDatabase, MysqlDatabase, \
-        TableAlreadyExists, statement
-from pycvsanaly2.utils import printdbg, printerr, printout, \
-        remove_directory, uri_to_filename
+from pycvsanaly2.Database import SqliteDatabase, MysqlDatabase, statement, ICursor
+from pycvsanaly2.utils import printdbg, printerr, printout, uri_to_filename
 from pycvsanaly2.profile import profiler_start, profiler_stop
 from pycvsanaly2.PatchParser import parse_patches, RemoveLine, InsertLine, \
-        ContextLine, Patch, BinaryPatch
-import os
+        ContextLine, Patch
 import re
 
 class CommitData:
@@ -68,6 +65,7 @@ class CommitData:
 # and keeps the source code until the object is garbage-collected
 class Hunks(Extension):
     deps = ['Patches']
+    INTERVAL_SIZE = 100
 
     def __prepare_table(self, connection, drop_table=False):
         cursor = connection.cursor()
@@ -237,7 +235,6 @@ class Hunks(Extension):
         connection = self.db.connect()
         read_cursor = connection.cursor()
         read_cursor_1 = connection.cursor()
-        read_cursor_2 = connection.cursor()
         write_cursor = connection.cursor()
         
         # Try to get the repository and get its ID from the database
@@ -260,101 +257,82 @@ class Hunks(Extension):
             raise ExtensionRunError( \
                     "Error creating repository %s. Exception: %s" \
                     %(repo.get_uri(), str(e)))
-            
+        
+        icursor = ICursor(read_cursor, self.INTERVAL_SIZE)
         # Get the patches from this repository
         query = "select p.commit_id, p.patch, s.rev from patches p, scmlog s " + \
                 "where p.commit_id = s.id and " + \
                 "s.repository_id = ? and " + \
                 "p.patch is not NULL"
-        read_cursor.execute(statement(query, db.place_holder),(repo_id,))
+        icursor.execute(statement(query, db.place_holder),(repo_id,))
 
         self.__prepare_table(connection)
         fp = FilePaths(db)
         fp.update_all(repo_id)
+        
+        rs = icursor.fetchmany()
 
-        for row in read_cursor:
-            commit_id = row[0]
-            patch_content = row[1]
-            rev = row[2]
-            
-            # No longer needed according to Zhongpeng's updates, delete if OK
-            #fp.update_for_revision(read_cursor_2, commit_id, repo_id)
-
-            for hunk in self.get_commit_data(patch_content):
-                # The original Java code seems to only pay attention to the
-                # revised code, not the original. New start/end lines won't
-                # be created if the change is simply removed lines.
-                # These hunks are skipped.
-                #if hunk.new_start_line is None:
-                #    continue
-
-                # Get the file ID from the database for linking
-                # TODO: This isn't going to work if two files are committed
-                # with the same name at the same time, eg. __init.py__ in
-                # different paths
-                file_id_query = """select f.id, f.file_name from files f, actions a
-                where a.commit_id = ?
-                and a.file_id = f.id"""
-                #and f.file_name = ?"""
-
-                hunk_file_name = re.sub(r'^[ab]\/', '', hunk.file_name.strip())
-               
-                #printdbg("Doing select with: " + str(commit_id) + "," +  re.search("[^\/]*$", hunk_file_name).group(0))
-
-                read_cursor_1.execute(statement(file_id_query, db.place_holder), \
-                        #(commit_id, re.search("[^\/]*$", hunk_file_name).group(0)))
-                        (commit_id,))
-                possible_files = read_cursor_1.fetchall()
-            
-                file_id = None
-
-                printdbg("Got " + str(len(possible_files)) + " possible files")
-
-                if len(possible_files) == 1:
-                    file_id = possible_files[0][0]
-                else:
-                    for possible_file in possible_files:
-                        # Get the paths of the possible matches
-                        path = fp.get_path(possible_file[0], commit_id, repo_id)
-
-                        if path is not None:
-                            #printdbg("Comparing " + path.strip() + " to " + hunk_file_name)
-                            if path.strip() == ("/" + hunk_file_name):
-                                #printdbg("Match found")
+        while rs:
+            for commit_id, patch_content, rev in rs:                
+                for hunk in self.get_commit_data(patch_content):
+                    # Get the file ID from the database for linking
+                    # TODO: This isn't going to work if two files are committed
+                    # with the same name at the same time, eg. __init.py__ in
+                    # different paths. Might get fixed when messing with file paths
+                    file_id_query = """select f.id, f.file_name from files f, actions a
+                    where a.commit_id = ?
+                    and a.file_id = f.id"""
+    
+                    hunk_file_name = re.sub(r'^[ab]\/', '', hunk.file_name.strip())               
+    
+                    read_cursor_1.execute(statement(file_id_query, db.place_holder), \
+                            (commit_id,))
+                    possible_files = read_cursor_1.fetchall()
+                
+                    file_id = None
+    
+                    if len(possible_files) == 1:
+                        file_id = possible_files[0][0]
+                    else:
+                        for possible_file in possible_files:
+                            # Get the paths of the possible matches
+                            path = fp.get_path(possible_file[0], commit_id, repo_id)
+    
+                            if path is not None:
+                                if path.strip() == ("/" + hunk_file_name):
+                                    file_id = possible_file[0]
+                                    break
+                                    break
+                           
+                            if possible_file[1] == hunk_file_name:
                                 file_id = possible_file[0]
                                 break
                                 break
-
-                        #printdbg("No match for old paths, is file name current?")
-
-                       # printdbg("Comparing " + possible_file[1] + " to " + hunk_file_name)                        
-                        if possible_file[1] == hunk_file_name:
-                            #printdbg("Match found")
-                            file_id = possible_file[0]
-                            break
-                            break
-
-                if file_id == None:
-                    if repo.type == "git":
-                        # The liklihood is that this is a merge, not a
-                        # missing ID from some data screwup.
-                        # We'll just continue and throw this away
+    
+                    if file_id == None:
+                        if repo.type == "git":
+                            # The liklihood is that this is a merge, not a
+                            # missing ID from some data screwup.
+                            # We'll just continue and throw this away
+                            continue
+                        else:
+                            printerr("No file ID found for hunk " + hunk_file_name)
+                            
+    
+                    insert = """insert into hunks(file_id, commit_id,
+                                old_start_line, old_end_line, new_start_line, new_end_line)
+                                values(?,?,?,?,?,?)"""
+                    try:
+                        write_cursor.execute(statement(insert, db.place_holder), \
+                                (file_id, commit_id, hunk.old_start_line, \
+                                hunk.old_end_line, hunk.new_start_line, \
+                                hunk.new_end_line))
+                    except Exception, e:
+                        printerr("Couldn't insert hunk, duplicate record? " + str(e))
                         continue
-                    else:
-                        printerr("No file ID found for hunk " + hunk_file_name)
-                        
-
-                insert = """insert into hunks(file_id, commit_id,
-                            old_start_line, old_end_line, new_start_line, new_end_line)
-                            values(?,?,?,?,?,?)"""
-                try:
-                    write_cursor.execute(statement(insert, db.place_holder), \
-                            (file_id, commit_id, hunk.old_start_line, \
-                            hunk.old_end_line, hunk.new_start_line, \
-                            hunk.new_end_line))
-                except Exception, e:
-                    printerr("Couldn't insert hunk, duplicate record? " + str(e))
-                    continue
+                
+            connection.commit
+            rs = icursor.fetchmany()
 
         read_cursor.close()
         read_cursor_1.close()

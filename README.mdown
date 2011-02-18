@@ -27,26 +27,29 @@ Requirements
 CVSAnalY has the following dependencies:
 
 * Python 2.5 or higher
-* RepositoryHandler (comes with `pip` installation)
+* RepositoryHandler (can be installed by `pip` requirements, if you know how to use that. More instructions forthcoming. This needs to be placed in your [PYTHONPATH][pp].)
 
-    `git clone https://github.com/Lewisham/repositoryhandler.git`
-* Guilty (If you need to run Blame or HunkBlame extensions
+    `git clone https://github.com/SoftwareIntrospectionLab/repositoryhandler.git`
+* Guilty (If you need to run Blame or HunkBlame extensions, also needs to be discoverable in the [PYTHONPATH][pp])
 
 	`git clone http://git.libresoft.es/guilty`
-* cvs (optional, for CVS support)
-* subversion (optional, for SVN support)
-* git (optional, for Git support)
-* Python MySQLDB (optional but recommended)
+* CVS (optional, for CVS support)
+* Subversion (optional, for SVN support)
+* Git (optional, for Git support)
+* Python MySQLDb (optional, but of course required if you wish to actually use MySQL as your database engine!)
 
 Install
 -------
 
-You can install cvsanaly2 running setup.py script:
+You don't need to do anything if you are happy using CVSAnalY from the path you downloaded it to. This is easiest if you intend on staying up-to-date with our releases.
+
+If you want to install it to a system location, you can do this by running the `setup.py` script:
 
     python setup.py install
 
-If you don't install CVSAnalY with root privileges, add to your $PATH
-the directory which contains cvsanaly (cvsanalydir is the directory
+If you do this, you'll need to remember to run this every time you get a new release.
+
+If you don't have root privledges, you can just add CVSAnalY to your $PATH (cvsanalydir is the directory
 where CVSAnalY is installed):
 
     export PATH=$PATH:cvsanalydir
@@ -71,6 +74,13 @@ version of your repository, and then run cvsanaly2:
 
 More options, and a more detailed info about the options, can be
 learnt by running `cvsanaly2 --help`
+
+If you're having problems
+-------------------------
+### Packet bigger than max_allowed_packet
+Sometimes, a lot of data can pass between CVSAnalY and MySQL, and packet limits are set too small.
+
+Follow the instructions [here](http://stackoverflow.com/questions/93128/mysql-got-a-packet-bigger-than-max-allowed-packet-bytes/104176#104176).
 
 How to get the original CVSAnalY2
 ---------------------------------
@@ -98,6 +108,7 @@ Fork authors
 * Chris Lewis, <cflewis@soe.ucsc.edu>
 * Zhongpeng Lin
 * Xiaoyan Zhu
+* Caitlin Sadowski
 * Jim Whitehead (advisor), <ejw@soe.ucsc.edu>
 
 
@@ -116,4 +127,6 @@ Contributors
 * Martin Michlmayr, <tbm@debian.org>
 * Alvaro del Castillo, <acs@barrapunto.com>
 * Santiago Duenas, <sduenas@libresoft.es>
+
+[pp]: http://docs.python.org/using/cmdline.html#envvar-PYTHONPATH
 
