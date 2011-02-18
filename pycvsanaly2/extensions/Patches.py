@@ -17,19 +17,13 @@
 # Authors :
 #       Carlos Garcia Campos <carlosgc@gsyc.escet.urjc.es>
 
-import os
-import re
-from subprocess import Popen, PIPE
 from repositoryhandler.backends.watchers import DIFF
 
 from pycvsanaly2.Database import (SqliteDatabase, MysqlDatabase, TableAlreadyExists,
                                   statement, ICursor)
-from pycvsanaly2.Log import LogReader
 from pycvsanaly2.Config import Config
 from pycvsanaly2.extensions import Extension, register_extension, ExtensionRunError
 from pycvsanaly2.utils import to_utf8, printerr, printdbg, uri_to_filename
-from pycvsanaly2.FindProgram import find_program
-from pycvsanaly2.Command import Command, CommandError
 from cStringIO import StringIO
 from Jobs import JobPool, Job
 
@@ -54,6 +48,8 @@ class PatchJob(Job):
 
         self.repo.remove_watch (DIFF, wid)
         io.close ()
+        
+        self.data = self.data.strip()
 
         return self.data
 
@@ -114,8 +110,8 @@ class Patches (Extension):
                 cursor.execute ("CREATE TABLE patches (" +
                                 "id INT primary key," +
                                 "commit_id integer," +
-                                "patch LONGTEXT," +
-                                "FOREIGN KEY (commit_id) REFERENCES scmlog(id)" +
+                                "patch LONGTEXT" +
+                                # "FOREIGN KEY (commit_id) REFERENCES scmlog(id)" +
                                 ") ENGINE=InnoDB, CHARACTER SET=utf8")
             except _mysql_exceptions.OperationalError, e:
                 if e.args[0] == 1050:
