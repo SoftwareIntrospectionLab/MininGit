@@ -124,6 +124,7 @@ class ContentJob(Job):
         return self.commit_id
 
     def get_file_contents(self):
+        """Returns contents of the file, stripped of whitespace at either end"""
         # An encode will fail if the source code can't be converted to
         # utf-8, ie. it's not already unicode, or latin-1, or something
         # obvious. This almost always means that the file isn't source
@@ -131,13 +132,14 @@ class ContentJob(Job):
         # TODO: I should really throw a "not source" exception,
         # but just doing None is fine for now.
         try:
-            return self.file_contents.encode("utf-8")
+            return self.file_contents.encode("utf-8").strip()
         except:
             return None
         
     
     def get_number_of_lines(self):
-        """Return the number of lines contained within the file.
+        """Return the number of lines contained within the file, stripped
+        of whitespace at either end.
         
         >>> cj = ContentJob(None, None, None, None)
         >>> cj.file_contents = "Hello"
@@ -154,7 +156,7 @@ class ContentJob(Job):
         
         >>> cj.file_contents = "\\n\\n Hello \\n\\n"
         >>> cj.get_number_of_lines()
-        4
+        1
         """
         contents = self.get_file_contents()
         
@@ -236,20 +238,6 @@ class Content(Extension):
                 raise
             finally:
                 cursor.close()
-        
-        # This one works regardless of DB
-        try:
-            cursor = connection.cursor()
-            
-            cursor.execute("""CREATE VIEW content_loc as
-            SELECT c.*, (LENGTH(content) - 
-            LENGTH(REPLACE(c.content, x'0a', ''))) + 1 as loc 
-            from content c""")
-        except Exception, e:
-            # Not getting a view created isn't the end of the world
-            pass
-        finally:
-            cursor.close()
 
         connection.commit()
 
