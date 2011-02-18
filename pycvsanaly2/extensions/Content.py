@@ -120,9 +120,6 @@ class ContentJob(Job):
                 #fd.close()
                 pass
 
-    def get_commit_id(self):
-        return self.commit_id
-
     def get_file_contents(self):
         """Returns contents of the file, stripped of whitespace at either end"""
         # An encode will fail if the source code can't be converted to
@@ -143,19 +140,19 @@ class ContentJob(Job):
         
         >>> cj = ContentJob(None, None, None, None)
         >>> cj.file_contents = "Hello"
-        >>> cj.get_number_of_lines()
+        >>> cj.file_number_of_lines
         1
         >>> cj.file_contents = "Hello \\n world"
-        >>> cj.get_number_of_lines()
+        >>> cj.file_number_of_lines
         2
         >>> cj.file_contents = ""
-        >>> cj.get_number_of_lines()
+        >>> cj.file_number_of_lines
         0
         >>> cj.file_contents = None
-        >>> cj.get_number_of_lines()
+        >>> cj.file_number_of_lines
         
         >>> cj.file_contents = "\\n\\n Hello \\n\\n"
-        >>> cj.get_number_of_lines()
+        >>> cj.file_number_of_lines
         1
         """
         contents = self.get_file_contents()
@@ -164,10 +161,10 @@ class ContentJob(Job):
             return None
         
         return len(contents.splitlines())
-        
-
-    def get_file_id(self):
-        return self.file_id
+    
+    file_contents = property(get_file_contents)
+    file_number_of_lines = property(get_number_of_lines)
+    
 
 
 class Content(Extension):
@@ -249,15 +246,15 @@ class Content(Extension):
         # but in the source, these are referred to as commit IDs.
         # Don't ask me why!
         while finished_job is not None:
-            if finished_job.get_file_contents() is not None:
+            if finished_job.file_contents is not None:
                 try:
                     query = "insert into content(commit_id, file_id, content, loc) values(?,?,?,?)"
 
                     write_cursor.execute(statement(query, db.place_holder), \
-                            (finished_job.get_commit_id(), \
-                                finished_job.get_file_id(), \
-                                str(finished_job.get_file_contents()), \
-                                finished_job.get_number_of_lines()))
+                            (finished_job.commit_id, \
+                                finished_job.file_id, \
+                                str(finished_job.file_contents), \
+                                finished_job.file_number_of_lines))
 
                 except Exception as e:
                     printerr("Couldn't insert, duplicate record?: %s", (e,))
