@@ -430,6 +430,8 @@ class SqliteDatabase (Database):
                             "commit_id integer" +
                             ")")
             cursor.execute ("CREATE index files_file_name on files(file_name)")
+            cursor.execute("CREATE index scmlog_date on scmlog(date)")
+            cursor.execute("CREATE index scmlog_repo on scmlog(repository_id)")
             self._create_views (cursor)
         except sqlite3.dbapi2.OperationalError:
             raise TableAlreadyExists
@@ -508,7 +510,9 @@ class MysqlDatabase (Database):
                             "repository_id INT," +
                             "FOREIGN KEY (committer_id) REFERENCES people(id)," +
                             "FOREIGN KEY (author_id) REFERENCES people(id)," +
-                            "FOREIGN KEY (repository_id) REFERENCES repositories(id)" + 
+                            "FOREIGN KEY (repository_id) REFERENCES repositories(id)," +
+                            "index(repository_id)," +
+                            "index(date)" +
                             ") CHARACTER SET=utf8 ENGINE=MyISAM")
             cursor.execute ("CREATE TABLE files (" +
                             "id INT primary key," +
