@@ -132,7 +132,7 @@ class Config:
         except:
             pass
         try:
-            self.bug_fix_regexes = config.bug_fix_regexes
+            self.bug_fix_regexes_case_sensitive = config.bug_fix_regexes_case_sensitive
         except:
             pass
 

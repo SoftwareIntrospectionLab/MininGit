@@ -48,13 +48,29 @@ def uri_is_remote (uri):
         return not uri.startswith ("file://")
 
 def uri_to_filename (uri):
+    """ Converts a URI to an absolute path.
+    If the URI is a file:// path, it converts it.
+    It the URI starts with ~, it expands to the user's home directory.
+    
+    Returns None if URI is remote.
+    
+    >>> uri_to_filename("file:///Users/cflewis/Documents")
+    '/Users/cflewis/Documents'
+    
+    >>> uri_to_filename("~/Documents")
+    '/Users/cflewis/Documents'
+    
+    """
     if uri_is_remote (uri):
         return None
 
     if uri.startswith ("file://"):
         return uri[uri.find ("file://") + len ("file://"):]
 
-    return uri
+    if uri.startswith("~"):
+        uri = os.path.expanduser(uri)
+        
+    return os.path.abspath(uri)
 
 def printout (str = '\n', args = None):
     if config.quiet:
