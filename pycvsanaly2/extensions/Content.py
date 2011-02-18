@@ -154,6 +154,14 @@ class ContentJob(Job):
         >>> cj.file_contents = "\\n\\n Hello \\n\\n"
         >>> cj.file_number_of_lines
         1
+        
+        >>> cj.file_contents = "a\\nb"
+        >>> cj.file_number_of_lines
+        2
+        
+        >>> cj.file_contents = "a\\nb\\nc\\nd\\nea\\nb\\nc\\nd\\ne"
+        >>> cj.file_number_of_lines
+        9
         """
         contents = self.get_file_contents()
         
