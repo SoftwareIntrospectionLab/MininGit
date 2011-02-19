@@ -23,17 +23,25 @@ from pycvsanaly2.profile import profiler_start, profiler_stop
 from pycvsanaly2.utils import printdbg, printerr, uri_to_filename
 from pycvsanaly2.Database import (SqliteDatabase, MysqlDatabase, TableAlreadyExists,
                                   statement)
+from repositoryhandler.backends import RepositoryCommandError
+from repositoryhandler.backends.watchers import BLAME
+from Guilty.Parser import create_parser
 from Jobs import JobPool, Job
 from FilePaths import FilePaths
+import os
+import sys
 
 
-class HunkBlameJob(BlameJob):
+class HunkBlameJob(Job):
     class BlameContentHandler(BlameJob.BlameContentHandler):
         def __init__(self, hunks):
             self.hunks = hunks
             self.bug_revs = {}
 
         def line(self,blame_line):
+            if not self.profiled:
+                profiler_start("Processing blame output for %s",(self.filename))
+                self.profiled=True 
             for hunk_id, start_line, end_line in self.hunks:
                 if blame_line.line>= start_line and blame_line.line<= end_line:
                     if self.bug_revs.get(hunk_id) is None:
@@ -42,8 +50,10 @@ class HunkBlameJob(BlameJob):
                     break
 
         def start_file (self, filename):
-            pass
+            self.filename=filename
+            self.profiled = False
         def end_file (self):
+            profiler_stop("Processing blame output for %s",(self.filename))
             if len(self.bug_revs)==0:
                 printdbg("No bug revision found in this file")
 
@@ -53,6 +63,47 @@ class HunkBlameJob(BlameJob):
         self.path = path
         self.rev = rev
         self.bug_revs = {}
+        
+    def run (self, repo, repo_uri):
+        profiler_start("Running HunkBlameJob for %s@%s", (self.path,self.rev))
+        def blame_line (line, p):
+            p.feed (line)
+
+        start = sys.maxint
+        end = 0
+        for hunk in self.hunks:
+            if hunk[1]<start:
+                start = hunk[1]
+            if hunk[2]>end:
+                end=hunk[2]
+                
+        repo_type = repo.get_type ()
+        if repo_type == 'cvs':
+            # CVS paths contain the module stuff
+            uri = repo.get_uri_for_path (repo_uri)
+            module = uri[len (repo.get_uri ()):].strip ('/')
+
+            if module != '.':
+                path = self.path[len (module):].strip ('/')
+            else:
+                path = self.path.strip ('/')
+        else:
+            path = self.path.strip ('/')
+
+        p = create_parser (repo.get_type (), self.path)
+        out = self.get_content_handler()
+        p.set_output_device (out)
+        wid = repo.add_watch (BLAME, blame_line, p)
+        try:
+            repo.blame (os.path.join (repo_uri, path), self.rev, start=start, end=end)
+            self.collect_results(out)
+        except RepositoryCommandError, e:
+            self.failed = True
+            printerr ("Command %s returned %d (%s)", (e.cmd, e.returncode, e.error))
+        p.end ()
+        repo.remove_watch(BLAME, wid)
+        profiler_stop("Running HunkBlameJob for %s@%s", (self.path,self.rev), delete=True)
+
 
     def get_content_handler(self):
         return self.BlameContentHandler(self.hunks)
@@ -71,7 +122,7 @@ class HunkBlame(Blame):
 
 #    deps = ['BugFixMessage']
 
-    MAX_BLAMES = 20
+    MAX_BLAMES = 2
 
     # Insert query
     __insert__ = 'INSERT INTO hunk_blames (hunk_id, bug_commit_id) ' + \
@@ -316,9 +367,12 @@ class HunkBlame(Blame):
                 n_blames += 1
         
                 if n_blames >= self.MAX_BLAMES:
-                    job_pool.join ()
-                    self.process_finished_jobs (job_pool, write_cursor)
-                    n_blames = 0
+                    processed_jobs = self.process_finished_jobs (job_pool, write_cursor)
+                    n_blames -= processed_jobs
+                    if processed_jobs<=self.MAX_BLAMES/5:
+                        profiler_start("Joining unprocessed jobs")
+                        job_pool.join()
+                        profiler_stop("Joining unprocessed jobs", delete=True)
             except NotValidHunkWarning as e:
                 printerr("Not a valid hunk: "+str(e))
             finally:

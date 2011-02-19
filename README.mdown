@@ -35,7 +35,7 @@ CVSAnalY has the following dependencies:
 	`git clone http://git.libresoft.es/guilty`
 * CVS (optional, for CVS support)
 * Subversion (optional, for SVN support)
-* Git (optional, for Git support)
+* Git (optional, for Git support. Must be >= 1.7.1 for Patches/Hunks extensions to work)
 * Python MySQLDb (optional, but of course required if you wish to actually use MySQL as your database engine!)
 
 Install

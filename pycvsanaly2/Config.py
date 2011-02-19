@@ -43,8 +43,8 @@ class Config:
                        # Threading options
                        'max_threads' : 10,
                        # Regex for matching bug fixes in BugFixMessage
-                       'bug_fix_regexes' : ["defect(es)?", "patch(ing|es)?", "bug(s|fix(es)?)?", 
-                "fix(es|ed)?", "\#\d+", ],
+                       'bug_fix_regexes' : ["defect(s)?", "patch(ing|es|ed)?", "bug(s|fix(es)?)?", 
+                "fix(es|ed)?", "debug(ged)?", "\#\d+", ],
                        'bug_fix_regexes_case_sensitive' : ["[A-Z]+-\d+",],
                        }
     
@@ -129,6 +129,10 @@ class Config:
             pass
         try:
             self.bug_fix_regexes = config.bug_fix_regexes
+        except:
+            pass
+        try:
+            self.bug_fix_regexes_case_sensitive = config.bug_fix_regexes_case_sensitive
         except:
             pass
 
