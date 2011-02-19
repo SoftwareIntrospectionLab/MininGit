@@ -75,10 +75,9 @@ class BugFixMessage(Extension):
     def __match_string(self, regexes, flags, string):
         """Checks whether a string matches a series of regexes"""
         for r in regexes:
-            printdbg("Checking " + str(r))
             # The bit at the beginning and end matches whitespace, punctuation
             # or the start or end of a line.
-            delimiters = "[\s\.,;]"
+            delimiters = "[\s\.,;\!\?\'\"\/\\\]"
             if re.search("(" + delimiters + "+|^)" + r + "(" + delimiters + "+|$)", string, flags):
                 printdbg("[STRING] matched on " + str(r) + " " + string)
                 return True
@@ -86,9 +85,6 @@ class BugFixMessage(Extension):
         return False
 
 
-    # This matches comments about defects, patching, bugs, bugfixes,
-    # fixes, references to bug numbers like #1234, and JIRA style
-    # comments, like HARMONY-1234 or GH-2.
     def fixes_bug(self, commit_message):
         """Check whether a commit message indicated a bug was present.
         
@@ -141,7 +137,35 @@ class BugFixMessage(Extension):
         >>> b.fixes_bug("Found X; debugged and solved.")
         True
         
+        # Regression tests from Apache
+        # When adding these, keep weird punctuation intact.
+        >>> b.fixes_bug("Fixups to build the whole shebang once again.")
+        True
+        >>> b.fixes_bug("Change some INFO messages to DEBUG messages.")
+        True
+        >>> b.fixes_bug("Put back PR#6347")
+        True
+        >>> b.fixes_bug("Typo fixage..")
+        True
+        >>> b.fixes_bug("another typo/fixup")
+        True
+        >>> b.fixes_bug("Refix the entity tag comparisons")
+        True
+        >>> b.fixes_bug("Closeout PR#721")
+        True
+        >>> b.fixes_bug("SECURITY: CVE-2010-0408 (cve.mitre.org)")
+        True
+        >>> b.fixes_bug("    debugged the require_one and require_all")
+        True
+        >>> b.fixes_bug("    various style fixups / general changes")
+        True
+        >>> b.fixes_bug("    Win32: Eliminate useless debug error message")
+        True
+        
         # Things that shouldn't match
+        # Refactoring could go either way, depending on whether you think
+        # renaming/refactoring is a "bug fix." Right now, we don't call that
+        # a "bug"
         >>> b.fixes_bug("Added method print_debug()")
         False
         >>> b.fixes_bug("Altered debug_log()")

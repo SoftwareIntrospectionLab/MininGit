@@ -38,7 +38,7 @@ class ContentJob(Job):
         self.file_id = file_id
         self.rev = rev
         self.path = path
-        self.file_contents = ""
+        self._file_contents = ""
 
     def run(self, repo, repo_uri):
         def write_line (data, io):
@@ -108,7 +108,7 @@ class ContentJob(Job):
             printerr("Failure due to error")
         else:
             try:
-                self.file_contents = io.getvalue()
+                self._file_contents = io.getvalue()
                 io.close()
             except Exception, e:
                 printerr("Error getting contents." +
@@ -129,7 +129,7 @@ class ContentJob(Job):
         # TODO: I should really throw a "not source" exception,
         # but just doing None is fine for now.
         try:
-            return self.file_contents.encode("utf-8").strip()
+            return self._file_contents.encode("utf-8").strip()
         except:
             return None
         
@@ -163,7 +163,7 @@ class ContentJob(Job):
         >>> cj.file_number_of_lines
         9
         """
-        contents = self.get_file_contents()
+        contents = self._file_contents
         
         if contents is None:
             return None
@@ -202,9 +202,11 @@ class Content(Extension):
                     id INTEGER PRIMARY KEY,
                     commit_id INTEGER NOT NULL,
                     file_id INTEGER NOT NULL,
-                    content CLOB NOT NULL,
+                    content CLOB,
                     loc INTEGER,
                     UNIQUE (commit_id, file_id))""")
+                cursor.execute("""create index commit_id_index on content(commit_id)""")
+                cursor.execute("""create index commit_id_index on content(file_id)""")
             except sqlite3.dbapi2.OperationalError:
                 # It's OK if the table already exists
                 pass
@@ -227,10 +229,12 @@ class Content(Extension):
                     id int(11) NOT NULL auto_increment,
                     commit_id int(11) NOT NULL,
                     file_id int(11) NOT NULL,
-                    content mediumtext NOT NULL,
+                    content mediumtext,
                     loc int(11),
                     PRIMARY KEY(id),
-                    UNIQUE (commit_id, file_id)
+                    UNIQUE (commit_id, file_id),
+                    index(commit_id),
+                    index(file_id)
                     ) ENGINE=InnoDB CHARACTER SET=utf8""")
 
             except _mysql_exceptions.OperationalError, e:
@@ -254,18 +258,17 @@ class Content(Extension):
         # but in the source, these are referred to as commit IDs.
         # Don't ask me why!
         while finished_job is not None:
-            if finished_job.file_contents is not None:
-                try:
-                    query = "insert into content(commit_id, file_id, content, loc) values(?,?,?,?)"
+            try:
+                query = "insert into content(commit_id, file_id, content, loc) values(?,?,?,?)"
 
-                    write_cursor.execute(statement(query, db.place_holder), \
-                            (finished_job.commit_id, \
-                                finished_job.file_id, \
-                                str(finished_job.file_contents), \
-                                finished_job.file_number_of_lines))
+                write_cursor.execute(statement(query, db.place_holder), \
+                        (finished_job.commit_id, \
+                            finished_job.file_id, \
+                            str(finished_job.file_contents), \
+                            finished_job.file_number_of_lines))
 
-                except Exception as e:
-                    printerr("Couldn't insert, duplicate record?: %s", (e,))
+            except Exception as e:
+                printerr("Couldn't insert, duplicate record?: %s", (e,))
             processed_jobs+=1
             finished_job = job_pool.get_next_done(0)
             

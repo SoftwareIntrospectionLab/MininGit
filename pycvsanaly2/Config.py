@@ -44,8 +44,8 @@ class Config:
                        'max_threads' : 10,
                        # Regex for matching bug fixes in BugFixMessage
                        'bug_fix_regexes' : ["defect(s)?", "patch(ing|es|ed)?", "bug(s|fix(es)?)?", 
-                "fix(es|ed)?", "debug(ged)?", "\#\d+", ],
-                       'bug_fix_regexes_case_sensitive' : ["[A-Z]+-\d+",],
+                "(re)?fix(es|ed|ing|age|\s?up(s)?)?", "debug(ged)?", "\#\d+", "back\s?out", "revert(ing|ed)?"],
+                       'bug_fix_regexes_case_sensitive' : ["[A-Z]+(-|#)\d+", "CVE-\d+-\d+"],
                        }
     
     def __init__ (self):
