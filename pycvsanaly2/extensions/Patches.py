@@ -207,14 +207,13 @@ class Patches (Extension):
                 job = PatchJob(rev, commit_id)
                 job_pool.push(job)
 
+                i = i + 1
                 if i >= queuesize:
                     printdbg("Queue is now at %d, flushing to database", (i,))
                     job_pool.join()
                     self.__process_finished_jobs(job_pool, write_cursor, db)
                     cnn.commit()
                     i = 0
-                else:
-                    i = i + 1
 
             cnn.commit()
             rs = icursor.fetchmany ()

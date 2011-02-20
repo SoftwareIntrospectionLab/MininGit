@@ -58,7 +58,7 @@ class BlameJob (Job):
         self.authors = None
 
     def run (self, repo, repo_uri):
-        printdbg("Start to run BlameJob")
+        profiler_start("Running BlameJob for %s@%s", (self.path,self.rev))
         def blame_line (line, p):
             p.feed (line)
 
@@ -88,6 +88,7 @@ class BlameJob (Job):
             printerr ("Command %s returned %d (%s)", (e.cmd, e.returncode, e.error))
         p.end ()
         repo.remove_watch(BLAME, wid)
+        profiler_stop("Running BlameJob for %s@%s", (self.path,self.rev), delete=True)
         
 
     def collect_results(self, content_handler):
@@ -182,23 +183,23 @@ class Blame (Extension):
             job = job_pool.get_next_done ()
 
         args = []
-
+        
+        processed_jobs = 0
         while job is not None:
-            printdbg("Processing a finished job")
             if not job.failed:
                 a = self.populate_insert_args(job)
                 args.extend (a)
                 self.id_counter += len (a)
-
+            processed_jobs+=1
             if unlocked:
                 job = job_pool.get_next_done_unlocked ()
             else:
                 job = job_pool.get_next_done (0)
 
         if len(args)>0:
-            printdbg("Inserting results")
             write_cursor.executemany (statement (self.__insert__, self.db.place_holder), args)
             del args
+        return processed_jobs
 
     def populate_insert_args(self, job):
         authors = job.get_authors ()
@@ -289,9 +290,9 @@ class Blame (Extension):
             n_blames += 1
 
             if n_blames >= self.MAX_BLAMES:
+                job_pool.join()
                 self.process_finished_jobs (job_pool, write_cursor)
                 n_blames = 0
-
         job_pool.join ()
         self.process_finished_jobs (job_pool, write_cursor, True)
 

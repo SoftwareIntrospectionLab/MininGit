@@ -57,7 +57,7 @@ class FilePaths:
         prev_commit_id = self.__dict__['rev']
         self.__dict__['rev'] = commit_id
 
-        profiler_start ("Updating adjacency matrix for commit %d", (commit_id,))
+#        profiler_start ("Updating adjacency matrix for commit %d", (commit_id,))
 
         if self.__dict__['adj'] is None:
             adj = FilePaths.Adj ()
@@ -77,9 +77,9 @@ class FilePaths:
         if not repo_files:
             # Get and cache all the files table
             query = "select id, file_name from files where repository_id = ?"
-            profiler_start ("Getting files for repository %d", (repo_id,))
+#            profiler_start ("Getting files for repository %d", (repo_id,))
             cursor.execute (statement (query, db.place_holder), (repo_id,))
-            profiler_stop ("Getting files for repository %d", (repo_id,), True)
+#            profiler_stop ("Getting files for repository %d", (repo_id,), True)
             rs = cursor.fetchmany ()
             while rs:
                 for id, file_name in rs:
@@ -96,9 +96,9 @@ class FilePaths:
                 "and af.commit_id = ? " + \
                 "and af.type = 'V' " + \
                 "and f.repository_id = ?"
-        profiler_start ("Getting new file names for commit %d", (commit_id,))
+#        profiler_start ("Getting new file names for commit %d", (commit_id,))
         cursor.execute (statement (query, db.place_holder), (commit_id, repo_id))
-        profiler_stop ("Getting new file names for commit %d", (commit_id,), True)
+#        profiler_stop ("Getting new file names for commit %d", (commit_id,), True)
         rs = cursor.fetchmany ()
         while rs:
             for id, file_name in rs:
@@ -116,9 +116,9 @@ class FilePaths:
             query += "and fl.commit_id between ? and ? "
             args = (prev_commit_id, commit_id, repo_id)
         query += "and f.repository_id = ?"
-        profiler_start ("Getting file links for commit %d", (commit_id,))
+#        profiler_start ("Getting file links for commit %d", (commit_id,))
         cursor.execute (statement (query, db.place_holder), args)
-        profiler_stop ("Getting file links for commit %d", (commit_id,), True)
+#        profiler_stop ("Getting file links for commit %d", (commit_id,), True)
         rs = cursor.fetchmany ()
         while rs:
             for f1, f2 in rs:
@@ -127,13 +127,13 @@ class FilePaths:
 
         self.__dict__['cached_adj'][commit_id] = deepcopy(adj)
 
-        profiler_stop ("Updating adjacency matrix for commit %d", (commit_id,), True)
+#        profiler_stop ("Updating adjacency matrix for commit %d", (commit_id,), True)
 
     def __build_path (self, file_id, adj):
         if file_id not in adj.adj:
             return None
 
-        profiler_start ("Building path for file %d", (file_id,))
+#        profiler_start ("Building path for file %d", (file_id,))
         
         tokens = []
         id = file_id
@@ -143,12 +143,12 @@ class FilePaths:
             #use get instead of index to avoid key error
             id = adj.adj.get(id) 
 
-        profiler_stop ("Building path for file %d", (file_id,), True)
+#        profiler_stop ("Building path for file %d", (file_id,), True)
 
         return "/" + "/".join (tokens)
 
     def get_path (self, file_id, commit_id, repo_id):
-        profiler_start ("Getting path for file %d at commit %d", (file_id, commit_id))
+#        profiler_start ("Getting path for file %d at commit %d", (file_id, commit_id))
         adj = self.__dict__['cached_adj'].get(commit_id)
         if adj is not None:
             self.__dict__['adj'] = adj
@@ -161,7 +161,7 @@ class FilePaths:
             adj = self.__dict__['adj']
         path = self.__build_path (file_id, adj)
 
-        profiler_stop ("Getting path for file %d at commit %d", (file_id, commit_id), True)
+#        profiler_stop ("Getting path for file %d at commit %d", (file_id, commit_id), True)
 
         return path
 
@@ -177,6 +177,7 @@ class FilePaths:
         return self.__dict__['rev']
 
     def update_all(self, repo_id):
+        profiler_start("Update all file paths")
         db = self.__dict__['db']
         cnn = db.connect ()
 
@@ -193,6 +194,7 @@ class FilePaths:
                 old_id = id
         cursor.close()
         cnn.close()
+        profiler_stop("Update all file paths", delete=True)
 
 if __name__ == '__main__':
     import sys
