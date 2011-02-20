@@ -121,14 +121,7 @@ class ContentJob(Job):
                 # <http://www.mail-archive.com/bazaar-commits@lists.canonical.com/msg06260.html>
                 #fd.close()
                 pass
-
-        # Returning a value is probably *not* what run does, but we'll just
-        # assume it for now.
-#        print "Before return: %s"%(datetime.now()-start)
-        return self.file_contents
-
-    def get_commit_id(self):
-        return self.commit_id
+                
 
     def get_file_contents(self):
         """Returns contents of the file, stripped of whitespace at either end"""
