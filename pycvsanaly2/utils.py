@@ -57,8 +57,9 @@ def uri_to_filename (uri):
     >>> uri_to_filename("file:///Users/cflewis/Documents")
     '/Users/cflewis/Documents'
     
-    >>> uri_to_filename("~/Documents")
-    '/Users/cflewis/Documents'
+    >>> import os
+    >>> uri_to_filename("~/Documents") == os.path.expanduser("~") + "/Documents"
+    True
     
     """
     if uri_is_remote (uri):
