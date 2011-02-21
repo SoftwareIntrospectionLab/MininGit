@@ -172,8 +172,9 @@ class ContentJob(Job):
                 return None
 
             return len(contents.splitlines())
-
-
+        
+        file_contents = property(get_file_contents)
+        file_number_of_lines = property(get_number_of_lines)
 
 class Content(Extension):
     deps = ['FileTypes']
