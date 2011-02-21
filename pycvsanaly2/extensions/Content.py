@@ -44,7 +44,7 @@ class ContentJob(Job):
         def write_line (data, io):
             io.write (data)
         
-#        start = datetime.now()
+        # start = datetime.now()
         self.repo = repo
         self.repo_uri = repo_uri
         self.repo_type = self.repo.get_type()
@@ -80,12 +80,12 @@ class ContentJob(Job):
             
         done = False
         failed = False
-#        print "Before downloadning file revision: %s"%(datetime.now()-start)
+        # print "Before downloadning file revision: %s"%(datetime.now()-start)
         # Try downloading the file revision
         while not done and not failed:
             try:
                 self.repo.cat(os.path.join(self.repo_uri, self.path), self.rev)
-#                print "After cat: %s"%(datetime.now()-start)
+                # print "After cat: %s"%(datetime.now()-start)
                 done = True
             except RepositoryCommandError, e:
                 if retries > 0:
@@ -103,7 +103,7 @@ class ContentJob(Job):
                 failed = True
                 printerr("Error obtaining %s@%s. Exception: %s", \
                         (self.path, self.rev, str(e)))
-#        print "After downloadning file revision: %s"%(datetime.now()-start)                
+        #print "After downloadning file revision: %s"%(datetime.now()-start)                
         self.repo.remove_watch(CAT, wid)
 
         if failed:
@@ -123,59 +123,56 @@ class ContentJob(Job):
                 pass
                 
 
-    def get_file_contents(self):
-        """Returns contents of the file, stripped of whitespace at either end"""
-        # An encode will fail if the source code can't be converted to
-        # utf-8, ie. it's not already unicode, or latin-1, or something
-        # obvious. This almost always means that the file isn't source
-        # code at all. 
-        # TODO: I should really throw a "not source" exception,
-        # but just doing None is fine for now.
-        try:
-            return self._file_contents.encode("utf-8").strip()
-        except:
-            return None
-        
-    
-    def get_number_of_lines(self):
-        """Return the number of lines contained within the file, stripped
-        of whitespace at either end.
-        
-        >>> cj = ContentJob(None, None, None, None)
-        >>> cj.file_contents = "Hello"
-        >>> cj.file_number_of_lines
-        1
-        >>> cj.file_contents = "Hello \\n world"
-        >>> cj.file_number_of_lines
-        2
-        >>> cj.file_contents = ""
-        >>> cj.file_number_of_lines
-        0
-        >>> cj.file_contents = None
-        >>> cj.file_number_of_lines
-        
-        >>> cj.file_contents = "\\n\\n Hello \\n\\n"
-        >>> cj.file_number_of_lines
-        1
-        
-        >>> cj.file_contents = "a\\nb"
-        >>> cj.file_number_of_lines
-        2
-        
-        >>> cj.file_contents = "a\\nb\\nc\\nd\\nea\\nb\\nc\\nd\\ne"
-        >>> cj.file_number_of_lines
-        9
-        """
-        contents = self._file_contents
-        
-        if contents is None:
-            return None
-        
-        return len(contents.splitlines())
-    
-    file_contents = property(get_file_contents)
-    file_number_of_lines = property(get_number_of_lines)
-    
+        def get_file_contents(self):
+                """Returns contents of the file, stripped of whitespace at either end"""
+                # An encode will fail if the source code can't be converted to
+                # utf-8, ie. it's not already unicode, or latin-1, or something
+                # obvious. This almost always means that the file isn't source
+                # code at all. 
+                # TODO: I should really throw a "not source" exception,
+                # but just doing None is fine for now.
+                try:
+                    return self._file_contents.encode("utf-8").strip()
+                except:
+                    return None
+
+
+        def get_number_of_lines(self):
+            """Return the number of lines contained within the file, stripped
+            of whitespace at either end.
+
+            >>> cj = ContentJob(None, None, None, None)
+            >>> cj.file_contents = "Hello"
+            >>> cj.file_number_of_lines
+            1
+            >>> cj.file_contents = "Hello \\n world"
+            >>> cj.file_number_of_lines
+            2
+            >>> cj.file_contents = ""
+            >>> cj.file_number_of_lines
+            0
+            >>> cj.file_contents = None
+            >>> cj.file_number_of_lines
+
+            >>> cj.file_contents = "\\n\\n Hello \\n\\n"
+            >>> cj.file_number_of_lines
+            1
+
+            >>> cj.file_contents = "a\\nb"
+            >>> cj.file_number_of_lines
+            2
+
+            >>> cj.file_contents = "a\\nb\\nc\\nd\\nea\\nb\\nc\\nd\\ne"
+            >>> cj.file_number_of_lines
+            9
+            """
+            contents = self._file_contents
+
+            if contents is None:
+                return None
+
+            return len(contents.splitlines())
+
 
 
 class Content(Extension):
