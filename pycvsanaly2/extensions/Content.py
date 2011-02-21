@@ -172,9 +172,13 @@ class ContentJob(Job):
         >>> cj.file_number_of_lines
         9
         """
-        contents = self.file_contents
-
-        if contents is None:
+        
+        # Access the internal variable to try and get a count even if
+        # Unicode conversion fails
+        
+        try:
+            contents = self._file_contents.strip()
+        except (UnicodeEncodeError, UnicodeDecodeError):
             return None
 
         return len(contents.splitlines())
