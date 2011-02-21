@@ -82,6 +82,9 @@ Sometimes, a lot of data can pass between CVSAnalY and MySQL, and packet limits 
 
 Follow the instructions [here](http://stackoverflow.com/questions/93128/mysql-got-a-packet-bigger-than-max-allowed-packet-bytes/104176#104176).
 
+### UnicodeEncodeError: 'ascii' codec can't encode character
+This happens because Python is trying to print out a Unicode string to a terminal that has told Python it only supports ASCII. You can co-erce Python into printing Unicode by setting up your [sitecustomize.py](http://diveintopython.org/xml_processing/unicode.html). 
+
 How to get the original CVSAnalY2
 ---------------------------------
 

@@ -133,7 +133,7 @@ class ContentJob(Job):
             # TODO: I should really throw a "not source" exception,
             # but just doing None is fine for now.
             try:
-                return self._file_contents.encode("utf-8").strip()
+                return to_utf8(self._file_contents).strip()
             except:
                 return None
     

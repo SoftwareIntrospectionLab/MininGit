@@ -28,7 +28,7 @@ config = Config ()
 def to_utf8 (string):
     if isinstance (string, unicode):
         return string.encode ('utf-8')
-    elif isinstance (string, str):
+    elif isinstance (string, bytes):
         for encoding in ['ascii', 'utf-8', 'iso-8859-15']:
             try:
                 s = unicode (string, encoding)
