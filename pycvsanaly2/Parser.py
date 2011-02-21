@@ -78,7 +78,7 @@ if __name__ == '__main__':
                 print "Author: %s <%s>" % (commit.author.name, commit.author.email)
             if commit.tags is not None:
                 print "Tags: %s" % (str (commit.tags))
-            print "files: ",
+            print "files: "
             for action in commit.actions:
                 print "%s %s " % (action.type, action.f1),
                 if action.f2 is not None:
