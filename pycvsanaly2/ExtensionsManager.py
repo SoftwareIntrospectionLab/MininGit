@@ -34,23 +34,37 @@ class InvalidDependency (ExtensionException):
         
 class ExtensionsManager:
 
-    def __init__ (self, exts):
+    def __init__ (self, exts, hard_order=False):
         self.exts = {}
+        self.hard_order = hard_order
+        order = 0
+        
         for ext in exts:
+            name = ext
+            
+            if hard_order:
+                name = str(order) + name
+                order = order + 1
+                
             try:
-                self.exts[ext] = get_extension (ext)
+                self.exts[name] = get_extension (ext)
             except ExtensionUnknownError:
                 raise InvalidExtension (ext)
 
             # Add dependencies
-            for dep in self.exts[ext].deps:
-                if dep not in self.exts.keys ():
-                    try:
-                        self.exts[dep] = get_extension (dep)
-                    except:
-                        raise InvalidDependency (ext, dep)
-
+            if not hard_order:
+                for dep in self.exts[ext].deps:
+                    if dep not in self.exts.keys ():
+                        try:
+                            self.exts[dep] = get_extension (dep)
+                        except:
+                            raise InvalidDependency (ext, dep)
+                        
     def run_extension (self, name, extension, repo, uri, db):
+        # Trim off the ordering numeral before printing
+        if self.hard_order:
+            name = name[1:]
+            
         printout ("Executing extension %s", (name,))
         try:
             extension.run (repo, uri, db)
@@ -62,20 +76,23 @@ class ExtensionsManager:
                     
     def run_extensions (self, repo, uri, db):
         done = []
-        for name, extension in [(ext, self.exts[ext] ()) for ext in self.exts]:
+        list = self.exts
+   
+        for name, extension in [(ext, self.exts[ext] ()) for ext in list]:
             if name in done:
                 continue
             done.append (name)
 
             result = True
             # Run dependencies first
-            for dep in extension.deps:
-                if dep in done:
-                    continue
-                result = self.run_extension (dep, self.exts[dep] (), repo, uri, db)
-                done.append (dep)
-                if not result:
-                    break
+            if not self.hard_order:
+                for dep in extension.deps:
+                    if dep in done:
+                        continue
+                    result = self.run_extension (dep, self.exts[dep] (), repo, uri, db)
+                    done.append (dep)
+                    if not result:
+                        break
 
             if not result:
                 printout ("Skipping extension %s since one or more of its dependencies failed", (name,))

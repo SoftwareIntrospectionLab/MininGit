@@ -37,6 +37,7 @@ class Config:
                        'db_database'   : 'cvsanaly',
                        'db_hostname'   : 'localhost',
                        'extensions'    : [],
+                       'hard_order'    : False,
                        # Metrics extension options
                        'metrics_all'   : False,
                        'metrics_noerr' : False,

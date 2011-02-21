@@ -86,7 +86,7 @@ def main (argv):
     long_opts = ["help", "version", "debug", "quiet", "profile", "config-file=", 
                  "repo-logfile=", "save-logfile=", "no-parse", "db-user=", "db-password=",
                  "db-hostname=", "db-database=", "db-driver=", "extensions=",
-                 "metrics-all", "metrics-noerr"]
+                 "hard-order", "metrics-all", "metrics-noerr"]
 
     # Default options
     debug = None
@@ -104,6 +104,7 @@ def main (argv):
     extensions = None
     metrics_all = None
     metrics_noerr = None
+    hard_order = None
 
     try:
         opts, args = getopt.getopt (argv, short_opts, long_opts)
@@ -144,6 +145,8 @@ def main (argv):
             save_logfile = value
         elif opt in ("--extensions", ):
             extensions = value.split (',')
+        elif opt in ("--hard-order"):
+            hard_order = True
         elif opt in ("--metrics-all", ):
             metrics_all = True
         elif opt in ("--metrics-noerr", ):
@@ -188,6 +191,8 @@ def main (argv):
         config.db_database = database
     if extensions is not None:
         config.extensions.extend ([item for item in extensions if item not in config.extensions])
+    if hard_order is not None:
+        config.hard_order = hard_order
     if metrics_all is not None:
         config.metrics_all = metrics_all
     if metrics_noerr is not None:
@@ -242,7 +247,7 @@ def main (argv):
         # TODO: check parser type == logfile type
 
     try:
-        emg = ExtensionsManager (config.extensions)
+        emg = ExtensionsManager (config.extensions, hard_order=config.hard_order)
     except InvalidExtension, e:
         printerr ("Invalid extension %s", (e.name,))
         return 1
