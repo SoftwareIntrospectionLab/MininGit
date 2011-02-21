@@ -251,7 +251,7 @@ class BugFixMessage(Extension):
             else:
                 is_bug_fix = 0
 
-            execute_statement(statement(update, db.placeholder), 
+            execute_statement(statement(update, db.place_holder), 
                               (is_bug_fix, row_id), 
                               write_cursor,
                               db,
