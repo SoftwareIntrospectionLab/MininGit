@@ -156,9 +156,9 @@ if __name__ == '__main__':
     print "rev: %s, committer: %s, date: %s" % (commit.revision, commit.committer, commit.date)
     if commit.author is not None:
         print "Author: %s" % (commit.author)
-    print "files: ",
+    print "files: "
     for action in commit.actions:
-        print "%s %s " % (action.type, action.f1),
+        print "%s %s " % (action.type, action.f1)
         if action.f2 is not None:
             print "(%s: %s) on branch %s" % (action.f2, action.rev, commit.branch or action.branch)
         else:
