@@ -246,7 +246,7 @@ class HunkBlame(Blame):
         """
         cnn = self.db.connect ()
         aux_cursor = cnn.cursor()
-        aux_cursor.execute(statement(query, self.db.place_holder),(file_id))
+        aux_cursor.execute(statement(query, self.db.place_holder),(file_id,))
         all_commits=aux_cursor.fetchall()
         aux_cursor.close()
         cnn.close()
