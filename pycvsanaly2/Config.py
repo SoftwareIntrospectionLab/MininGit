@@ -49,8 +49,7 @@ class Config:
                        }
     
     def __init__ (self):
-        for key, value in self.__shared_state.items():
-            self.__dict__[key] = value
+        self.__dict__ = self.__shared_state
         
     def __getattr__ (self, attr):
         return self.__dict__[attr]
