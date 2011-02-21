@@ -62,13 +62,9 @@ class Parser:
         self.handler.end ()        
     
 if __name__ == '__main__':
-    import sys
-    import os
     from repositoryhandler.backends import create_repository, create_repository_from_path
     from ParserFactory import create_parser_from_logfile, create_parser_from_repository
     from Log import LogReader
-    from Repository import *
-    from utils import *
     
     class StdoutContentHandler (ContentHandler):
         def commit (self, commit):
@@ -80,7 +76,7 @@ if __name__ == '__main__':
                 print "Tags: %s" % (str (commit.tags))
             print "files: "
             for action in commit.actions:
-                print "%s %s " % (action.type, action.f1),
+                print "%s %s " % (action.type, action.f1)
                 if action.f2 is not None:
                     print "(%s: %s) on branch %s" % (action.f2, action.rev, commit.branch or action.branch_f1)
                 else:
