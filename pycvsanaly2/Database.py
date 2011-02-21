@@ -19,7 +19,7 @@
 
 import datetime
 
-from utils import to_utf8, printdbg
+from utils import to_utf8, printdbg, printerr
 
 class DBRepository:
 
@@ -612,6 +612,28 @@ def create_database (driver, database, username = None, password = None, hostnam
         raise e
     
     return db
+
+# Useful DB utility functions
+def execute_statement(statement, parameters, write_cursor, db, error_message, exception=Exception):
+    if isinstance(db, SqliteDatabase):
+        import sqlite3.dbapi2
+        
+        try:
+            write_cursor.execute(statement, parameters)
+        except sqlite3.dbapi2.OperationalError as e:
+            printerr(error_message + ": %s", (e,))
+        except Exception as e:
+            raise exception(e)
+
+    elif isinstance(db, MysqlDatabase):
+        import _mysql_exceptions
+    
+        try:
+            write_cursor.execute(statement, parameters)
+        except _mysql_exceptions.OperationalError as e:
+            printerr(error_message + ": %s", (e,))
+        except Exception as e:
+            raise exception(e)
 
 if __name__ == '__main__':
     db = create_database ('sqlite', '/tmp/foo.db')

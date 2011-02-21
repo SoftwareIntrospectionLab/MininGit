@@ -20,7 +20,8 @@
 from pycvsanaly2.extensions import Extension, register_extension, \
         ExtensionRunError
 from pycvsanaly2.extensions.FilePaths import FilePaths
-from pycvsanaly2.Database import SqliteDatabase, MysqlDatabase, statement, ICursor
+from pycvsanaly2.Database import SqliteDatabase, MysqlDatabase, statement, \
+    ICursor, execute_statement
 from pycvsanaly2.utils import printdbg, printerr, printout, uri_to_filename
 from pycvsanaly2.profile import profiler_start, profiler_stop
 from pycvsanaly2.PatchParser import parse_patches, RemoveLine, InsertLine, \
@@ -322,14 +323,15 @@ class Hunks(Extension):
                     insert = """insert into hunks(file_id, commit_id,
                                 old_start_line, old_end_line, new_start_line, new_end_line)
                                 values(?,?,?,?,?,?)"""
-                    try:
-                        write_cursor.execute(statement(insert, db.place_holder), \
-                                (file_id, commit_id, hunk.old_start_line, \
-                                hunk.old_end_line, hunk.new_start_line, \
-                                hunk.new_end_line))
-                    except Exception, e:
-                        printerr("Couldn't insert hunk, duplicate record? " + str(e))
-                        continue
+
+                    execute_statement(statement(insert, db.place_holder),
+                                      (file_id, commit_id, hunk.old_start_line, \
+                                       hunk.old_end_line, hunk.new_start_line, \
+                                       hunk.new_end_line),
+                                       write_cursor,
+                                       db,
+                                       "Couldn't insert hunk, duplicate record?",
+                                       exception=ExtensionRunError)
                 
             connection.commit
             rs = icursor.fetchmany()

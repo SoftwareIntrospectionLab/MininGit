@@ -19,7 +19,8 @@
 
 from pycvsanaly2.extensions import Extension, register_extension, \
         ExtensionRunError
-from pycvsanaly2.Database import SqliteDatabase, MysqlDatabase, statement
+from pycvsanaly2.Database import SqliteDatabase, MysqlDatabase, statement, \
+    execute_statement
 from pycvsanaly2.Config import Config
 from pycvsanaly2.utils import printdbg, printerr, uri_to_filename, to_utf8
 from pycvsanaly2.profile import profiler_start, profiler_stop
@@ -123,58 +124,58 @@ class ContentJob(Job):
                 pass
                 
 
-        def get_file_contents(self):
-                """Returns contents of the file, stripped of whitespace at either end"""
-                # An encode will fail if the source code can't be converted to
-                # utf-8, ie. it's not already unicode, or latin-1, or something
-                # obvious. This almost always means that the file isn't source
-                # code at all. 
-                # TODO: I should really throw a "not source" exception,
-                # but just doing None is fine for now.
-                try:
-                    return self._file_contents.encode("utf-8").strip()
-                except:
-                    return None
-
-
-        def get_number_of_lines(self):
-            """Return the number of lines contained within the file, stripped
-            of whitespace at either end.
-
-            >>> cj = ContentJob(None, None, None, None)
-            >>> cj.file_contents = "Hello"
-            >>> cj.file_number_of_lines
-            1
-            >>> cj.file_contents = "Hello \\n world"
-            >>> cj.file_number_of_lines
-            2
-            >>> cj.file_contents = ""
-            >>> cj.file_number_of_lines
-            0
-            >>> cj.file_contents = None
-            >>> cj.file_number_of_lines
-
-            >>> cj.file_contents = "\\n\\n Hello \\n\\n"
-            >>> cj.file_number_of_lines
-            1
-
-            >>> cj.file_contents = "a\\nb"
-            >>> cj.file_number_of_lines
-            2
-
-            >>> cj.file_contents = "a\\nb\\nc\\nd\\nea\\nb\\nc\\nd\\ne"
-            >>> cj.file_number_of_lines
-            9
-            """
-            contents = self._file_contents
-
-            if contents is None:
+    def get_file_contents(self):
+            """Returns contents of the file, stripped of whitespace at either end"""
+            # An encode will fail if the source code can't be converted to
+            # utf-8, ie. it's not already unicode, or latin-1, or something
+            # obvious. This almost always means that the file isn't source
+            # code at all. 
+            # TODO: I should really throw a "not source" exception,
+            # but just doing None is fine for now.
+            try:
+                return self._file_contents.encode("utf-8").strip()
+            except:
                 return None
 
-            return len(contents.splitlines())
-        
-        file_contents = property(get_file_contents)
-        file_number_of_lines = property(get_number_of_lines)
+
+    def get_number_of_lines(self):
+        """Return the number of lines contained within the file, stripped
+        of whitespace at either end.
+
+        >>> cj = ContentJob(None, None, None, None)
+        >>> cj.file_contents = "Hello"
+        >>> cj.file_number_of_lines
+        1
+        >>> cj.file_contents = "Hello \\n world"
+        >>> cj.file_number_of_lines
+        2
+        >>> cj.file_contents = ""
+        >>> cj.file_number_of_lines
+        0
+        >>> cj.file_contents = None
+        >>> cj.file_number_of_lines
+
+        >>> cj.file_contents = "\\n\\n Hello \\n\\n"
+        >>> cj.file_number_of_lines
+        1
+
+        >>> cj.file_contents = "a\\nb"
+        >>> cj.file_number_of_lines
+        2
+
+        >>> cj.file_contents = "a\\nb\\nc\\nd\\nea\\nb\\nc\\nd\\ne"
+        >>> cj.file_number_of_lines
+        9
+        """
+        contents = self._file_contents
+
+        if contents is None:
+            return None
+
+        return len(contents.splitlines())
+    
+    file_contents = property(get_file_contents)
+    file_number_of_lines = property(get_number_of_lines)
 
 class Content(Extension):
     deps = ['FileTypes']
@@ -261,23 +262,22 @@ class Content(Extension):
         # but in the source, these are referred to as commit IDs.
         # Don't ask me why!
         while finished_job is not None:
-            try:
-                query = "insert into content(commit_id, file_id, content, loc) values(?,?,?,?)"
-
-                write_cursor.execute(statement(query, db.place_holder), \
-                        (finished_job.commit_id, \
-                            finished_job.file_id, \
-                            str(finished_job.file_contents), \
-                            finished_job.file_number_of_lines))
-
-            except Exception as e:
-                printerr("Couldn't insert, duplicate record?: %s", (e,))
+            query = "insert into content(commit_id, file_id, content, loc) values(?,?,?,?)"
+            insert_statement = statement(query, db.place_holder)
+            parameters = (finished_job.commit_id,
+                          finished_job.file_id,
+                          str(finished_job.file_contents),
+                          finished_job.file_number_of_lines)
+                                
+            execute_statement(insert_statement, parameters, write_cursor, db,
+                       "Couldn't insert, duplicate record?", 
+                       exception=ExtensionRunError)
+            
             processed_jobs+=1
             finished_job = job_pool.get_next_done(0)
 #        print "Before return: %s"%(datetime.now()-start)
             
         return processed_jobs
-            
 
 
     def run(self, repo, uri, db):

@@ -21,7 +21,7 @@ from pycvsanaly2.extensions import Extension, register_extension, \
         ExtensionRunError
 from pycvsanaly2.extensions.FilePaths import FilePaths
 from pycvsanaly2.Database import SqliteDatabase, MysqlDatabase, \
-        TableAlreadyExists, statement
+        TableAlreadyExists, statement, execute_statement
 from pycvsanaly2.utils import printdbg, printerr, printout, \
         remove_directory, uri_to_filename
 from pycvsanaly2.profile import profiler_start, profiler_stop
@@ -251,12 +251,12 @@ class BugFixMessage(Extension):
             else:
                 is_bug_fix = 0
 
-            try:
-                write_cursor.execute(statement(update, db.place_holder), \
-                        (is_bug_fix, row_id))
-            except Exception, e:
-                printerr("Couldn't update scmlog: " + str(e))
-                continue
+            execute_statement(statement(update, db.placeholder), 
+                              (is_bug_fix, row_id), 
+                              write_cursor,
+                              db,
+                              "Couldn't update scmlog",
+                              exception=ExtensionRunError)
 
         read_cursor.close()
         connection.commit()

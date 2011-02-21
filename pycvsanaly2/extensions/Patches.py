@@ -20,7 +20,7 @@
 from repositoryhandler.backends.watchers import DIFF
 
 from pycvsanaly2.Database import (SqliteDatabase, MysqlDatabase, TableAlreadyExists,
-                                  statement, ICursor)
+                                  statement, ICursor, execute_statement)
 from pycvsanaly2.Config import Config
 from pycvsanaly2.extensions import Extension, register_extension, ExtensionRunError
 from pycvsanaly2.utils import to_utf8, printerr, printdbg, uri_to_filename
@@ -140,13 +140,14 @@ class Patches (Extension):
         # but in the source, these are referred to as commit IDs.
         # Don't ask me why!
         while finished_job is not None:
-            try:
-                p = DBPatch (None, finished_job.commit_id, finished_job.data)
-                write_cursor.execute (statement (DBPatch.__insert__, self.db.place_holder), \
-                    (p.id, p.commit_id, to_utf8(p.patch).decode("utf-8")))
+            p = DBPatch (None, finished_job.commit_id, finished_job.data)
 
-            except Exception as e:
-                printerr("Couldn't insert, duplicate record?: %s", (e,))
+            execute_statement(statement(DBPatch.__insert__, self.db.place_holder),
+                              (p.id, p.commit_id, to_utf8(p.patch).decode("utf-8")),
+                              write_cursor,
+                              db,
+                              "Couldn't insert, duplicate patch?",
+                              exception=ExtensionRunError)
 
             finished_job = job_pool.get_next_done(0)
 
