@@ -652,7 +652,7 @@ class DBContentHandler (ContentHandler):
 
 if __name__ == '__main__':
     import sys
-    from cStringIO import StringIO
+    from io import BytesIO
     from cPickle import dump, load
     from Database import create_database, DBRepository, ICursor
 
@@ -690,7 +690,7 @@ if __name__ == '__main__':
     while rs:
         for t in rs:
             obj = t[0]
-            io = StringIO (obj)
+            io = BytesIO (obj)
             commit = load (io)
             io.close ()
             ch.commit (commit)

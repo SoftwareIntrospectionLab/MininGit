@@ -23,7 +23,7 @@ from Repository import Commit
 from AsyncQueue import AsyncQueue, TimeOut
 
 import threading
-from cStringIO import StringIO
+from io import BytesIO
 from cPickle import dump, load
 
 class DBTempLog:
@@ -118,7 +118,7 @@ class DBTempLog:
                 queue.done ()
                 break
 
-            io = StringIO ()
+            io = BytesIO ()
             dump (commit, io, -1)
             obj = io.getvalue ()
             io.close ()
@@ -164,7 +164,7 @@ class DBTempLog:
         while rs:
             for t in rs:
                 obj = t[0]
-                io = StringIO (obj)
+                io = BytesIO (obj)
                 commit = load (io)
                 io.close ()
                 cb (commit)

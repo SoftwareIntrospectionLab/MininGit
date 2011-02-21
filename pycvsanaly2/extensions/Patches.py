@@ -24,7 +24,7 @@ from pycvsanaly2.Database import (SqliteDatabase, MysqlDatabase, TableAlreadyExi
 from pycvsanaly2.Config import Config
 from pycvsanaly2.extensions import Extension, register_extension, ExtensionRunError
 from pycvsanaly2.utils import to_utf8, printerr, printdbg, uri_to_filename
-from cStringIO import StringIO
+from io import BytesIO
 from Jobs import JobPool, Job
 
 class PatchJob(Job):
@@ -37,7 +37,7 @@ class PatchJob(Job):
         def diff_line (data, io):
             io.write (data)
 
-        io = StringIO ()
+        io = BytesIO ()
         wid = self.repo.add_watch (DIFF, diff_line, io)
         try:
             self.repo.show (self.repo_uri, self.rev)

@@ -28,7 +28,7 @@ from FileRevs import FileRevs
 from repositoryhandler.backends import RepositoryCommandError
 from repositoryhandler.backends.watchers import CAT
 from Jobs import JobPool, Job
-from cStringIO import StringIO
+from io import BytesIO
 import os
 
 # This class holds a single repository retrieve task,
@@ -68,7 +68,7 @@ class ContentJob(Job):
         if ext_ptr != -1:
             suffix = filename[ext_ptr:]
 
-        io = StringIO()
+        io = BytesIO()
 
         wid = self.repo.add_watch(CAT, write_line, io)
         
