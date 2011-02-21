@@ -136,46 +136,51 @@ class ContentJob(Job):
                 return self._file_contents.encode("utf-8").strip()
             except:
                 return None
-
-
+    
+    def set_file_contents(self, contents):
+        self._file_contents = contents
+        
     def get_number_of_lines(self):
         """Return the number of lines contained within the file, stripped
         of whitespace at either end.
 
+        # Note that it looks like doctest doesn't work with properties,
+        # depending on what your doctest runner is. That's why
+        # it accesses the setter. There's no need to do this in your code.
         >>> cj = ContentJob(None, None, None, None)
-        >>> cj.file_contents = "Hello"
+        >>> cj.set_file_contents("Hello")
         >>> cj.file_number_of_lines
         1
-        >>> cj.file_contents = "Hello \\n world"
+        >>> cj.set_file_contents("Hello \\n world")
         >>> cj.file_number_of_lines
         2
-        >>> cj.file_contents = ""
+        >>> cj.set_file_contents("")
         >>> cj.file_number_of_lines
         0
-        >>> cj.file_contents = None
+        >>> cj.set_file_contents(None)
         >>> cj.file_number_of_lines
 
-        >>> cj.file_contents = "\\n\\n Hello \\n\\n"
+        >>> cj.set_file_contents("\\n\\n Hello \\n\\n")
         >>> cj.file_number_of_lines
         1
 
-        >>> cj.file_contents = "a\\nb"
+        >>> cj.set_file_contents("a\\nb")
         >>> cj.file_number_of_lines
         2
 
-        >>> cj.file_contents = "a\\nb\\nc\\nd\\nea\\nb\\nc\\nd\\ne"
+        >>> cj.set_file_contents("a\\nb\\nc\\nd\\nea\\nb\\nc\\nd\\ne")
         >>> cj.file_number_of_lines
         9
         """
-        contents = self._file_contents
+        contents = self.file_contents
 
         if contents is None:
             return None
 
         return len(contents.splitlines())
     
-    file_contents = property(get_file_contents)
     file_number_of_lines = property(get_number_of_lines)
+    file_contents = property(get_file_contents, set_file_contents)
 
 class Content(Extension):
     deps = ['FileTypes']
