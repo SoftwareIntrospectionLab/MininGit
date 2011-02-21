@@ -204,7 +204,7 @@ class HunkBlame(Blame):
         if isinstance (self.db, SqliteDatabase):
             import sqlite3.dbapi2
             try:
-                cursor.execute ("""CREATE TABLE _action_files_cache 
+                cursor.execute ("""CREATE TABLE _action_files_cache as
                     select * from action_files""")
             except sqlite3.dbapi2.OperationalError:
                 cursor.close ()
@@ -215,7 +215,7 @@ class HunkBlame(Blame):
             import _mysql_exceptions
 
             try:
-                cursor.execute ("""CREATE TABLE _action_files_cache 
+                cursor.execute ("""CREATE TABLE _action_files_cache as
                     select * from action_files""")
             except _mysql_exceptions.OperationalError, e:
                 if e.args[0] == 1050:
