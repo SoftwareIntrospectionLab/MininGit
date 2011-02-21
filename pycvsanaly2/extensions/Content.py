@@ -178,7 +178,7 @@ class ContentJob(Job):
         
         try:
             contents = self._file_contents.strip()
-        except (UnicodeEncodeError, UnicodeDecodeError):
+        except (UnicodeEncodeError, UnicodeDecodeError, AttributeError):
             return None
 
         return len(contents.splitlines())
