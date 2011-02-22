@@ -117,6 +117,10 @@ class Config:
         except:
             pass
         try:
+            self.hard_order = config.hard_order
+        except:
+            pass
+        try:
             self.metrics_all = config.metrics_all
         except:
             pass
