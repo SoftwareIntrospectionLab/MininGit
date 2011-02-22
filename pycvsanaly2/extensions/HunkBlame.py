@@ -366,6 +366,8 @@ class HunkBlame(Blame):
                 #FIXME
                 except Exception as e:
                     pass
+                finally:
+                    inner_cursor.close()
                     
                 hunks = [h for h in hunks if h[0] not in blames]
                 job = HunkBlameJob(hunks, relative_path, pre_rev)
