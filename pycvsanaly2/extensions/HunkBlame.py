@@ -351,7 +351,9 @@ class HunkBlame(Blame):
                     raise NotValidHunkWarning("Couldn't find path for file ID %d"%file_id)
                 printdbg ("Path for %d at %s -> %s", (file_id, pre_rev, relative_path))
                 
-                with cnn.cursor() as inner_cursor:
+                try:
+                    inner_cursor = cnn.cursor()
+                
                     inner_query = """select h.id, h.old_start_line, h.old_end_line from hunks h
                         where h.file_id = ? and h.commit_id = ?
                             and h.old_start_line is not null 
@@ -361,6 +363,9 @@ class HunkBlame(Blame):
                     """
                     inner_cursor.execute(statement(inner_query, db.place_holder), (file_id, commit_id))
                     hunks = inner_cursor.fetchall()
+                #FIXME
+                except Exception as e:
+                    pass
                     
                 hunks = [h for h in hunks if h[0] not in blames]
                 job = HunkBlameJob(hunks, relative_path, pre_rev)
