@@ -16,10 +16,10 @@
 #
 # Authors: Carlos Garcia Campos <carlosgc@gsyc.escet.urjc.es>
 
-class ErrorLoadingConfig (Exception):
+class ErrorLoadingConfig(Exception):
 
-    def __init__ (self, message = None):
-        Exception.__init__ (self)
+    def __init__(self, message = None):
+        Exception.__init__(self)
         
         self.message = message
 
@@ -49,24 +49,24 @@ class Config:
                        'bug_fix_regexes_case_sensitive' : ["[A-Z]+(-|#)\d+", "CVE-\d+-\d+"],
                        }
     
-    def __init__ (self):
+    def __init__(self):
         self.__dict__ = self.__shared_state
         
-    def __getattr__ (self, attr):
+    def __getattr__(self, attr):
         return self.__dict__[attr]
 
-    def __setattr__ (self, attr, value):
+    def __setattr__(self, attr, value):
         self.__dict__[attr] = value
 
-    def __load_from_file (self, config_file):
+    def __load_from_file(self, config_file):
         try:
             from types import ModuleType
-            config = ModuleType ('cvsanaly-config')
-            f = open (config_file, 'r')
+            config = ModuleType('cvsanaly-config')
+            f = open(config_file, 'r')
             exec f in config.__dict__
-            f.close ()
+            f.close()
         except Exception, e:
-            raise ErrorLoadingConfig ("Error reading config file %s (%s)" % (config_file, str (e)))
+            raise ErrorLoadingConfig("Error reading config file %s (%s)" % (config_file, str(e)))
 
         try:
             self.debug = config.debug
@@ -113,7 +113,7 @@ class Config:
         except:
             pass
         try:
-            self.extensions.extend ([item for item in config.extensions if item not in self.extensions])
+            self.extensions.extend([item for item in config.extensions if item not in self.extensions])
         except:
             pass
         try:
@@ -141,28 +141,28 @@ class Config:
         except:
             pass
 
-    def load (self):
+    def load(self):
         import os
         from utils import cvsanaly_dot_dir, printout
 
         # First look in /etc
         # FIXME /etc is not portable
-        config_file = os.path.join ('/etc', 'cvsanaly2')
-        if os.path.isfile (config_file):
-            self.__load_from_file (config_file)
+        config_file = os.path.join('/etc', 'cvsanaly2')
+        if os.path.isfile(config_file):
+            self.__load_from_file(config_file)
 
         # Then look at $HOME
-        config_file = os.path.join (cvsanaly_dot_dir (), 'config')
-        if os.path.isfile (config_file):
-            self.__load_from_file (config_file)
+        config_file = os.path.join(cvsanaly_dot_dir(), 'config')
+        if os.path.isfile(config_file):
+            self.__load_from_file(config_file)
         else:
             # If there's an old file, migrate it
-            old_config = os.path.join (os.environ.get ('HOME'), '.cvsanaly')
-            if os.path.isfile (old_config):
-                printout ("Old config file found in %s, moving to %s", (old_config, config_file))
-                os.rename (old_config, config_file)
-                self.__load_from_file (config_file)
+            old_config = os.path.join(os.environ.get('HOME'), '.cvsanaly')
+            if os.path.isfile(old_config):
+                printout("Old config file found in %s, moving to %s", (old_config, config_file))
+                os.rename(old_config, config_file)
+                self.__load_from_file(config_file)
             
-    def load_from_file (self, path):
-        self.__load_from_file (path)
+    def load_from_file(self, path):
+        self.__load_from_file(path)
          

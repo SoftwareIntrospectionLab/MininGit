@@ -22,28 +22,28 @@ class ContentHandler:
     (
         ORDER_REVISION,
         ORDER_FILE
-    ) = range (2)
+    ) = range(2)
 
-    def __init__ (self):
+    def __init__(self):
         pass
 
-    def begin (self, order=None):
+    def begin(self, order=None):
         pass
     
-    def repository (self, uri):
+    def repository(self, uri):
         pass
     
-    def commit (self, commit):
+    def commit(self, commit):
         pass
 
-    def committer (self, committer):
+    def committer(self, committer):
         pass
 
-    def author (self, author):
+    def author(self, author):
         pass
 
-    def file (self, file):
+    def file(self, file):
         pass
 
-    def end (self):
+    def end(self):
         pass
