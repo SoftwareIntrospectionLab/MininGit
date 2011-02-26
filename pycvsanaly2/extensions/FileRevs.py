@@ -22,7 +22,7 @@ from FilePaths import FilePaths
 
 if __name__ == '__main__':
     import sys
-    sys.path.insert (0, "../../")
+    sys.path.insert(0, "../../")
 
 class FileRevs:
 
@@ -32,83 +32,83 @@ class FileRevs:
         where s.id = af.commit_id and s.repository_id = ? 
         order by s.date'''
 
-    def __init__ (self, db, cnn, cursor, repoid):
+    def __init__(self, db, cnn, cursor, repoid):
         self.db = db
         self.cnn = cnn
         self.repoid = repoid
 
-        self.icursor = ICursor (cursor, self.INTERVAL_SIZE)
-        self.icursor.execute (statement (self.__query__, db.place_holder), (repoid,))
-        self.rs = iter (self.icursor.fetchmany ())
+        self.icursor = ICursor(cursor, self.INTERVAL_SIZE)
+        self.icursor.execute(statement(self.__query__, db.place_holder), (repoid,))
+        self.rs = iter(self.icursor.fetchmany())
         self.prev_commit = -1
         self.current = None
 
-        self.fp = FilePaths (db)
+        self.fp = FilePaths(db)
         self.fp.update_all(repoid)
 
-    def __iter__ (self):
+    def __iter__(self):
         return self
 
-    def __get_next (self):
+    def __get_next(self):
         try:
-            t = self.rs.next ()
+            t = self.rs.next()
         except StopIteration:
-            self.rs = iter (self.icursor.fetchmany ())
+            self.rs = iter(self.icursor.fetchmany())
             if not self.rs:
                 raise StopIteration
-            t = self.rs.next ()
+            t = self.rs.next()
 
         return t
 
-    def next (self):
+    def next(self):
         if not self.rs:
             raise StopIteration
 
         while True:
-            self.current = self.__get_next ()
+            self.current = self.__get_next()
             revision, commit_id, file_id, action_type, composed = self.current
 
             # Should not need to update_for_revision anymore, delete if OK
-            # if action_type in ('V', 'C'):
+            # if action_type in('V', 'C'):
             #     if self.prev_commit != commit_id:
             #         # Get the matrix for revision
             #         self.prev_commit = commit_id
-            #         aux_cursor = self.cnn.cursor ()
-            #         self.fp.update_for_revision (aux_cursor, commit_id, self.repoid)
-            #         aux_cursor.close ()
+            #         aux_cursor = self.cnn.cursor()
+            #         self.fp.update_for_revision(aux_cursor, commit_id, self.repoid)
+            #         aux_cursor.close()
             #         continue
             # elif action_type == 'D':
             #     continue
-            # elif action_type in  ('A', 'R'):
+            # elif action_type in ('A', 'R'):
             #     if self.prev_commit != commit_id:
             #         # Get the matrix for revision
             #         self.prev_commit = commit_id
-            #         aux_cursor = self.cnn.cursor ()
-            #         self.fp.update_for_revision (aux_cursor, commit_id, self.repoid)
-            #         aux_cursor.close ()
+            #         aux_cursor = self.cnn.cursor()
+            #         self.fp.update_for_revision(aux_cursor, commit_id, self.repoid)
+            #         aux_cursor.close()
 
             return self.current
 
-    def get_path (self):
+    def get_path(self):
         if not self.current:
             return None
 
         revision, commit_id, file_id, action_type, composed = self.current
         if composed:
-            rev = revision.split ("|")[0]
+            rev = revision.split("|")[0]
         else:
             rev = revision
 
         try:
-            relative_path = self.fp.get_path (file_id, commit_id, self.repoid).strip ("/")
+            relative_path = self.fp.get_path(file_id, commit_id, self.repoid).strip("/")
         except AttributeError, e:
-            if self.fp.get_commit_id () != commit_id:
+            if self.fp.get_commit_id() != commit_id:
                 # Commented out as update_for_all exists, delete if OK
-                # aux_cursor = self.cnn.cursor ()
-                #                 self.fp.update_for_revision (aux_cursor, commit_id, self.repoid)
-                #                 aux_cursor.close ()
+                # aux_cursor = self.cnn.cursor()
+                #                 self.fp.update_for_revision(aux_cursor, commit_id, self.repoid)
+                #                 aux_cursor.close()
 
-                relative_path = self.fp.get_path (file_id, commit_id, self.repoid).strip ("/")
+                relative_path = self.fp.get_path(file_id, commit_id, self.repoid).strip("/")
             else:
                 raise e
 
@@ -119,15 +119,15 @@ if __name__ == '__main__':
     from pycvsanaly2.Database import create_database
     from pycvsanaly2.Config import Config
 
-    config = Config ()
-    config.load ()
-    db = create_database (config.db_driver, sys.argv[1], config.db_user, config.db_password, config.db_hostname)
-    cnn = db.connect ()
-    cursor = cnn.cursor ()
+    config = Config()
+    config.load()
+    db = create_database(config.db_driver, sys.argv[1], config.db_user, config.db_password, config.db_hostname)
+    cnn = db.connect()
+    cursor = cnn.cursor()
 
-    fr = FileRevs (db, cnn, cursor, 1)
+    fr = FileRevs(db, cnn, cursor, 1)
     for revision, commit_id, file_id, action_type, composed in fr:
-        print revision, commit_id, action_type, fr.get_path ()
+        print revision, commit_id, action_type, fr.get_path()
 
-    cursor.close ()
-    cnn.close ()
+    cursor.close()
+    cnn.close()

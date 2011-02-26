@@ -42,8 +42,8 @@ class ContentJob(Job):
         self._file_contents = ""
 
     def run(self, repo, repo_uri):
-        def write_line (data, io):
-            io.write (data)
+        def write_line(data, io):
+            io.write(data)
         
         # start = datetime.now()
         self.repo = repo

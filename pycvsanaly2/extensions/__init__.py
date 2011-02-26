@@ -19,34 +19,34 @@
 
 __all__ = ['Extension', 'get_extension', 'register_extension']
 
-class ExtensionUnknownError (Exception):
+class ExtensionUnknownError(Exception):
     '''Unkown extension'''
 
-class ExtensionRunError (Exception):
+class ExtensionRunError(Exception):
     '''Error running extension'''
 
 class Extension:
 
     deps = []
     
-    def run (self, repo, uri, db):
+    def run(self, repo, uri, db):
         raise NotImplementedError
 
 from pycvsanaly2.utils import printerr
 
 _extensions = {}
-def register_extension (extension_name, extension_class):
+def register_extension(extension_name, extension_class):
     _extensions[extension_name] = extension_class
 
-def get_extension (extension_name):
+def get_extension(extension_name):
     if extension_name not in _extensions:
         try:
-            __import__ ("pycvsanaly2.extensions.%s" % extension_name)
+            __import__("pycvsanaly2.extensions.%s" % extension_name)
         except ImportError as e:
             printerr("Error in importing extension %s: %s", (extension_name, str(e)))
 
     if extension_name not in _extensions:
-        raise ExtensionUnknownError ('Extension %s not registered' % extension_name)
+        raise ExtensionUnknownError('Extension %s not registered' % extension_name)
 
     return _extensions[extension_name]
 

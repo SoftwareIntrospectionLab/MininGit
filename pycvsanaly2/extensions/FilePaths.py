@@ -20,7 +20,7 @@
 
 if __name__ == '__main__':
     import sys
-    sys.path.insert (0, "../../")
+    sys.path.insert(0, "../../")
 
 from pycvsanaly2.Database import statement
 from pycvsanaly2.utils import printdbg
@@ -31,7 +31,7 @@ class FilePaths:
 
     class Adj:
 
-        def __init__ (self):
+        def __init__(self):
             self.files = {}
             self.adj = {}
 
@@ -42,12 +42,12 @@ class FilePaths:
                        'cached_adj': {},
                        'db'    : None}
 
-    def __init__ (self, db):
+    def __init__(self, db):
         self.__dict__ = self.__shared_state
         self.__dict__['db'] = db
         
   
-    def update_for_revision (self, cursor, commit_id, repo_id):
+    def update_for_revision(self, cursor, commit_id, repo_id):
         adj = self.__dict__['cached_adj'].get(commit_id)
         if adj is not None:
             return
@@ -57,10 +57,10 @@ class FilePaths:
         prev_commit_id = self.__dict__['rev']
         self.__dict__['rev'] = commit_id
 
-#        profiler_start ("Updating adjacency matrix for commit %d", (commit_id,))
+#        profiler_start("Updating adjacency matrix for commit %d", (commit_id,))
 
         if self.__dict__['adj'] is None:
-            adj = FilePaths.Adj ()
+            adj = FilePaths.Adj()
             self.__dict__['adj'] = adj
         else:
             adj = self.__dict__['adj']
@@ -77,14 +77,14 @@ class FilePaths:
         if not repo_files:
             # Get and cache all the files table
             query = "select id, file_name from files where repository_id = ?"
-#            profiler_start ("Getting files for repository %d", (repo_id,))
-            cursor.execute (statement (query, db.place_holder), (repo_id,))
-#            profiler_stop ("Getting files for repository %d", (repo_id,), True)
-            rs = cursor.fetchmany ()
+#            profiler_start("Getting files for repository %d", (repo_id,))
+            cursor.execute(statement(query, db.place_holder), (repo_id,))
+#            profiler_stop("Getting files for repository %d", (repo_id,), True)
+            rs = cursor.fetchmany()
             while rs:
                 for id, file_name in rs:
                     repo_files[id] = file_name
-                rs = cursor.fetchmany ()
+                rs = cursor.fetchmany()
             self.__dict__['files'] = (repo_id, repo_files)
             adj.files = repo_files
 
@@ -96,14 +96,14 @@ class FilePaths:
                 "and af.commit_id = ? " + \
                 "and af.type = 'V' " + \
                 "and f.repository_id = ?"
-#        profiler_start ("Getting new file names for commit %d", (commit_id,))
-        cursor.execute (statement (query, db.place_holder), (commit_id, repo_id))
-#        profiler_stop ("Getting new file names for commit %d", (commit_id,), True)
-        rs = cursor.fetchmany ()
+#        profiler_start("Getting new file names for commit %d", (commit_id,))
+        cursor.execute(statement(query, db.place_holder), (commit_id, repo_id))
+#        profiler_stop("Getting new file names for commit %d", (commit_id,), True)
+        rs = cursor.fetchmany()
         while rs:
             for id, file_name in rs:
                 adj.files[id] = file_name
-            rs = cursor.fetchmany ()
+            rs = cursor.fetchmany()
 
         # Get the new file links since the last time
         query = "select fl.parent_id, fl.file_id " + \
@@ -116,39 +116,39 @@ class FilePaths:
             query += "and fl.commit_id between ? and ? "
             args = (prev_commit_id, commit_id, repo_id)
         query += "and f.repository_id = ?"
-#        profiler_start ("Getting file links for commit %d", (commit_id,))
-        cursor.execute (statement (query, db.place_holder), args)
-#        profiler_stop ("Getting file links for commit %d", (commit_id,), True)
-        rs = cursor.fetchmany ()
+#        profiler_start("Getting file links for commit %d", (commit_id,))
+        cursor.execute(statement(query, db.place_holder), args)
+#        profiler_stop("Getting file links for commit %d", (commit_id,), True)
+        rs = cursor.fetchmany()
         while rs:
             for f1, f2 in rs:
                 adj.adj[f2] = f1
-            rs = cursor.fetchmany ()
+            rs = cursor.fetchmany()
 
         self.__dict__['cached_adj'][commit_id] = deepcopy(adj)
 
-#        profiler_stop ("Updating adjacency matrix for commit %d", (commit_id,), True)
+#        profiler_stop("Updating adjacency matrix for commit %d", (commit_id,), True)
 
-    def __build_path (self, file_id, adj):
+    def __build_path(self, file_id, adj):
         if file_id not in adj.adj:
             return None
 
-#        profiler_start ("Building path for file %d", (file_id,))
+#        profiler_start("Building path for file %d", (file_id,))
         
         tokens = []
         id = file_id
         
         while id is not None and id !=-1:
-            tokens.insert (0, adj.files[id])
+            tokens.insert(0, adj.files[id])
             #use get instead of index to avoid key error
             id = adj.adj.get(id) 
 
-#        profiler_stop ("Building path for file %d", (file_id,), True)
+#        profiler_stop("Building path for file %d", (file_id,), True)
 
-        return "/" + "/".join (tokens)
+        return "/" + "/".join(tokens)
 
-    def get_path (self, file_id, commit_id, repo_id):
-#        profiler_start ("Getting path for file %d at commit %d", (file_id, commit_id))
+    def get_path(self, file_id, commit_id, repo_id):
+#        profiler_start("Getting path for file %d at commit %d", (file_id, commit_id))
         adj = self.__dict__['cached_adj'].get(commit_id)
         if adj is not None:
             self.__dict__['adj'] = adj
@@ -159,13 +159,13 @@ class FilePaths:
             self.update_for_revision(cursor, commit_id, repo_id)
             cursor.close()
             adj = self.__dict__['adj']
-        path = self.__build_path (file_id, adj)
+        path = self.__build_path(file_id, adj)
 
-#        profiler_stop ("Getting path for file %d at commit %d", (file_id, commit_id), True)
+#        profiler_stop("Getting path for file %d at commit %d", (file_id, commit_id), True)
 
         return path
 
-    def get_filename (self, file_id):
+    def get_filename(self, file_id):
         adj = self.__dict__['adj']
         assert adj is not None, "Matrix no updated"
         try:
@@ -173,24 +173,24 @@ class FilePaths:
         except KeyError:
             return None
 
-    def get_commit_id (self):
+    def get_commit_id(self):
         return self.__dict__['rev']
 
     def update_all(self, repo_id):
         profiler_start("Update all file paths")
         db = self.__dict__['db']
-        cnn = db.connect ()
+        cnn = db.connect()
 
-        cursor = cnn.cursor ()
+        cursor = cnn.cursor()
         query = """select distinct(s.id) from scmlog s, actions a
                     where s.id = a.commit_id and repository_id=?
                     order by s.id"""
-        cursor.execute (statement (query, db.place_holder), (repo_id,))        
+        cursor.execute(statement(query, db.place_holder), (repo_id,))        
         old_id = -1
-        all_commits = [i[0] for i in cursor.fetchall ()]
+        all_commits = [i[0] for i in cursor.fetchall()]
         for id in all_commits:
             if old_id != id:
-                self.update_for_revision (cursor, id, repo_id)
+                self.update_for_revision(cursor, id, repo_id)
                 old_id = id
         cursor.close()
         cnn.close()
@@ -201,24 +201,24 @@ if __name__ == '__main__':
     from pycvsanaly2.Database import create_database
     from pycvsanaly2.Config import Config
 
-    db = create_database ('sqlite', sys.argv[1])
-    cnn = db.connect ()
+    db = create_database('sqlite', sys.argv[1])
+    cnn = db.connect()
 
-    fp = FilePaths (db)
+    fp = FilePaths(db)
 
-    config = Config ()
+    config = Config()
     config.profile = True
 
-    cursor = cnn.cursor ()
-    cursor.execute ("select s.id, file_id from scmlog s, actions a where s.id = a.commit_id")
+    cursor = cnn.cursor()
+    cursor.execute("select s.id, file_id from scmlog s, actions a where s.id = a.commit_id")
     old_id = -1
-    for id, file_id in cursor.fetchall ():
+    for id, file_id in cursor.fetchall():
         if old_id != id:
             print "Commit ",id
-            fp.update_for_revision (cursor, id, 1)
+            fp.update_for_revision(cursor, id, 1)
             old_id = id
-        print fp.get_path (file_id, id, 1)
+        print fp.get_path(file_id, id, 1)
 
-    cursor.close ()
+    cursor.close()
     
-    cnn.close ()
+    cnn.close()

@@ -49,25 +49,25 @@ class HunkBlameJob(Job):
                     self.bug_revs[hunk_id].add(blame_line.rev)
                     break
 
-        def start_file (self, filename):
+        def start_file(self, filename):
             self.filename=filename
             self.profiled = False
-        def end_file (self):
+        def end_file(self):
             profiler_stop("Processing blame output for %s",(self.filename))
             if len(self.bug_revs)==0:
                 printdbg("No bug revision found in this file")
 
-    def __init__ (self, hunks, path, rev):
+    def __init__(self, hunks, path, rev):
         Job.__init__(self)
         self.hunks = hunks
         self.path = path
         self.rev = rev
         self.bug_revs = {}
         
-    def run (self, repo, repo_uri):
+    def run(self, repo, repo_uri):
         profiler_start("Running HunkBlameJob for %s@%s", (self.path,self.rev))
-        def blame_line (line, p):
-            p.feed (line)
+        def blame_line(line, p):
+            p.feed(line)
 
         start = sys.maxint
         end = 0
@@ -77,30 +77,30 @@ class HunkBlameJob(Job):
             if hunk[2]>end:
                 end=hunk[2]
                 
-        repo_type = repo.get_type ()
+        repo_type = repo.get_type()
         if repo_type == 'cvs':
             # CVS paths contain the module stuff
-            uri = repo.get_uri_for_path (repo_uri)
-            module = uri[len (repo.get_uri ()):].strip ('/')
+            uri = repo.get_uri_for_path(repo_uri)
+            module = uri[len(repo.get_uri()):].strip('/')
 
             if module != '.':
-                path = self.path[len (module):].strip ('/')
+                path = self.path[len(module):].strip('/')
             else:
-                path = self.path.strip ('/')
+                path = self.path.strip('/')
         else:
-            path = self.path.strip ('/')
+            path = self.path.strip('/')
 
-        p = create_parser (repo.get_type (), self.path)
+        p = create_parser(repo.get_type(), self.path)
         out = self.get_content_handler()
-        p.set_output_device (out)
-        wid = repo.add_watch (BLAME, blame_line, p)
+        p.set_output_device(out)
+        wid = repo.add_watch(BLAME, blame_line, p)
         try:
-            repo.blame (os.path.join (repo_uri, path), self.rev, start=start, end=end)
+            repo.blame(os.path.join(repo_uri, path), self.rev, start=start, end=end)
             self.collect_results(out)
         except RepositoryCommandError, e:
             self.failed = True
-            printerr ("Command %s returned %d (%s)", (e.cmd, e.returncode, e.error))
-        p.end ()
+            printerr("Command %s returned %d (%s)", (e.cmd, e.returncode, e.error))
+        p.end()
         repo.remove_watch(BLAME, wid)
         profiler_stop("Running HunkBlameJob for %s@%s", (self.path,self.rev), delete=True)
 
@@ -132,58 +132,58 @@ class HunkBlame(Blame):
         self.id_counter = 1 
         
     def __create_table(self, cnn):
-        cursor = cnn.cursor ()
+        cursor = cnn.cursor()
 
-        if isinstance (self.db, SqliteDatabase):
+        if isinstance(self.db, SqliteDatabase):
             import sqlite3.dbapi2
             try:
-                cursor.execute ("CREATE TABLE hunk_blames (" +
+                cursor.execute("CREATE TABLE hunk_blames (" +
                                 "id integer primary key," +
                                 "hunk_id integer," +
                                 "bug_commit_id integer"
                                 ")")
             except sqlite3.dbapi2.OperationalError:
-                cursor.close ()
+                cursor.close()
                 raise TableAlreadyExists
             except:
                 raise
-        elif isinstance (self.db, MysqlDatabase):
+        elif isinstance(self.db, MysqlDatabase):
             import _mysql_exceptions
 
             try:
-                cursor.execute ("CREATE TABLE hunk_blames (" +
+                cursor.execute("CREATE TABLE hunk_blames (" +
                                 "id integer primary key auto_increment," +
                                 "hunk_id integer REFERENCES hunks(id)," +
                                 "bug_commit_id integer REFERENCES scmlog(id)"+
                                 ") CHARACTER SET=utf8")
             except _mysql_exceptions.OperationalError, e:
                 if e.args[0] == 1050:
-                    cursor.close ()
+                    cursor.close()
                     raise TableAlreadyExists
                 raise
             except:
                 raise
 
-        cnn.commit ()
-        cursor.close ()
+        cnn.commit()
+        cursor.close()
         
     def __drop_cache(self, cnn):
         cursor = cnn.cursor()
         
-        if isinstance (self.db, SqliteDatabase):
+        if isinstance(self.db, SqliteDatabase):
             import sqlite3.dbapi2
             try:
-                cursor.execute ("drop table _action_files_cache")
+                cursor.execute("drop table _action_files_cache")
             except sqlite3.dbapi2.OperationalError:
                 # Do nothing, thats OK
                 pass
             except:
                 raise
-        elif isinstance (self.db, MysqlDatabase):
+        elif isinstance(self.db, MysqlDatabase):
             import _mysql_exceptions
 
             try:
-                cursor.execute ("drop table _action_files_cache")
+                cursor.execute("drop table _action_files_cache")
             except _mysql_exceptions.OperationalError, e:
                 if e.args[0] == 1050:
                     # Do nothing
@@ -194,39 +194,39 @@ class HunkBlame(Blame):
     
         
     def __create_cache(self, cnn):
-        cursor = cnn.cursor ()
+        cursor = cnn.cursor()
 
         try:
             self.__drop_cache(cnn)
         except Exception, e:
             printdbg("Couldn't drop cache because of " + str(e))
 
-        if isinstance (self.db, SqliteDatabase):
+        if isinstance(self.db, SqliteDatabase):
             import sqlite3.dbapi2
             try:
-                cursor.execute ("""CREATE TABLE _action_files_cache as
+                cursor.execute("""CREATE TABLE _action_files_cache as
                     select * from action_files""")
             except sqlite3.dbapi2.OperationalError:
-                cursor.close ()
+                cursor.close()
                 raise TableAlreadyExists
             except:
                 raise
-        elif isinstance (self.db, MysqlDatabase):
+        elif isinstance(self.db, MysqlDatabase):
             import _mysql_exceptions
 
             try:
-                cursor.execute ("""CREATE TABLE _action_files_cache as
+                cursor.execute("""CREATE TABLE _action_files_cache as
                     select * from action_files""")
             except _mysql_exceptions.OperationalError, e:
                 if e.args[0] == 1050:
-                    cursor.close ()
+                    cursor.close()
                     raise TableAlreadyExists
                 raise
             except:
                 raise
 
-        cnn.commit ()
-        cursor.close ()
+        cnn.commit()
+        cursor.close()
 
     def __get_hunk_blames(self, cursor, repoid):
         query = """select distinct b.hunk_id 
@@ -234,7 +234,7 @@ class HunkBlame(Blame):
             join hunks h on b.hunk_id=h.id
             join files f on h.file_id=f.id
             where f.repository_id=?"""
-        cursor.execute (statement (query, self.db.place_holder), (repoid,))
+        cursor.execute(statement(query, self.db.place_holder), (repoid,))
         return [h[0] for h in cursor.fetchall()]
     
     # It is also possible to get previous commit by modifying
@@ -244,7 +244,7 @@ class HunkBlame(Blame):
             where a.commit_id=c.id and a.file_id=?
             order by c.date
         """
-        cnn = self.db.connect ()
+        cnn = self.db.connect()
         aux_cursor = cnn.cursor()
         aux_cursor.execute(statement(query, self.db.place_holder),(file_id,))
         all_commits=aux_cursor.fetchall()
@@ -269,7 +269,7 @@ class HunkBlame(Blame):
         return pre_commit_id,pre_rev    
 
     def populate_insert_args(self, job):
-        bug_revs = job.get_bug_revs ()
+        bug_revs = job.get_bug_revs()
         cnn = self.db.connect()
         cursor = cnn.cursor()
         args = []
@@ -288,45 +288,45 @@ class HunkBlame(Blame):
         cnn.close()
         return args
         
-    def run (self, repo, uri, db):
-        profiler_start ("Running HunkBlame extension")
+    def run(self, repo, uri, db):
+        profiler_start("Running HunkBlame extension")
         
         self.db = db
 
-        cnn = self.db.connect ()
-        read_cursor = cnn.cursor ()
-        write_cursor = cnn.cursor ()
+        cnn = self.db.connect()
+        read_cursor = cnn.cursor()
+        write_cursor = cnn.cursor()
         try:
-            path = uri_to_filename (uri)
+            path = uri_to_filename(uri)
             if path is not None:
-                repo_uri = repo.get_uri_for_path (path)
+                repo_uri = repo.get_uri_for_path(path)
             else:
                 repo_uri = uri
 
-            read_cursor.execute (statement ("SELECT id from repositories where uri = ?", db.place_holder), (repo_uri,))
-            repoid = read_cursor.fetchone ()[0]
+            read_cursor.execute(statement("SELECT id from repositories where uri = ?", db.place_holder), (repo_uri,))
+            repoid = read_cursor.fetchone()[0]
         except NotImplementedError:
-            raise ExtensionRunError ("HunkBlame extension is not supported for %s repositories" % (repo.get_type ()))
+            raise ExtensionRunError("HunkBlame extension is not supported for %s repositories" % (repo.get_type()))
         except Exception, e:
-            raise ExtensionRunError ("Error creating repository %s. Exception: %s" % (repo.get_uri (), str (e)))
+            raise ExtensionRunError("Error creating repository %s. Exception: %s" % (repo.get_uri(), str(e)))
 
         try:
-            self.__create_table (cnn)
+            self.__create_table(cnn)
         except TableAlreadyExists:
             pass
         except Exception, e:
-            raise ExtensionRunError (str(e))
+            raise ExtensionRunError(str(e))
             
         try:
             self.__create_cache(cnn)
         except TableAlreadyExists:
             pass
         except Exception, e:
-            raise ExtensionRunError (str(e))
+            raise ExtensionRunError(str(e))
         
-        blames = self.__get_hunk_blames (read_cursor, repoid)
+        blames = self.__get_hunk_blames(read_cursor, repoid)
 
-        job_pool = JobPool (repo, path or repo.get_uri (), queuesize=100)
+        job_pool = JobPool(repo, path or repo.get_uri(), queuesize=100)
         
         outer_query = """select distinct h.file_id, h.commit_id
             from hunks h, scmlog s
@@ -337,7 +337,7 @@ class HunkBlame(Blame):
                 and h.file_id is not null
                 and h.commit_id is not null
         """
-        read_cursor.execute(statement (outer_query, db.place_holder), (repoid,))
+        read_cursor.execute(statement(outer_query, db.place_holder),(repoid,))
         file_rev = read_cursor.fetchone()
         n_blames = 0
         fp = FilePaths(db)
@@ -349,7 +349,7 @@ class HunkBlame(Blame):
                 relative_path = fp.get_path(file_id, pre_commit_id, repoid)
                 if relative_path is None:
                     raise NotValidHunkWarning("Couldn't find path for file ID %d"%file_id)
-                printdbg ("Path for %d at %s -> %s", (file_id, pre_rev, relative_path))
+                printdbg("Path for %d at %s -> %s", (file_id, pre_rev, relative_path))
                 
                 try:
                     inner_cursor = cnn.cursor()
