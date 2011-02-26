@@ -23,31 +23,31 @@ import errno
 
 from Config import Config
 
-config = Config ()
+config = Config()
 
-def to_utf8 (string):
-    if isinstance (string, unicode):
-        return str(string.encode ('utf-8'))
-    elif isinstance (string, bytes):
+def to_utf8(string):
+    if isinstance(string, unicode):
+        return str(string.encode('utf-8'))
+    elif isinstance(string, bytes):
         for encoding in ['ascii', 'utf-8', 'iso-8859-15']:
             try:
-                s = unicode (string, encoding)
+                s = unicode(string, encoding)
             except:
                 continue
             break
 
-        return str(s.encode ('utf-8'))
+        return str(s.encode('utf-8'))
     else:
         return string
 
-def uri_is_remote (uri):
-    match = re.compile ("^.*://.*$").match (uri)
+def uri_is_remote(uri):
+    match = re.compile("^.*://.*$").match(uri)
     if match is None:
         return False
     else:
-        return not uri.startswith ("file://")
+        return not uri.startswith("file://")
 
-def uri_to_filename (uri):
+def uri_to_filename(uri):
     """ Converts a URI to an absolute path.
     If the URI is a file:// path, it converts it.
     It the URI starts with ~, it expands to the user's home directory.
@@ -62,71 +62,71 @@ def uri_to_filename (uri):
     True
     
     """
-    if uri_is_remote (uri):
+    if uri_is_remote(uri):
         return None
 
-    if uri.startswith ("file://"):
-        return uri[uri.find ("file://") + len ("file://"):]
+    if uri.startswith("file://"):
+        return uri[uri.find("file://") + len("file://"):]
 
     if uri.startswith("~"):
         uri = os.path.expanduser(uri)
         
     return os.path.abspath(uri)
 
-def printout (str = '\n', args = None):
+def printout(str = '\n', args = None):
     if config.quiet:
         return
 
     if args is not None:
-        str = str % tuple (to_utf8 (arg) for arg in args)
+        str = str % tuple(to_utf8(arg) for arg in args)
     
     if str != '\n':
         str += '\n'
-    sys.stdout.write (to_utf8 (str))
-    sys.stdout.flush ()
+    sys.stdout.write(to_utf8(str))
+    sys.stdout.flush()
 
-def printerr (str = '\n', args = None):
+def printerr(str = '\n', args = None):
     if args is not None:
-        str = str % tuple (to_utf8 (arg) for arg in args)
+        str = str % tuple(to_utf8(arg) for arg in args)
     
     if str != '\n':
         str += '\n'
-    sys.stderr.write (to_utf8 (str))
-    sys.stderr.flush ()
+    sys.stderr.write(to_utf8(str))
+    sys.stderr.flush()
 
-def printdbg (str = '\n', args = None):
+def printdbg(str = '\n', args = None):
     if not config.debug:
         return
 
-    printout ("DBG: " + str, args)
+    printout("DBG: " + str, args)
 
-def remove_directory (path):
-    if not os.path.exists (path):
+def remove_directory(path):
+    if not os.path.exists(path):
         return
 
-    for root, dirs, files in os.walk (path, topdown = False):
+    for root, dirs, files in os.walk(path, topdown = False):
         for file in files:
-            os.remove (os.path.join (root, file))
+            os.remove(os.path.join(root, file))
         for dir in dirs:
-            os.rmdir (os.path.join (root, dir))
+            os.rmdir(os.path.join(root, dir))
 
-    os.rmdir (path)
+    os.rmdir(path)
 
 _dirs = {}
 
-def cvsanaly_dot_dir ():
+def cvsanaly_dot_dir():
 
     try:
         return _dirs['dot']
     except KeyError:
         pass
     
-    dot_dir = os.path.join (os.environ.get ('HOME'), '.cvsanaly2')
+    dot_dir = os.path.join(os.environ.get('HOME'), '.cvsanaly2')
     try:
-        os.mkdir (dot_dir, 0700)
+        os.mkdir(dot_dir, 0700)
     except OSError, e:
         if e.errno == errno.EEXIST:
-            if not os.path.isdir (dot_dir):
+            if not os.path.isdir(dot_dir):
                 raise
         else:
             raise
@@ -135,18 +135,18 @@ def cvsanaly_dot_dir ():
     
     return dot_dir
 
-def cvsanaly_cache_dir ():
+def cvsanaly_cache_dir():
     try:
         return _dirs['cache']
     except KeyError:
         pass
     
-    cache_dir = os.path.join (cvsanaly_dot_dir (), 'cache')
+    cache_dir = os.path.join(cvsanaly_dot_dir(), 'cache')
     try:
-        os.mkdir (cache_dir, 0700)
+        os.mkdir(cache_dir, 0700)
     except OSError, e:
         if e.errno == errno.EEXIST:
-            if not os.path.isdir (cache_dir):
+            if not os.path.isdir(cache_dir):
                 raise
         else:
             raise
@@ -156,6 +156,6 @@ def cvsanaly_cache_dir ():
     return cache_dir
     
 if __name__ == '__main__':
-    print cvsanaly_dot_dir ()
-    print cvsanaly_cache_dir ()
+    print cvsanaly_dot_dir()
+    print cvsanaly_cache_dir()
     

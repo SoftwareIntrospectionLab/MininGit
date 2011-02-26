@@ -26,54 +26,54 @@ class Parser:
 
     CONTENT_ORDER = ContentHandler.ORDER_REVISION
 
-    def __init__ (self):
-        self.handler = ContentHandler ()
+    def __init__(self):
+        self.handler = ContentHandler()
         self.repo_uri = None
         
         self.n_line = 0
 
-    def set_content_handler (self, handler):
+    def set_content_handler(self, handler):
         self.handler = handler
 
-    def set_repository (self, repo, uri):
+    def set_repository(self, repo, uri):
         self.repo_uri = uri
 
-    def flush (self):
+    def flush(self):
         pass
         
-    def _parse_line (self):
+    def _parse_line(self):
         raise NotImplementedError
 
-    def feed (self, data):
+    def feed(self, data):
         if self.n_line == 0:
-            self.handler.begin (self.CONTENT_ORDER)
+            self.handler.begin(self.CONTENT_ORDER)
 
             if self.repo_uri is not None:
-                self.handler.repository (self.repo_uri)
+                self.handler.repository(self.repo_uri)
             
-        for line in data.splitlines ():
+        for line in data.splitlines():
             self.n_line += 1
-            self._parse_line (line)
+            self._parse_line(line)
 
-    def end (self):
+    def end(self):
         if self.n_line <= 0:
             return
-        self.flush ()
-        self.handler.end ()        
+        self.flush()
+        self.handler.end()        
     
 if __name__ == '__main__':
     from repositoryhandler.backends import create_repository, create_repository_from_path
     from ParserFactory import create_parser_from_logfile, create_parser_from_repository
     from Log import LogReader
     
-    class StdoutContentHandler (ContentHandler):
-        def commit (self, commit):
+    class StdoutContentHandler(ContentHandler):
+        def commit(self, commit):
             print "Commit"
             print "rev: %s, committer: %s <%s>, date: %s" % (commit.revision, commit.committer.name, commit.committer.email, commit.date)
             if commit.author is not None:
                 print "Author: %s <%s>" % (commit.author.name, commit.author.email)
             if commit.tags is not None:
-                print "Tags: %s" % (str (commit.tags))
+                print "Tags: %s" % (str(commit.tags))
             print "files: "
             for action in commit.actions:
                 print "%s %s " % (action.type, action.f1)
@@ -84,27 +84,27 @@ if __name__ == '__main__':
             print "Message"
             print commit.message
 
-    def new_line (line, user_data = None):
-        user_data.feed (line)
+    def new_line(line, user_data = None):
+        user_data.feed(line)
             
-    reader = LogReader ()
+    reader = LogReader()
             
-    if os.path.isfile (sys.argv[1]):
+    if os.path.isfile(sys.argv[1]):
         # Parser from logfile
-        p = create_parser_from_logfile (sys.argv[1])
-        reader.set_logfile (sys.argv[1])
+        p = create_parser_from_logfile(sys.argv[1])
+        reader.set_logfile(sys.argv[1])
     else:
-        path = uri_to_filename (sys.argv[1])
+        path = uri_to_filename(sys.argv[1])
         if path is not None:
-            repo = create_repository_from_path (path)
+            repo = create_repository_from_path(path)
         else:
-            repo = create_repository ('svn', sys.argv[1])
+            repo = create_repository('svn', sys.argv[1])
             path = sys.argv[1]
-        p = create_parser_from_repository (repo)
-        reader.set_repo (repo, path)
+        p = create_parser_from_repository(repo)
+        reader.set_repo(repo, path)
 
-    p.set_content_handler (StdoutContentHandler ())
-    reader.start (new_line, p)
-    p.end ()
+    p.set_content_handler(StdoutContentHandler())
+    reader.start(new_line, p)
+    p.end()
 
 
