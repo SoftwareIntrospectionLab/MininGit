@@ -39,6 +39,8 @@ class ExtensionsManager:
         self.hard_order = hard_order
         order = 0
         
+        print "Hard order is " + str(self.hard_order)
+        
         for ext in exts:
             name = ext
             
@@ -60,6 +62,8 @@ class ExtensionsManager:
                         except:
                             raise InvalidDependency(ext, dep)
                         
+            print str(self.exts)
+                        
     def run_extension(self, name, extension, repo, uri, db):
         # Trim off the ordering numeral before printing
         if self.hard_order:
@@ -76,7 +80,9 @@ class ExtensionsManager:
                     
     def run_extensions(self, repo, uri, db):
         done = []
-        list = self.exts
+        list = sorted(self.exts)
+        
+        print "List is " + str(list)
    
         for name, extension in [(ext, self.exts[ext]()) for ext in list]:
             if name in done:
