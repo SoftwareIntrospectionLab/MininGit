@@ -38,9 +38,7 @@ class ExtensionsManager:
         self.exts = {}
         self.hard_order = hard_order
         order = 0
-        
-        print "Hard order is " + str(self.hard_order)
-        
+
         for ext in exts:
             name = ext
             
@@ -70,6 +68,7 @@ class ExtensionsManager:
             name = name[1:]
             
         printout("Executing extension %s", (name,))
+        
         try:
             extension.run(repo, uri, db)
         except ExtensionRunError, e:
@@ -81,9 +80,7 @@ class ExtensionsManager:
     def run_extensions(self, repo, uri, db):
         done = []
         list = sorted(self.exts)
-        
-        print "List is " + str(list)
-   
+           
         for name, extension in [(ext, self.exts[ext]()) for ext in list]:
             if name in done:
                 continue
