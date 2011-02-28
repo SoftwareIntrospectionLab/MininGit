@@ -24,6 +24,7 @@ from AsyncQueue import AsyncQueue, TimeOut
 from utils import printdbg
 import threading
 
+
 class DBProxyContentHandler(ContentHandler):
 
     def __init__(self, db):
@@ -84,7 +85,8 @@ class DBProxyContentHandler(ContentHandler):
             del item
 
         # No threads now, we don't need locks
-        printdbg("DBProxyContentHandler: thread __reader is finished, continue without locks")
+        printdbg("DBProxyContentHandler: thread __reader is finished, " + \
+                 "continue without locks")
         while not queue.empty_unlocked():
             item = queue.get_unlocked()
             self.db_handler.commit(item)
@@ -92,4 +94,3 @@ class DBProxyContentHandler(ContentHandler):
 
         self.db_handler.end()
         self.templog.clear()
-

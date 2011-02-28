@@ -20,12 +20,14 @@ import threading
 from time import time as _time
 from collections import deque
 
+
 class TimeOut(Exception):
     pass
 
+
 class AsyncQueue:
 
-    def __init__(self, maxsize = 0):
+    def __init__(self, maxsize=0):
         self._init(maxsize)
         self.mutex = threading.Lock()
         self.empty_cond = threading.Condition(self.mutex)
@@ -64,7 +66,7 @@ class AsyncQueue:
     def empty_unlocked(self):
         return self._empty()
 
-    def put(self, item, timeout = None):
+    def put(self, item, timeout=None):
         self.full_cond.acquire()
         try:
             if timeout is None:
@@ -89,7 +91,7 @@ class AsyncQueue:
     def put_unlocked(self, item):
         self._put(item)
 
-    def get(self, timeout = None):
+    def get(self, timeout=None):
         self.empty_cond.acquire()
         try:
             if timeout is None:
@@ -114,7 +116,6 @@ class AsyncQueue:
     def get_unlocked(self):
         return self._get()
 
-
     # Queue implementation
     def _init(self, maxsize):
         self.maxsize = maxsize
@@ -135,9 +136,9 @@ class AsyncQueue:
 if __name__ == '__main__':
     def worker(q):
         while True:
-             item = q.get()
-             print "Got item ", item
-             q.done()
+            item = q.get()
+            print "Got item ", item
+            q.done()
 
     q = AsyncQueue()
     for i in range(5):
@@ -145,7 +146,7 @@ if __name__ == '__main__':
         t.setDaemon(True)
         t.start()
 
-    for item in ['foo', 'bar', 1, 2, {'a' : 'b'}, [5,6,7]]:
+    for item in ['foo', 'bar', 1, 2, {'a': 'b'}, [5, 6, 7]]:
         q.put(item)
 
     q.join()
@@ -154,4 +155,3 @@ if __name__ == '__main__':
         q.get(5)
     except TimeOut:
         print "Queue empty! bye bye!"
-        

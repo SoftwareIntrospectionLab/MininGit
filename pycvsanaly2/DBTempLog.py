@@ -18,13 +18,15 @@
 #       Carlos Garcia Campos <carlosgc@gsyc.escet.urjc.es>
 
 from ContentHandler import ContentHandler
-from Database import SqliteDatabase, MysqlDatabase, TableAlreadyExists, statement, ICursor
+from Database import (SqliteDatabase, MysqlDatabase, TableAlreadyExists, 
+                      statement, ICursor)
 from Repository import Commit
-from AsyncQueue import AsyncQueue, TimeOut
+from AsyncQueue import AsyncQueue
 
 import threading
 from io import BytesIO
 from cPickle import dump, load
+
 
 class DBTempLog:
 
@@ -123,12 +125,15 @@ class DBTempLog:
             obj = io.getvalue()
             io.close()
 
-            commits.append((commit.revision, commit.date, self.db.to_binary(obj)))
+            commits.append((commit.revision, commit.date, 
+                            self.db.to_binary(obj)))
             n_commits += 1
             del commit
 
             if n_commits == 50:
-                cursor.executemany(statement("INSERT into _temp_log (rev, date, object) values (?, ?, ?)", self.db.place_holder), commits)
+                cursor.executemany(statement("INSERT into _temp_log " + \
+                    "(rev, date, object) values (?, ?, ?)", 
+                    self.db.place_holder), commits)
                 cnn.commit()
                 del commits
                 commits = []
@@ -137,7 +142,9 @@ class DBTempLog:
             queue.done()
 
         if commits:
-            cursor.executemany(statement("INSERT into _temp_log (rev, date, object) values (?, ?, ?)", self.db.place_holder), commits)
+            cursor.executemany(statement("INSERT into _temp_log " + \
+                    "(rev, date, object) values (?, ?, ?)", 
+                    self.db.place_holder), commits)
             cnn.commit()
             del commits
             
@@ -188,5 +195,3 @@ class DBTempLog:
     def __del__(self):
         self.flush()
         self.clear()
-
-        

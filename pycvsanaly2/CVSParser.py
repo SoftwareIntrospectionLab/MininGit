@@ -26,15 +26,32 @@ from Parser import Parser
 from ContentHandler import ContentHandler
 from Repository import Commit, Action, Person
 
+
 class CVSParser(Parser):
+    """A parser for CVS.
+    
+    # These are a couple of tests for the longer regexes that had
+    # to be split up when trying to get PEP-8 line length compliance
+    >>> p = CVSParser()
+    >>> info = "date: 1999/03/05 07:23:11;  author: philg;  state: Exp;  " + \
+            "lines: +30 -8"
+    >>> re.match(p.patterns['info'], info) #doctest: +ELLIPSIS
+    <_sre.SRE_Match object...>
+    >>> info = "date: 1999/03/05 07:23:11;  author: philg;state: Exp; " + \
+            "lines: +30 -8"
+    >>> re.match(p.patterns['info'], info)
+    """
 
     CONTENT_ORDER = ContentHandler.ORDER_FILE
     
     patterns = {}
     patterns['file'] = re.compile("^RCS file: (.*)$")
     patterns['revision'] = re.compile("^revision ([\d\.]*)$")
-    patterns['info'] = \
-        re.compile("^date: (\d\d\d\d)[/-](\d\d)[/-](\d\d) (\d\d):(\d\d):(\d\d)(.*);  author: (.*);  state: ([^;]*);(  lines: \+(\d+) -(\d+);?)?")
+    patterns['info'] = re.compile("".join([\
+        "^date: (\d\d\d\d)[/-](\d\d)[/-](\d\d) (\d\d):(\d\d):(\d\d)(.*);  ",
+        "author: (.*);  ",
+        "state: ([^;]*);(  ",
+        "lines: \+(\d+) -(\d+);?)?"]))
     patterns['branches'] = re.compile("^branches:  ([\d\.]*);$")
     patterns['branch'] = re.compile("^[ \b\t]+(.*): (([0-9]+\.)+)0\.([0-9]+)$")
     patterns['tag'] = re.compile("^[ \b\t]+(.*): (([0-9]+\.)+([0-9]+))$")
@@ -73,6 +90,7 @@ class CVSParser(Parser):
 
             self.handler.commit(self.commit)
             self.commit = None
+            
     def flush(self):
         self._handle_commit()
         if self.file is not None:
@@ -192,11 +210,16 @@ class CVSParser(Parser):
             commit.committer.name = match.group(8)
             self.handler.committer(commit.committer)
             
-            commit.date = datetime.datetime(int(match.group(1)), int(match.group(2)), int(match.group(3)),
-                                             int(match.group(4)), int(match.group(5)), int(match.group(6)))
+            commit.date = datetime.datetime(int(match.group(1)), 
+                                            int(match.group(2)), 
+                                            int(match.group(3)),
+                                            int(match.group(4)), 
+                                            int(match.group(5)), 
+                                            int(match.group(6)))
 
             if match.group(10) is not None:
-                self.lines[commit.revision] = (int(match.group(11)), int(match.group(12)))
+                self.lines[commit.revision] = (int(match.group(11)), 
+                                               int(match.group(12)))
             else:
                 self.lines[commit.revision] = (0, 0)
 
@@ -262,4 +285,3 @@ class CVSParser(Parser):
                 self.commit.message += self.file_separator + '\n'
                 self.file_separator = None
             self.commit.message += line + '\n'
-

@@ -16,37 +16,44 @@
 #
 # Authors: Carlos Garcia Campos <carlosgc@gsyc.escet.urjc.es>
 
+
 class ErrorLoadingConfig(Exception):
 
-    def __init__(self, message = None):
+    def __init__(self, message=None):
         Exception.__init__(self)
         
         self.message = message
 
+
 class Config:
 
-    __shared_state = { 'debug'         : False,
-                       'quiet'         : False,
-                       'profile'       : False,
-                       'repo_logfile'  : None,
-                       'save_logfile'  : None,
-                       'no_parse'      : False,
-                       'db_driver'     : 'mysql',
-                       'db_user'       : 'operator',
-                       'db_password'   : None, 
-                       'db_database'   : 'cvsanaly',
-                       'db_hostname'   : 'localhost',
-                       'extensions'    : [],
-                       'hard_order'    : False,
-                       # Metrics extension options
-                       'metrics_all'   : False,
-                       'metrics_noerr' : False,
-                       # Threading options
-                       'max_threads' : 10,
-                       # Regex for matching bug fixes in BugFixMessage
-                       'bug_fix_regexes' : ["defect(s)?", "patch(ing|es|ed)?", "bug(s|fix(es)?)?", 
-                "(re)?fix(es|ed|ing|age|\s?up(s)?)?", "debug(ged)?", "\#\d+", "back\s?out", "revert(ing|ed)?"],
-                       'bug_fix_regexes_case_sensitive' : ["[A-Z]+(-|#)\d+", "CVE-\d+-\d+"],
+    __shared_state = {'debug': False,
+                      'quiet': False,
+                      'profile': False,
+                      'repo_logfile': None,
+                      'save_logfile': None,
+                      'no_parse': False,
+                      'db_driver': 'mysql',
+                      'db_user': 'operator',
+                      'db_password': None, 
+                      'db_database': 'cvsanaly',
+                      'db_hostname': 'localhost',
+                      'extensions': [],
+                      'hard_order': False,
+                      # Metrics extension options
+                      'metrics_all': False,
+                      'metrics_noerr': False,
+                      # Threading options
+                      'max_threads': 10,
+                      # Regex for matching bug fixes in BugFixMessage
+                      'bug_fix_regexes': ["defect(s)?", "patch(ing|es|ed)?", 
+                                          "bug(s|fix(es)?)?", 
+                                          "(re)?fix(es|ed|ing|age|\s?up(s)?)?", 
+                                          "debug(ged)?", 
+                                          "\#\d+", "back\s?out", 
+                                          "revert(ing|ed)?"],
+                      'bug_fix_regexes_case_sensitive': ["[A-Z]+(-|#)\d+", 
+                                                         "CVE-\d+-\d+"],
                        }
     
     def __init__(self):
@@ -66,7 +73,8 @@ class Config:
             exec f in config.__dict__
             f.close()
         except Exception, e:
-            raise ErrorLoadingConfig("Error reading config file %s (%s)" % (config_file, str(e)))
+            raise ErrorLoadingConfig("Error reading config file %s (%s)" % \
+                                     (config_file, str(e)))
 
         try:
             self.debug = config.debug
@@ -113,7 +121,8 @@ class Config:
         except:
             pass
         try:
-            self.extensions.extend([item for item in config.extensions if item not in self.extensions])
+            self.extensions.extend([item for item in config.extensions \
+                                    if item not in self.extensions])
         except:
             pass
         try:
@@ -137,7 +146,8 @@ class Config:
         except:
             pass
         try:
-            self.bug_fix_regexes_case_sensitive = config.bug_fix_regexes_case_sensitive
+            self.bug_fix_regexes_case_sensitive = \
+                config.bug_fix_regexes_case_sensitive
         except:
             pass
 
@@ -159,10 +169,10 @@ class Config:
             # If there's an old file, migrate it
             old_config = os.path.join(os.environ.get('HOME'), '.cvsanaly')
             if os.path.isfile(old_config):
-                printout("Old config file found in %s, moving to %s", (old_config, config_file))
+                printout("Old config file found in %s, moving to %s", 
+                         (old_config, config_file))
                 os.rename(old_config, config_file)
                 self.__load_from_file(config_file)
             
     def load_from_file(self, path):
         self.__load_from_file(path)
-         

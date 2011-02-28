@@ -19,19 +19,21 @@
 import os
 import select
 import subprocess
-import sys
 import errno
 from signal import SIGINT, SIGTERM
 
+
 class CommandError(Exception):
 
-    def __init__(self, cmd, returncode, error = None):
+    def __init__(self, cmd, returncode, error=None):
         self.cmd = cmd
         self.returncode = returncode
         self.error = error
 
     def __str__(self):
-        return "Command '%s' returned non-zero exit status %d" % (self.cmd, self.returncode)
+        return "Command '%s' returned non-zero exit status %d" % \
+            (self.cmd, self.returncode)
+
 
 class CommandRunningError(Exception):
     
@@ -42,14 +44,16 @@ class CommandRunningError(Exception):
     def __str__(self):
         return "Error during execution of command %s" % (self.cmd)
 
+
 class CommandTimeOut(Exception):
     '''Timeout running command'''
+
 
 class Command:
 
     SELECT_TIMEOUT = 2
     
-    def __init__(self, command, cwd = None, env = None, error_handler_func = None):
+    def __init__(self, command, cwd=None, env=None, error_handler_func=None):
         self.cmd = command
         self.cwd = cwd
         self.env = env
@@ -80,7 +84,8 @@ class Command:
                 else:
                     raise
 
-    def _read_from_pipes(self, stdin = None, out_data_cb = None, err_data_cb = None, timeout = None):
+    def _read_from_pipes(self, stdin=None, out_data_cb=None, err_data_cb=None, 
+                         timeout=None):
         p = self.process
         
         read_set = [p.stdout, p.stderr]
@@ -107,7 +112,8 @@ class Command:
         try:
             while read_set or write_set:
                 try:
-                    rlist, wlist, xlist = select.select(read_set, write_set, [], self.SELECT_TIMEOUT)
+                    rlist, wlist, xlist = select.select(read_set, write_set, 
+                                            [], self.SELECT_TIMEOUT)
                 except select.error, e:
                     # Ignore interrupted system call, reraise anything else
                     if e.args[0] == errno.EINTR:
@@ -133,7 +139,9 @@ class Command:
                     elapsed = 0.0
                     
                 if p.stdin in wlist:
-                    bytes_written = self._write(p.stdin.fileno(), buffer(stdin, input_offset, 512))
+                    bytes_written = self._write(p.stdin.fileno(), 
+                                                buffer(stdin, input_offset, 
+                                                       512))
                     input_offset += bytes_written
                     if input_offset >= len(stdin):
                         p.stdin.close()
@@ -173,7 +181,8 @@ class Command:
         
         return out_data, err_data, ret
 
-    def _run_with_callbacks(self, stdin = None, parser_out_func = None, parser_error_func = None, timeout = None):
+    def _run_with_callbacks(self, stdin=None, parser_out_func=None, 
+                            parser_error_func=None, timeout=None):
         out_func = err_func = None
         
         def out_cb(out_chunk, out_data_l):
@@ -208,11 +217,11 @@ class Command:
         if self.process is not None:
             return self.process
         
-        kws = { 'close_fds': True,
-                'stdout'   : subprocess.PIPE,
-                'stderr'   : subprocess.PIPE,
-                'stdin'    : subprocess.PIPE,
-                'env'      : os.environ.copy()
+        kws = {'close_fds': True,
+               'stdout': subprocess.PIPE,
+               'stderr': subprocess.PIPE,
+               'stdin': subprocess.PIPE,
+               'env': os.environ.copy()
         }
 
         if self.cwd is not None:
@@ -228,16 +237,19 @@ class Command:
     # We keep this only for backwards compatibility,
     # but it doesn't make sense, since both run and run_sync
     # have been always synchronous
-    def run_sync(self, stdin = None, timeout = None):
+    def run_sync(self, stdin=None, timeout=None):
         return self.run(stdin, None, None, timeout)
         
-    def run(self, stdin = None, parser_out_func = None, parser_error_func = None, timeout = None):
+    def run(self, stdin=None, parser_out_func=None, parser_error_func=None, 
+            timeout=None):
         self._get_process()
 
         if parser_out_func is None and parser_error_func is None:
-            out, err, ret = self._read_from_pipes(stdin, timeout = timeout)
+            out, err, ret = self._read_from_pipes(stdin, timeout=timeout)
         else:
-            out, err, ret = self._run_with_callbacks(stdin, parser_out_func, parser_error_func, timeout)
+            out, err, ret = self._run_with_callbacks(stdin, parser_out_func, 
+                                                     parser_error_func, 
+                                                     timeout)
             
         if ret != 0:
             raise CommandError(self.cmd, ret, err)
@@ -262,9 +274,9 @@ if __name__ == '__main__':
 
     # Valid command with cwd
     def out_func(line):
-        print "LINE: %s" %(line)
+        print "LINE: %s" % (line)
     cmd = Command(['ls', '-lh'], '/')
-    cmd.run(parser_out_func = out_func)
+    cmd.run(parser_out_func=out_func)
 
     # Invalid command
     cmd = Command('invalid')
@@ -293,7 +305,8 @@ if __name__ == '__main__':
     def error_handler(cmd, data):
         cmd.input('p\n')
         return True
-    cmd = Command(['svn', 'info', 'https://svn.apache.org/repos/asf/activemq/trunk'])
+    cmd = Command(['svn', 'info', 
+                   'https://svn.apache.org/repos/asf/activemq/trunk'])
     cmd.set_error_handler(error_handler)
     print cmd.run()
 

@@ -24,10 +24,22 @@ import datetime
 from Parser import Parser
 from Repository import Commit, Action, Person
 
+
 # TODO: Add debug messages
 #       Branches stuff
-
 class BzrParser(Parser):
+    """A parser for Bazaar.
+    
+    # These are a couple of tests for the longer regexes that had
+    # to be split up when trying to get PEP-8 line length compliance
+    >>> p = BzrParser()
+    >>> ts = "timestamp: Mon 2010-12-27 02:39:12 +0000"
+    >>> re.match(p.patterns['date'], ts) #doctest: +ELLIPSIS
+    <_sre.SRE_Match object...>
+    >>> ts = "timestamp: Mon 2010-12-27 02:39:12+0000"
+    >>> re.match(p.patterns['date'], ts) #doctest: +ELLIPSIS
+    
+    """
 
     (
         UNKNOWN,
@@ -43,7 +55,8 @@ class BzrParser(Parser):
     patterns['commit'] = re.compile("^revno:[ \t]+(.*)$")
     patterns['committer'] = re.compile("^committer:[ \t]+(.*)[ \t]+<(.*)>$")
     patterns['author'] = re.compile("^author:[ \t]+(.*)[ \t]+<(.*)>$")
-    patterns['date'] = re.compile("^timestamp:.* ([0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] [0-9]+:[0-9]+:[0-9]+) ([+-][0-9][0-9][0-9][0-9])$")
+    patterns['date'] = re.compile("^timestamp:.* " + \
+                            "(\d{4}-\d{2}-\d{2} \d+:\d+:\d+) ([+-]\d{4})$")
     patterns['message'] = re.compile("^message:$")
     patterns['added'] = re.compile("^added:$")
     patterns['modified'] = re.compile("^modified:$")
@@ -119,9 +132,12 @@ class BzrParser(Parser):
         # Date
         match = self.patterns['date'].match(line)
         if match:
-            self.commit.date = datetime.datetime(*(time.strptime(match.group(1).strip(" "), "%Y-%m-%d %H:%M:%S")[0:6]))
+            self.commit.date = datetime.datetime(*(time.strptime
+                                                   (match.group(1).strip(" "), 
+                                                    "%Y-%m-%d %H:%M:%S")[0:6]))
             # datetime.datetime.strptime not supported by Python2.4
-            #self.commit.date = datetime.datetime.strptime(match.group(1).strip(" "), "%a %b %d %H:%M:%S %Y")
+            #self.commit.date = datetime.datetime.strptime(\
+            #    match.group(1).strip(" "), "%a %b %d %H:%M:%S %Y")
             
             return
 

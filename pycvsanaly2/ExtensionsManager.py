@@ -20,18 +20,22 @@
 from extensions import get_extension, ExtensionRunError, ExtensionUnknownError
 from utils import printerr, printout
 
+
 class ExtensionException(Exception):
     '''ExtensionException'''
+
 
 class InvalidExtension(ExtensionException):
     def __init__(self, name):
         self.name = name
 
+
 class InvalidDependency(ExtensionException):
     def __init__(self, name1, name2):
         self.name1 = name1
         self.name2 = name2
-        
+ 
+       
 class ExtensionsManager:
 
     def __init__(self, exts, hard_order=False):
@@ -89,14 +93,15 @@ class ExtensionsManager:
                 for dep in extension.deps:
                     if dep in done:
                         continue
-                    result = self.run_extension(dep, self.exts[dep](), repo, uri, db)
+                    result = self.run_extension(dep, self.exts[dep](), 
+                                                repo, uri, db)
                     done.append(dep)
                     if not result:
                         break
 
             if not result:
-                printout("Skipping extension %s since one or more of its dependencies failed", (name,))
+                printout("Skipping extension %s since one or more of its " + \
+                         "dependencies failed", (name,))
                 continue
                     
             self.run_extension(name, extension, repo, uri, db)
-    
