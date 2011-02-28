@@ -60,8 +60,6 @@ class ExtensionsManager:
                         except:
                             raise InvalidDependency(ext, dep)
                         
-            print str(self.exts)
-                        
     def run_extension(self, name, extension, repo, uri, db):
         # Trim off the ordering numeral before printing
         if self.hard_order:
