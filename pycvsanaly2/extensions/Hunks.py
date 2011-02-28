@@ -28,6 +28,7 @@ from pycvsanaly2.PatchParser import parse_patches, RemoveLine, InsertLine, \
         ContextLine, Patch
 import re
 
+
 class CommitData:
     def __init__(self, file_name, 
                     old_start_line=None, old_end_line=None, \
@@ -50,17 +51,18 @@ class CommitData:
 
         if self.old_start_line is not None:
             s = s + "Old start line = " + str(self.old_start_line) + "\n"
-            s = s +  "Old end line = " + str(self.old_end_line) + "\n"
+            s = s + "Old end line = " + str(self.old_end_line) + "\n"
         else:
             s = s + "None deleted\n"
 
         if self.new_start_line is not None:
             s = s + "New start line = " + str(self.new_start_line) + "\n"
-            s = s +  "New end line = " + str(self.new_end_line) + "\n"
+            s = s + "New end line = " + str(self.new_end_line) + "\n"
         else:
             s = s + "None added\n"
 
         return s.strip()
+
 
 # This class holds a single repository retrieve task,
 # and keeps the source code until the object is garbage-collected
@@ -95,7 +97,8 @@ class Hunks(Extension):
                     new_end_line INTEGER,
                     bug_introducing INTEGER NOT NULL default 0,
                     bug_introducing_hunk INTEGER,
-                    UNIQUE (file_id, commit_id, old_start_line, old_end_line, new_start_line, new_end_line))""")
+                    UNIQUE (file_id, commit_id, old_start_line, old_end_line, 
+                            new_start_line, new_end_line))""")
             except sqlite3.dbapi2.OperationalError:
                 # It's OK if the table already exists
                 pass
@@ -123,7 +126,8 @@ class Hunks(Extension):
                     new_end_line int(11),
                     bug_introducing bool NOT NULL default false,
                     PRIMARY KEY(id),
-                    UNIQUE (file_id, commit_id, old_start_line, old_end_line, new_start_line, new_end_line)
+                    UNIQUE (file_id, commit_id, old_start_line, old_end_line, 
+                            new_start_line, new_end_line)
                     ) ENGINE=InnoDB CHARACTER SET=utf8""")
             except _mysql_exceptions.OperationalError, e:
                 if e.args[0] == 1050:
@@ -144,7 +148,8 @@ class Hunks(Extension):
         lines = [l + "\n" for l in patch_content.splitlines() if l]
         hunks = []
 
-        for patch in [p for p in parse_patches(lines, allow_dirty=True, allow_continue=True) if isinstance(p, Patch)]:
+        for patch in [p for p in parse_patches(lines, allow_dirty=True, \
+                            allow_continue=True) if isinstance(p, Patch)]:
             # This method matches that of parseLine in UnifiedDiffParser.java
             # It's not necessarily intuitive, but this algorithm is much harder
             # than it looks, I spent hours trying to get a simpler solution.
@@ -226,7 +231,6 @@ class Hunks(Extension):
 
         return hunks
 
-    
     def run(self, repo, uri, db):
         # Start the profiler, per every other extension
         profiler_start("Running hunks extension")
@@ -248,24 +252,25 @@ class Hunks(Extension):
 
             read_cursor.execute(statement( \
                     "SELECT id from repositories where uri = ?", \
-                    db.place_holder),(repo_uri,))
+                    db.place_holder), (repo_uri,))
             repo_id = read_cursor.fetchone()[0]
         except NotImplementedError:
             raise ExtensionRunError( \
-                    "Content extension is not supported for %s repos" \
-                    %(repo.get_type()))
+                    "Content extension is not supported for %s repos" % \
+                    (repo.get_type()))
         except Exception, e:
             raise ExtensionRunError( \
-                    "Error creating repository %s. Exception: %s" \
-                    %(repo.get_uri(), str(e)))
+                    "Error creating repository %s. Exception: %s" % \
+                    (repo.get_uri(), str(e)))
         
         icursor = ICursor(read_cursor, self.INTERVAL_SIZE)
         # Get the patches from this repository
-        query = "select p.commit_id, p.patch, s.rev from patches p, scmlog s " + \
-                "where p.commit_id = s.id and " + \
-                "s.repository_id = ? and " + \
-                "p.patch is not NULL"
-        icursor.execute(statement(query, db.place_holder),(repo_id,))
+        query = """select p.commit_id, p.patch, s.rev 
+                    from patches p, scmlog s 
+                    where p.commit_id = s.id and
+                    s.repository_id = ? and 
+                    p.patch is not NULL"""
+        icursor.execute(statement(query, db.place_holder), (repo_id,))
 
         self.__prepare_table(connection)
         fp = FilePaths(db)
@@ -279,15 +284,18 @@ class Hunks(Extension):
                     # Get the file ID from the database for linking
                     # TODO: This isn't going to work if two files are committed
                     # with the same name at the same time, eg. __init.py__ in
-                    # different paths. Might get fixed when messing with file paths
-                    file_id_query = """select f.id, f.file_name from files f, actions a
+                    # different paths. 
+                    # Might get fixed when messing with file paths
+                    file_id_query = """select f.id, f.file_name 
+                    from files f, actions a
                     where a.commit_id = ?
                     and a.file_id = f.id"""
     
-                    hunk_file_name = re.sub(r'^[ab]\/', '', hunk.file_name.strip())               
+                    hunk_file_name = re.sub(r'^[ab]\/', '', 
+                                            hunk.file_name.strip())               
     
-                    read_cursor_1.execute(statement(file_id_query, db.place_holder), \
-                            (commit_id,))
+                    read_cursor_1.execute(statement(file_id_query,
+                        db.place_holder), (commit_id,))
                     possible_files = read_cursor_1.fetchall()
                 
                     file_id = None
@@ -297,7 +305,8 @@ class Hunks(Extension):
                     else:
                         for possible_file in possible_files:
                             # Get the paths of the possible matches
-                            path = fp.get_path(possible_file[0], commit_id, repo_id)
+                            path = fp.get_path(possible_file[0], 
+                                               commit_id, repo_id)
     
                             if path is not None:
                                 if path.strip() == ("/" + hunk_file_name):
@@ -317,20 +326,23 @@ class Hunks(Extension):
                             # We'll just continue and throw this away
                             continue
                         else:
-                            printerr("No file ID found for hunk " + hunk_file_name)
-                            
-    
+                            printerr("No file ID found for hunk " + \
+                                     hunk_file_name)
+
                     insert = """insert into hunks(file_id, commit_id,
-                                old_start_line, old_end_line, new_start_line, new_end_line)
+                                old_start_line, old_end_line, new_start_line, 
+                                new_end_line)
                                 values(?,?,?,?,?,?)"""
 
                     execute_statement(statement(insert, db.place_holder),
-                                      (file_id, commit_id, hunk.old_start_line, \
-                                       hunk.old_end_line, hunk.new_start_line, \
+                                      (file_id, commit_id, 
+                                       hunk.old_start_line,
+                                       hunk.old_end_line, 
+                                       hunk.new_start_line,
                                        hunk.new_end_line),
                                        write_cursor,
                                        db,
-                                       "Couldn't insert hunk, duplicate record?",
+                                       "Couldn't insert hunk, dup record?",
                                        exception=ExtensionRunError)
                 
             connection.commit

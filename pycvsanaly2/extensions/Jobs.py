@@ -25,11 +25,13 @@ from pycvsanaly2.AsyncQueue import AsyncQueue, TimeOut
 import repositoryhandler.backends as rh
 import threading
 
+
 class JobPool:
 
     POOL_SIZE = 5
 
-    def __init__(self, repo, repo_uri, jobs_done = True, poolsize = POOL_SIZE, queuesize = None):
+    def __init__(self, repo, repo_uri, jobs_done=True, poolsize=POOL_SIZE, 
+                 queuesize=None):
         self.jobs_done = jobs_done
 
         self.queue = AsyncQueue(queuesize or 0)
@@ -38,7 +40,8 @@ class JobPool:
             
         for i in range(poolsize):
             rep = rh.create_repository(repo.get_type(), repo.get_uri())
-            thread = threading.Thread(target=self._job_thread, args=(rep, repo_uri))
+            thread = threading.Thread(target=self._job_thread, 
+                                      args=(rep, repo_uri))
             thread.setDaemon(True)
             thread.start()
 
@@ -54,7 +57,7 @@ class JobPool:
     def push(self, job):
         self.queue.put(job)
 
-    def get_next_done(self, timeout = None):
+    def get_next_done(self, timeout=None):
         if not self.jobs_done:
             return None
         
@@ -77,6 +80,7 @@ class JobPool:
     def join(self):
         self.queue.join()
 
+
 class Job:
     def __init__(self):
         self.failed = False
@@ -94,9 +98,11 @@ if __name__ == '__main__':
             uri = repo_uri + self.module
             print "%s -> %s" % (uri, repo.get_last_revision(uri))
 
-    modules = ['cvsanaly', 'octopus', 'cmetrics', 'repositoryhandler', 'retrieval_system',
-               'bicho', 'pandaRest']
-    repo = rh.create_repository('svn', 'https://svn.forge.morfeo-project.org/svn/libresoft-tools/')
+    repo_uri = 'https://svn.forge.morfeo-project.org/svn/libresoft-tools/'
+
+    modules = ['cvsanaly', 'octopus', 'cmetrics', 'repositoryhandler', 
+               'retrieval_system', 'bicho', 'pandaRest']
+    repo = rh.create_repository('svn', repo_uri)
     repo_uri = 'https://svn.forge.morfeo-project.org/svn/libresoft-tools/'
     
     pool = JobPool(repo, repo_uri, False)
@@ -105,4 +111,3 @@ if __name__ == '__main__':
         pool.push(job)
 
     pool.join()
-    

@@ -25,6 +25,7 @@ from Config import Config
 
 config = Config()
 
+
 def to_utf8(string):
     if isinstance(string, unicode):
         return str(string.encode('utf-8'))
@@ -40,12 +41,14 @@ def to_utf8(string):
     else:
         return string
 
+
 def uri_is_remote(uri):
     match = re.compile("^.*://.*$").match(uri)
     if match is None:
         return False
     else:
         return not uri.startswith("file://")
+
 
 def uri_to_filename(uri):
     """ Converts a URI to an absolute path.
@@ -58,7 +61,8 @@ def uri_to_filename(uri):
     '/Users/cflewis/Documents'
     
     >>> import os
-    >>> uri_to_filename("~/Documents") == os.path.expanduser("~") + "/Documents"
+    >>> uri_to_filename("~/Documents") == os.path.expanduser("~") + \
+                                          "/Documents"
     True
     
     """
@@ -73,7 +77,8 @@ def uri_to_filename(uri):
         
     return os.path.abspath(uri)
 
-def printout(str = '\n', args = None):
+
+def printout(str='\n', args=None):
     if config.quiet:
         return
 
@@ -85,7 +90,8 @@ def printout(str = '\n', args = None):
     sys.stdout.write(to_utf8(str))
     sys.stdout.flush()
 
-def printerr(str = '\n', args = None):
+
+def printerr(str='\n', args=None):
     if args is not None:
         str = str % tuple(to_utf8(arg) for arg in args)
     
@@ -94,17 +100,19 @@ def printerr(str = '\n', args = None):
     sys.stderr.write(to_utf8(str))
     sys.stderr.flush()
 
-def printdbg(str = '\n', args = None):
+
+def printdbg(str='\n', args=None):
     if not config.debug:
         return
 
     printout("DBG: " + str, args)
 
+
 def remove_directory(path):
     if not os.path.exists(path):
         return
 
-    for root, dirs, files in os.walk(path, topdown = False):
+    for root, dirs, files in os.walk(path, topdown=False):
         for file in files:
             os.remove(os.path.join(root, file))
         for dir in dirs:
@@ -113,6 +121,7 @@ def remove_directory(path):
     os.rmdir(path)
 
 _dirs = {}
+
 
 def cvsanaly_dot_dir():
 
@@ -135,6 +144,7 @@ def cvsanaly_dot_dir():
     
     return dot_dir
 
+
 def cvsanaly_cache_dir():
     try:
         return _dirs['cache']
@@ -154,8 +164,8 @@ def cvsanaly_cache_dir():
     _dirs['cache'] = cache_dir
 
     return cache_dir
-    
+
+   
 if __name__ == '__main__':
     print cvsanaly_dot_dir()
     print cvsanaly_cache_dir()
-    

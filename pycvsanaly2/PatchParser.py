@@ -169,7 +169,7 @@ class RemoveLine(HunkLine):
         return self.get_str("-")
 
 NO_NL = '\\ No newline at end of file\n'
-__pychecker__="no-returnvalues"
+
 
 def parse_line(line):
     if line.startswith("\n"):
@@ -182,7 +182,6 @@ def parse_line(line):
         return RemoveLine(line[1:])
     else:
         raise MalformedLine("Unknown line type", line)
-__pychecker__=""
 
 
 class Hunk:
@@ -226,15 +225,15 @@ class Hunk:
         return "".join(lines)
 
     def shift_to_mod(self, pos):
-        if pos < self.orig_pos-1:
+        if pos < self.orig_pos - 1:
             return 0
-        elif pos > self.orig_pos+self.orig_range:
+        elif pos > self.orig_pos + self.orig_range:
             return self.mod_range - self.orig_range
         else:
             return self.shift_to_mod_lines(pos)
 
     def shift_to_mod_lines(self, pos):
-        position = self.orig_pos-1
+        position = self.orig_pos - 1
         shift = 0
         for line in self.lines:
             if isinstance(line, InsertLine):
@@ -319,9 +318,9 @@ class Patch(BinaryPatch):
         for hunk in self.hunks:
             for line in hunk.lines:
                 if isinstance(line, InsertLine):
-                     inserts+=1;
+                    inserts += 1
                 elif isinstance(line, RemoveLine):
-                     removes+=1;
+                    removes += 1
         return (inserts, removes, len(self.hunks))
 
     def stats_str(self):
@@ -345,7 +344,7 @@ class Patch(BinaryPatch):
         :rtype: iterator of (int, InsertLine)
         """
         for hunk in self.hunks:
-            pos = hunk.mod_pos - 1;
+            pos = hunk.mod_pos - 1
             for line in hunk.lines:
                 if isinstance(line, InsertLine):
                     yield (pos, line)
@@ -449,10 +448,11 @@ def parse_patches(iter_lines, allow_dirty=False, allow_continue=False):
     for f in iter_file_patch(iter_lines, allow_dirty):
         try:
             patches.append(parse_patch(f.__iter__(), allow_dirty))
-        except Exception, e:
+        except Exception:
             continue
 
     return patches
+
 
 def difference_index(atext, btext):
     """Find the indext of the first character that differs between two texts
@@ -469,7 +469,7 @@ def difference_index(atext, btext):
         length = len(btext)
     for i in range(length):
         if atext[i] != btext[i]:
-            return i;
+            return i
     return None
 
 
@@ -505,7 +505,8 @@ def iter_patched_from_hunks(orig_lines, hunks):
             elif isinstance(hunk_line, (ContextLine, RemoveLine)):
                 orig_line = orig_lines.next()
                 if orig_line != hunk_line.contents:
-                    raise PatchConflict(line_no, orig_line, "".join(seen_patch))
+                    raise PatchConflict(line_no, orig_line, 
+                                        "".join(seen_patch))
                 if isinstance(hunk_line, ContextLine):
                     yield orig_line
                 else:

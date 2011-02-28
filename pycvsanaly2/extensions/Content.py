@@ -31,6 +31,7 @@ from Jobs import JobPool, Job
 from io import BytesIO
 import os
 
+
 # This class holds a single repository retrieve task,
 # and keeps the source code until the object is garbage-collected
 class ContentJob(Job):
@@ -115,17 +116,18 @@ class ContentJob(Job):
                 io.close()
             except Exception, e:
                 printerr("Error getting contents." +
-                            "Exception: %s",(str(e),))
+                            "Exception: %s", (str(e),))
             finally:
                 #TODO: This should close, but it throws an error
                 # sometimes. It's fixable using an algorithm like
-                # <http://www.mail-archive.com/bazaar-commits@lists.canonical.com/msg06260.html>
+                # <http://goo.gl/9gPCw>
                 #fd.close()
                 pass
                 
-
     def get_file_contents(self):
-            """Returns contents of the file, stripped of whitespace at either end"""
+            """Returns contents of the file, stripped of whitespace 
+            at either end
+            """
             # An encode will fail if the source code can't be converted to
             # utf-8, ie. it's not already unicode, or latin-1, or something
             # obvious. This almost always means that the file isn't source
@@ -186,6 +188,7 @@ class ContentJob(Job):
     file_number_of_lines = property(get_number_of_lines)
     file_contents = property(get_file_contents, set_file_contents)
 
+
 class Content(Extension):
     deps = ['FileTypes']
     
@@ -216,8 +219,10 @@ class Content(Extension):
                     content CLOB,
                     loc INTEGER,
                     UNIQUE (commit_id, file_id))""")
-                cursor.execute("""create index commit_id_index on content(commit_id)""")
-                cursor.execute("""create index commit_id_index on content(file_id)""")
+                cursor.execute("""create index commit_id_index 
+                    on content(commit_id)""")
+                cursor.execute("""create index commit_id_index 
+                    on content(file_id)""")
             except sqlite3.dbapi2.OperationalError:
                 # It's OK if the table already exists
                 pass
@@ -271,7 +276,8 @@ class Content(Extension):
         # but in the source, these are referred to as commit IDs.
         # Don't ask me why!
         while finished_job is not None:
-            query = "insert into content(commit_id, file_id, content, loc) values(?,?,?,?)"
+            query = """insert into content(commit_id, file_id, content, loc) 
+                values(?,?,?,?)"""
             insert_statement = statement(query, db.place_holder)
             parameters = (finished_job.commit_id,
                           finished_job.file_id,
@@ -282,12 +288,11 @@ class Content(Extension):
                        "Couldn't insert, duplicate record?", 
                        exception=ExtensionRunError)
             
-            processed_jobs+=1
+            processed_jobs += 1
             finished_job = job_pool.get_next_done(0)
-#        print "Before return: %s"%(datetime.now()-start)
+            # print "Before return: %s"%(datetime.now()-start)
             
         return processed_jobs
-
 
     def run(self, repo, uri, db):
         # Start the profiler, per every other extension
@@ -309,16 +314,16 @@ class Content(Extension):
 
             read_cursor.execute(statement( \
                     "SELECT id from repositories where uri = ?", \
-                    db.place_holder),(repo_uri,))
+                    db.place_holder), (repo_uri,))
             repo_id = read_cursor.fetchone()[0]
         except NotImplementedError:
             raise ExtensionRunError( \
-                    "Content extension is not supported for %s repos" \
-                    %(repo.get_type()))
+                    "Content extension is not supported for %s repos" % \
+                    (repo.get_type()))
         except Exception, e:
             raise ExtensionRunError( \
-                    "Error creating repository %s. Exception: %s" \
-                    %(repo.get_uri(), str(e)))
+                    "Error creating repository %s. Exception: %s" % \
+                    (repo.get_uri(), str(e)))
             
         # Try to create a table for storing the content
         # TODO: Removed use case for choosing between all or just the HEAD,
@@ -326,7 +331,8 @@ class Content(Extension):
         try:
             self.__prepare_table(connection)
         except Exception as e:
-            raise ExtensionRunError("Couldn't prepare table because " + str(e))
+            raise ExtensionRunError("Couldn't prepare table because " + \
+                                    str(e))
 
         queuesize = Config().max_threads
         printdbg("Setting queuesize to " + str(queuesize))
@@ -344,13 +350,14 @@ class Content(Extension):
                 "ft.type in('code') and " + \
                 "f.repository_id = ?"
                 # "ft.type in('code', 'unknown') and " + \
-        read_cursor.execute(statement(query, db.place_holder),(repo_id,))
+        read_cursor.execute(statement(query, db.place_holder), (repo_id,))
         code_files = [item[0] for item in read_cursor.fetchall()]
         query = """select c.file_id, c.commit_id from content c, files f
             where c.file_id=f.id and f.repository_id=?
         """
-        read_cursor.execute(statement(query, db.place_holder),(repo_id,))
-        existing_content = [(item[0],item[1]) for item in read_cursor.fetchall()]
+        read_cursor.execute(statement(query, db.place_holder), (repo_id,))
+        existing_content = [(item[0], item[1]) \
+                            for item in read_cursor.fetchall()]
 
         fr = FileRevs(db, connection, read_cursor, repo_id)
 
@@ -366,7 +373,8 @@ class Content(Extension):
             try:
                 relative_path = fr.get_path()
             except AttributeError, e:
-                printerr("No path found for file %d at commit %d", (file_id, commit_id))
+                printerr("No path found for file %d at commit %d", 
+                         (file_id, commit_id))
                 continue
 #            print "After getting path: %s"%(datetime.now()-loop_start)
             if composed:
@@ -374,11 +382,11 @@ class Content(Extension):
             else:
                 rev = revision
 
-            printdbg("Path for %d at %s -> %s",(file_id, rev, relative_path))
+            printdbg("Path for %d at %s -> %s", (file_id, rev, relative_path))
 
             # Ignore SVN tags
             if repo.get_type() == 'svn' and relative_path == 'tags':
-                printdbg("Skipping file %s",(relative_path,))
+                printdbg("Skipping file %s", (relative_path,))
                 continue
 
             job = ContentJob(commit_id, file_id, rev, relative_path)
@@ -386,16 +394,21 @@ class Content(Extension):
             i = i + 1
             if i >= queuesize:
                 printdbg("Queue is now at %d, flushing to database", (i,))
-#                print "Before __process_finished_jobs: %s"%(datetime.now()-loop_start)
-                processed_jobs=self.__process_finished_jobs(job_pool, write_cursor, db)
-#                print "%d jobs processed at %s"%(processed_jobs, datetime.now()-loop_start)
-                connection.commit()
-                i = i-processed_jobs
-                if processed_jobs<queuesize/5:
-#                    print "Before joining jobs: %s"%(datetime.now()-loop_start)
-                    job_pool.join()
                 
-#            print "End of loop: %s"%(datetime.now()-loop_start)
+                # TODO: Remove these comments if they aren't useful
+                # print "Before __process_finished_jobs: \
+                #    %s"%(datetime.now()-loop_start)
+                processed_jobs = self.__process_finished_jobs(job_pool, 
+                                                              write_cursor, db)
+                # print "%d jobs processed at %s" % \
+                #    (processed_jobs, datetime.now()-loop_start)
+                connection.commit()
+                i = i - processed_jobs
+                if processed_jobs < (queuesize / 5):
+                    # print "Before joining jobs: \
+                    #    %s"%(datetime.now()-loop_start)
+                    job_pool.join()
+                # print "End of loop: %s"%(datetime.now()-loop_start)
 
         job_pool.join()
         self.__process_finished_jobs(job_pool, write_cursor, db)

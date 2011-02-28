@@ -27,6 +27,7 @@ from BzrParser import BzrParser
 
 from utils import printerr
 
+
 def create_parser_from_logfile(uri):
     def logfile_is_cvs(logfile):
         retval = False
@@ -132,6 +133,7 @@ def create_parser_from_logfile(uri):
 
     printerr("Error: path %s doesn't look like a valid log file", (uri,))
     return None
+
 
 def create_parser_from_repository(repo):
     if repo.get_type() == 'cvs':

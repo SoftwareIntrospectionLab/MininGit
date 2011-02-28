@@ -15,17 +15,18 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 #
 
+
 class Commit:
     def __init__(self):
-        self.__dict__ = { 'revision'     : None,
-                          'committer'    : None,
-                          'author'       : None,
-                          'date'         : None,
-                          'actions'      : [],
-                          'branch'       : None,
-                          'tags'         : None,
-                          'message'      : "",
-                          'composed_rev' : False }
+        self.__dict__ = {'revision': None,
+                         'committer': None,
+                         'author': None,
+                         'date': None,
+                         'actions': [],
+                         'branch': None,
+                         'tags': None,
+                         'message': "",
+                         'composed_rev': False}
 
     def __getinitargs__(self):
         return()
@@ -48,6 +49,7 @@ class Commit:
     def __ne__(self, other):
         return not isinstance(other, Commit) or self.revision != other.revision
 
+
 # Action types
 # A Add
 # M Modified
@@ -55,15 +57,14 @@ class Commit:
 # V moVed (Renamed)
 # C Copied
 # R Replaced
-
 class Action:
     def __init__(self):
-        self.__dict__ = { 'type'      : None,
-                          'branch_f1' : None,
-                          'branch_f2' : None,
-                          'f1'        : None,
-                          'f2'        : None,
-                          'rev'       : None}
+        self.__dict__ = {'type': None,
+                         'branch_f1': None,
+                         'branch_f2': None,
+                         'f1': None,
+                         'f2': None,
+                         'rev': None}
 
     def __getinitargs__(self):
         return()
@@ -101,8 +102,8 @@ class Action:
 
 class Person:
     def __init__(self):
-        self.__dict__ = { 'name'  : None,
-                          'email' : None }
+        self.__dict__ = {'name': None,
+                         'email': None}
 
     def __getinitargs__(self):
         return()
@@ -153,18 +154,17 @@ if __name__ == '__main__':
     f.close()
 
     print "Commit"
-    print "rev: %s, committer: %s, date: %s" % (commit.revision, commit.committer, commit.date)
+    print "rev: %s, committer: %s, date: %s" % (commit.revision, 
+                                                commit.committer, commit.date)
     if commit.author is not None:
         print "Author: %s" % (commit.author)
     print "files: "
     for action in commit.actions:
         print "%s %s " % (action.type, action.f1)
         if action.f2 is not None:
-            print "(%s: %s) on branch %s" % (action.f2, action.rev, commit.branch or action.branch)
+            print "(%s: %s) on branch %s" % (action.f2, action.rev, 
+                                             commit.branch or action.branch)
         else:
             print "on branch %s" % (commit.branch or action.branch)
     print "Message"
     print commit.message
-
-
-    

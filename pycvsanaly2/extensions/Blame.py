@@ -17,9 +17,10 @@
 # Authors :
 #       Carlos Garcia Campos  <carlosgc@gsyc.escet.urjc.es>
 
-from pycvsanaly2.Database import (SqliteDatabase, MysqlDatabase, TableAlreadyExists,
-                                  statement, ICursor)
-from pycvsanaly2.extensions import Extension, register_extension, ExtensionRunError
+from pycvsanaly2.Database import (SqliteDatabase, MysqlDatabase, 
+    TableAlreadyExists, statement, ICursor)
+from pycvsanaly2.extensions import (Extension, register_extension, 
+    ExtensionRunError)
 from pycvsanaly2.profile import profiler_start, profiler_stop
 from pycvsanaly2.utils import printdbg, printerr, uri_to_filename
 from FileRevs import FileRevs
@@ -29,6 +30,7 @@ from repositoryhandler.backends.watchers import BLAME
 from Guilty.Parser import create_parser
 from Guilty.OutputDevs import OutputDevice
 import os
+
 
 class BlameJob(Job):
 
@@ -58,7 +60,8 @@ class BlameJob(Job):
         self.authors = None
 
     def run(self, repo, repo_uri):
-        profiler_start("Running BlameJob for %s@%s", (self.path,self.rev))
+        profiler_start("Running BlameJob for %s@%s", (self.path, self.rev))
+        
         def blame_line(line, p):
             p.feed(line)
 
@@ -85,11 +88,12 @@ class BlameJob(Job):
             self.collect_results(out)
         except RepositoryCommandError, e:
             self.failed = True
-            printerr("Command %s returned %d (%s)", (e.cmd, e.returncode, e.error))
+            printerr("Command %s returned %d (%s)", 
+                     (e.cmd, e.returncode, e.error))
         p.end()
         repo.remove_watch(BLAME, wid)
-        profiler_stop("Running BlameJob for %s@%s", (self.path,self.rev), delete=True)
-        
+        profiler_stop("Running BlameJob for %s@%s", 
+                      (self.path, self.rev), delete=True)
 
     def collect_results(self, content_handler):
         self.authors = content_handler.get_authors()
@@ -106,13 +110,15 @@ class BlameJob(Job):
     def get_commit_id(self):
         return self.commit_id
 
+
 class Blame(Extension):
 
     deps = ['FileTypes']
 
     # Insert query
-    __insert__ = 'INSERT INTO blame (id, file_id, commit_id, author_id, n_lines) ' + \
-                 'VALUES (?,?,?,?,?)'
+    __insert__ = """INSERT INTO blame (id, file_id, commit_id, author_id, 
+                                       n_lines)
+                 'VALUES (?,?,?,?,?)"""
     MAX_BLAMES = 10
 
     def __init__(self):
@@ -128,13 +134,13 @@ class Blame(Extension):
             import sqlite3.dbapi2
 
             try:
-                cursor.execute("CREATE TABLE blame (" +
-                                "id integer primary key," +
-                                "file_id integer," +
-                                "commit_id integer," +
-                                "author_id integer," +
-                                "n_lines integer" +
-                                ")")
+                cursor.execute("""CREATE TABLE blame (
+                                id integer primary key,
+                                file_id integer,
+                                commit_id integer,
+                                author_id integer,
+                                n_lines integer
+                                )""")
             except sqlite3.dbapi2.OperationalError:
                 cursor.close()
                 raise TableAlreadyExists
@@ -144,16 +150,16 @@ class Blame(Extension):
             import _mysql_exceptions
 
             try:
-                cursor.execute("CREATE TABLE blame (" +
-                                "id integer primary key not null," +
-                                "file_id integer," +
-                                "commit_id integer," +
-                                "author_id integer," +
-                                "n_lines integer," +
-                                "FOREIGN KEY (file_id) REFERENCES tree(id)," +
-                                "FOREIGN KEY (commit_id) REFERENCES scmlog(id)," +
-                                "FOREIGN KEY (author_id) REFERENCES people(id)" +
-                                ") CHARACTER SET=utf8")
+                cursor.execute("""CREATE TABLE blame ("
+                                id integer primary key not null,
+                                file_id integer,
+                                commit_id integer,
+                                author_id integer,
+                                n_lines integer,
+                                FOREIGN KEY (file_id) REFERENCES tree(id),
+                                FOREIGN KEY (commit_id) REFERENCES scmlog(id),
+                                FOREIGN KEY (author_id) REFERENCES people(id)
+                                ) CHARACTER SET=utf8""")
             except _mysql_exceptions.OperationalError, e:
                 if e.args[0] == 1050:
                     cursor.close()
@@ -176,7 +182,7 @@ class Blame(Extension):
         cursor.execute(statement(query, self.db.place_holder))
         self.authors = dict([(name, id) for id, name in cursor.fetchall()])
 
-    def process_finished_jobs(self, job_pool, write_cursor, unlocked = False):
+    def process_finished_jobs(self, job_pool, write_cursor, unlocked=False):
         if unlocked:
             job = job_pool.get_next_done_unlocked()
         else:
@@ -190,14 +196,15 @@ class Blame(Extension):
                 a = self.populate_insert_args(job)
                 args.extend(a)
                 self.id_counter += len(a)
-            processed_jobs+=1
+            processed_jobs += 1
             if unlocked:
                 job = job_pool.get_next_done_unlocked()
             else:
                 job = job_pool.get_next_done(0)
 
-        if len(args)>0:
-            write_cursor.executemany(statement(self.__insert__, self.db.place_holder), args)
+        if len(args) > 0:
+            write_cursor.executemany(statement(self.__insert__, 
+                                               self.db.place_holder), args)
             del args
         return processed_jobs
 
@@ -206,10 +213,10 @@ class Blame(Extension):
         file_id = job.get_file_id()
         commit_id = job.get_commit_id()
 
-        return [(self.id_counter + i, file_id, commit_id, self.authors[key], authors[key]) \
+        return [(self.id_counter + i, file_id, commit_id, \
+                 self.authors[key], authors[key]) \
                  for i, key in enumerate(authors.keys())]
-        
-        
+
     def run(self, repo, uri, db):
         profiler_start("Running Blame extension")
 
@@ -228,18 +235,23 @@ class Blame(Extension):
             else:
                 repo_uri = uri
 
-            read_cursor.execute(statement("SELECT id from repositories where uri = ?", db.place_holder), (repo_uri,))
+            read_cursor.execute(statement("SELECT id from repositories " + \
+                                          "where uri = ?", db.place_holder), 
+                                          (repo_uri,))
             repoid = read_cursor.fetchone()[0]
         except NotImplementedError:
-            raise ExtensionRunError("Blame extension is not supported for %s repositories" % (repo.get_type()))
+            raise ExtensionRunError("Blame extension is not supported for " + \
+                                    "%s repositories" % (repo.get_type()))
         except Exception, e:
-            raise ExtensionRunError("Error creating repository %s. Exception: %s" % (repo.get_uri(), str(e)))
+            raise ExtensionRunError("Error creating repository %s. " + \
+                                    "Exception: %s" % (repo.get_uri(), str(e)))
 
         try:
             self.__create_table(cnn)
         except TableAlreadyExists:
             cursor = cnn.cursor()
-            cursor.execute(statement("SELECT max(id) from blame", db.place_holder))
+            cursor.execute(statement("SELECT max(id) from blame", 
+                                     db.place_holder))
             id = cursor.fetchone()[0]
             if id is not None:
                 self.id_counter = id + 1
@@ -270,7 +282,8 @@ class Blame(Extension):
                 continue
 
             if(file_id, commit_id) in blames:
-                printdbg("%d@%d is already in the database, skip it", (file_id, commit_id))
+                printdbg("%d@%d is already in the database, skip it", 
+                         (file_id, commit_id))
                 continue
 
             if composed:
@@ -300,6 +313,6 @@ class Blame(Extension):
         write_cursor.close()
         cnn.close()
 
-        profiler_stop("Running Blame extension", delete = True)
+        profiler_stop("Running Blame extension", delete=True)
 
 register_extension("Blame", Blame)

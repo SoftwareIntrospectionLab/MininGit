@@ -28,6 +28,7 @@ from pycvsanaly2.profile import profiler_start, profiler_stop
 from pycvsanaly2.Config import Config
 import re
 
+
 # This class holds a single repository retrieve task,
 # and keeps the source code until the object is garbage-collected
 class BugFixMessage(Extension):
@@ -78,12 +79,12 @@ class BugFixMessage(Extension):
             # The bit at the beginning and end matches whitespace, punctuation
             # or the start or end of a line.
             delimiters = "[\s\.,;\!\?\'\"\/\\\]"
-            if re.search("(" + delimiters + "+|^)" + r + "(" + delimiters + "+|$)", string, flags):
+            if re.search("(" + delimiters + "+|^)" + r + \
+                         "(" + delimiters + "+|$)", string, flags):
                 printdbg("[STRING] matched on " + str(r) + " " + string)
                 return True
                 
         return False
-
 
     def fixes_bug(self, commit_message):
         """Check whether a commit message indicated a bug was present.
@@ -118,7 +119,7 @@ class BugFixMessage(Extension):
         True
         >>> b.fixes_bug("Debugged this one")
         True
-        >>> b.fixes_bug("Found a hole, which I patched, shouldn't be a problem")
+        >>> b.fixes_bug("Found a hole, which I patched, shouldn't be problem")
         True
         >>> b.fixes_bug("Put in a couple of fixes in x.java")
         True
@@ -174,7 +175,8 @@ class BugFixMessage(Extension):
         False
         >>> b.fixes_bug("Rename ap_debug_assert() to AP_DEBUG_ASSERT()")
         False
-        >>> b.fixes_bug("Use bread() etc instead of fread() for reading/writing")
+        >>> b.fixes_bug("Use bread() etc instead of fread() for " + \
+                        "reading/writing")
         False
         >>> b.fixes_bug("Refactored to look cleaner")
         False
@@ -197,7 +199,6 @@ class BugFixMessage(Extension):
 
         return False
 
-
     def run(self, repo, uri, db):
         # Start the profiler, per every other extension
         profiler_start("Running bug prediction extension")
@@ -218,21 +219,21 @@ class BugFixMessage(Extension):
 
             read_cursor.execute(statement( \
                     "SELECT id from repositories where uri = ?", \
-                    db.place_holder),(repo_uri,))
+                    db.place_holder), (repo_uri,))
             repo_id = read_cursor.fetchone()[0]
         except NotImplementedError:
             raise ExtensionRunError( \
-                    "BugPrediction extension is not supported for %s repos" \
-                    %(repo.get_type()))
+                    "BugPrediction extension is not supported for %s repos" % \
+                    (repo.get_type()))
         except Exception, e:
             raise ExtensionRunError( \
-                    "Error creating repository %s. Exception: %s" \
-                    %(repo.get_uri(), str(e)))
+                    "Error creating repository %s. Exception: %s" % \
+                    (repo.get_uri(), str(e)))
             
         # Get the commit notes from this repository
         query = """select s.id, s.message from scmlog s
             where s.repository_id = ?"""
-        read_cursor.execute(statement(query, db.place_holder),(repo_id,))
+        read_cursor.execute(statement(query, db.place_holder), (repo_id,))
 
         self.__prepare_table(connection)
         fp = FilePaths(db)

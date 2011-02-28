@@ -23,6 +23,7 @@ from Config import Config
 
 config = Config()
 
+
 def plog(data):
     if not config.profile:
         return
@@ -30,7 +31,8 @@ def plog(data):
     str = "MARK: %s: %s" % ('foo', data)
     os.access(str, os.F_OK)
 
-def profiler_start(msg, args = None):
+
+def profiler_start(msg, args=None):
     if not config.profile:
         return
 
@@ -49,7 +51,8 @@ def profiler_start(msg, args = None):
     else:
         _timers[msg] = Timer()
 
-def profiler_stop(msg, args = None, delete = False):
+
+def profiler_stop(msg, args=None, delete=False):
     if not config.profile:
         return
 
@@ -76,7 +79,8 @@ if __name__ == '__main__':
     def _thread(n):
         profiler_start("Running thread %d sleeping %d seconds", (n, n + 1))
         time.sleep(n + 1)
-        profiler_stop("Running thread %d sleeping %d seconds", (n, n + 1), True)
+        profiler_stop("Running thread %d sleeping %d seconds", 
+                      (n, n + 1), True)
 
     for i in range(6):
         thread = threading.Thread(target=_thread, args=(i,))

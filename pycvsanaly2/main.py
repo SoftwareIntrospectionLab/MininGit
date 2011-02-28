@@ -30,17 +30,21 @@ Main funcion of cvsanaly. Fun starts here!
 
 import os
 import getopt
-from repositoryhandler.backends import create_repository, create_repository_from_path, RepositoryUnknownError
-from ParserFactory import create_parser_from_logfile, create_parser_from_repository
-from Database import (create_database, TableAlreadyExists, AccessDenied, DatabaseNotFound,
-                      DatabaseDriverNotSupported, DBRepository, statement, initialize_ids,
-		      DatabaseException)
+from repositoryhandler.backends import (create_repository, 
+    create_repository_from_path, RepositoryUnknownError)
+from ParserFactory import (create_parser_from_logfile, 
+    create_parser_from_repository)
+from Database import (create_database, TableAlreadyExists, AccessDenied, 
+    DatabaseNotFound, DatabaseDriverNotSupported, DBRepository, statement, 
+    initialize_ids, DatabaseException)
 from DBProxyContentHandler import DBProxyContentHandler
 from Log import LogReader, LogWriter
-from ExtensionsManager import ExtensionsManager, InvalidExtension, InvalidDependency
+from ExtensionsManager import (ExtensionsManager, InvalidExtension, 
+    InvalidDependency)
 from Config import Config, ErrorLoadingConfig
 from utils import printerr, printout, uri_to_filename
 from _config import *
+
 
 def usage():
     print "%s %s - %s" % (PACKAGE, VERSION, DESCRIPTION)
@@ -60,9 +64,11 @@ Options:
   -q, --quiet                    Run silently, only print error messages
       --profile                  Enable profiling mode
   -f, --config-file              Use a custom configuration file
-  -l, --repo-logfile=path        Logfile to use instead of getting log from the repository
+  -l, --repo-logfile=path        Logfile to use instead of getting log from 
+                                 the repository
   -s, --save-logfile[=path]      Save the repository log to the given path
-  -n, --no-parse                 Skip the parsing process. It only makes sense in conjunction with --extensions
+  -n, --no-parse                 Skip the parsing process. It only makes sense 
+                                 in conjunction with --extensions
       --extensions=ext1,ext2,    List of extensions to run        
 
 Database:
@@ -71,22 +77,26 @@ Database:
   -u, --db-user                  Database user name (operator)
   -p, --db-password              Database user password
   -d, --db-database              Database name (cvsanaly)
-  -H, --db-hostname              Name of the host where database server is running (localhost)
+  -H, --db-hostname              Name of the host where database server 
+                                 is running (localhost)
 
 Metrics Options:
 
-      --metrics-all              Get metrics for every revision, not only for HEAD
+      --metrics-all              Get metrics for every revision, not only 
+                                 for HEAD
       --metrics-noerr            Ignore errors when calculating metrics
 """
+
 
 def main(argv):
     # Short (one letter) options. Those requiring argument followed by :
     short_opts = "hVgqnf:l:s:u:p:d:H:"
     # Long options (all started by --). Those requiring argument followed by =
-    long_opts = ["help", "version", "debug", "quiet", "profile", "config-file=", 
-                 "repo-logfile=", "save-logfile=", "no-parse", "db-user=", "db-password=",
-                 "db-hostname=", "db-database=", "db-driver=", "extensions=",
-                 "hard-order", "metrics-all", "metrics-noerr"]
+    long_opts = ["help", "version", "debug", "quiet", "profile", 
+                 "config-file=", "repo-logfile=", "save-logfile=", 
+                 "no-parse", "db-user=", "db-password=", "db-hostname=", 
+                 "db-database=", "db-driver=", "extensions=", "hard-order", 
+                 "metrics-all", "metrics-noerr"]
 
     # Default options
     debug = None
@@ -190,7 +200,8 @@ def main(argv):
     if database is not None:
         config.db_database = database
     if extensions is not None:
-        config.extensions.extend([item for item in extensions if item not in config.extensions])
+        config.extensions.extend([item for item in extensions \
+                                  if item not in config.extensions])
     if hard_order is not None:
         config.hard_order = hard_order
     if metrics_all is not None:
@@ -212,10 +223,12 @@ def main(argv):
         try:
             repo = create_repository_from_path(path)
         except RepositoryUnknownError:
-            printerr("Path %s doesn't seem to point to a repository supported by cvsanaly", (path,))
+            printerr("Path %s doesn't seem to point to a repository " + \
+                     "supported by cvsanaly", (path,))
             return 1
         except Exception, e:
-            printerr("Unknown error creating repository for path %s (%s)", (path, str(e)))
+            printerr("Unknown error creating repository for path %s (%s)", 
+                     (path, str(e)))
             return 1
         uri = repo.get_uri_for_path(path)
     else:
@@ -223,7 +236,8 @@ def main(argv):
         repo = create_repository('svn', uri)
         # Check uri actually points to a valid svn repo
         if repo.get_last_revision(uri) is None:
-            printerr("URI %s doesn't seem to point to a valid svn repository", (uri,))
+            printerr("URI %s doesn't seem to point to a valid svn repository", 
+                     (uri,))
             return 1
 
     if not config.no_parse:
@@ -247,12 +261,14 @@ def main(argv):
         # TODO: check parser type == logfile type
 
     try:
-        emg = ExtensionsManager(config.extensions, hard_order=config.hard_order)
+        emg = ExtensionsManager(config.extensions, 
+                                hard_order=config.hard_order)
     except InvalidExtension, e:
         printerr("Invalid extension %s", (e.name,))
         return 1
     except InvalidDependency, e:
-        printerr("Extension %s depends on extension %s which is not a valid extension", (e.name1, e.name2))
+        printerr("Extension %s depends on extension %s which is not a " + \
+                 "valid extension", (e.name1, e.name2))
         return 1
     except Exception, e:
         printerr("Unknown extensions error: %s", (str(e),))
@@ -261,19 +277,21 @@ def main(argv):
     db_exists = False
 
     try:
-        db = create_database (config.db_driver,
-                              config.db_database,
-                              config.db_user,
-                              config.db_password,
-                              config.db_hostname)
+        db = create_database(config.db_driver,
+                             config.db_database,
+                             config.db_user,
+                             config.db_password,
+                             config.db_hostname)
     except AccessDenied, e:
         printerr("Error creating database: %s", (e.message,))
         return 1
     except DatabaseNotFound:
-        printerr("Database %s doesn't exist. It must be created before running cvsanaly", (config.db_database,))
+        printerr("Database %s doesn't exist. It must be created before " + \
+                 "running cvsanaly", (config.db_database,))
         return 1
     except DatabaseDriverNotSupported:
-        printerr("Database driver %s is not supported by cvsanaly", (config.db_driver,))
+        printerr("Database driver %s is not supported by cvsanaly", 
+                 (config.db_driver,))
         return 1
     
     cnn = db.connect()
@@ -288,18 +306,21 @@ def main(argv):
         return 1
 
     if config.no_parse and not db_exists:
-        printerr("The option --no-parse must be used with an already filled database")
+        printerr("The option --no-parse must be used with an already " + \
+                 "filled database")
         return 1
 
     # Add repository to Database
     if db_exists:
-        cursor.execute(statement("SELECT id from repositories where uri = ?", db.place_holder), (uri,))
+        cursor.execute(statement("SELECT id from repositories where uri = ?", 
+                                 db.place_holder), (uri,))
         rep = cursor.fetchone()
         initialize_ids(db, cursor)
         cursor.close()
 
     if config.no_parse and rep is None:
-        printerr("The option --no-parse must be used with an already filled database")
+        printerr("The option --no-parse must be used with an already " + \
+                 "filled database")
         return 1
         
     if not db_exists or rep is None:
@@ -307,7 +328,8 @@ def main(argv):
         name = uri.rstrip("/").split("/")[-1].strip()
         cursor = cnn.cursor()
         rep = DBRepository(None, uri, name, repo.get_type())
-        cursor.execute(statement(DBRepository.__insert__, db.place_holder), (rep.id, rep.uri, rep.name, rep.type))
+        cursor.execute(statement(DBRepository.__insert__, db.place_holder), 
+                       (rep.id, rep.uri, rep.name, rep.type))
         cursor.close()
         cnn.commit()
 
@@ -328,11 +350,10 @@ def main(argv):
             writer = LogWriter(config.save_logfile)
         
         parser.set_content_handler(DBProxyContentHandler(db))
-        reader.start(new_line,(parser, writer))
+        reader.start(new_line, (parser, writer))
         parser.end()
         writer and writer.close()
 
     # Run extensions
     printout("Executing extensions")
     emg.run_extensions(repo, path or uri, db)
-

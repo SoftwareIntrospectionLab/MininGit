@@ -19,13 +19,15 @@
 
 from repositoryhandler.backends.watchers import DIFF
 
-from pycvsanaly2.Database import (SqliteDatabase, MysqlDatabase, TableAlreadyExists,
-                                  statement, ICursor, execute_statement)
+from pycvsanaly2.Database import (SqliteDatabase, MysqlDatabase, 
+        TableAlreadyExists, statement, ICursor, execute_statement)
 from pycvsanaly2.Config import Config
-from pycvsanaly2.extensions import Extension, register_extension, ExtensionRunError
+from pycvsanaly2.extensions import (Extension, register_extension, 
+    ExtensionRunError)
 from pycvsanaly2.utils import to_utf8, printerr, printdbg, uri_to_filename
 from io import BytesIO
 from Jobs import JobPool, Job
+
 
 class PatchJob(Job):
     def __init__(self, rev, commit_id):
@@ -76,8 +78,10 @@ class DBPatch:
         self.patch = data
 
     def __str__(self):
-        return "<Patch ID: " + str(self.id) + ", commit_id: " + str(self.commit_id) + \
-                ", data: " + to_utf8(self.patch).decode("utf-8") + ">" 
+        return "<Patch ID: %s, commit_id: %s, data: %s>" % \
+                (str(self.id), str(self.commit_id), 
+                 to_utf8(self.patch).decode("utf-8"))
+
 
 class Patches(Extension):
 
@@ -93,11 +97,11 @@ class Patches(Extension):
             import sqlite3.dbapi2
 
             try:
-                cursor.execute("CREATE TABLE patches (" +
-                                "id integer primary key," +
-                                "commit_id integer," +
-                                "patch text" +
-                                ")")
+                cursor.execute("""CREATE TABLE patches (
+                                id integer primary key,
+                                commit_id integer,
+                                patch text
+                                )""")
             except sqlite3.dbapi2.OperationalError:
                 cursor.close()
                 raise TableAlreadyExists
@@ -107,12 +111,13 @@ class Patches(Extension):
             import _mysql_exceptions
 
             try:
-                cursor.execute("CREATE TABLE patches (" +
-                                "id INT primary key," +
-                                "commit_id integer," +
-                                "patch LONGTEXT" +
-                                # "FOREIGN KEY (commit_id) REFERENCES scmlog(id)" +
-                                ") ENGINE=InnoDB, CHARACTER SET=utf8")
+                cursor.execute("""CREATE TABLE patches (
+                                id INT primary key,
+                                commit_id integer,
+                                patch LONGTEXT
+                                -- FOREIGN KEY (commit_id) 
+                                --    REFERENCES scmlog(id)
+                                ) ENGINE=InnoDB, CHARACTER SET=utf8""")
             except _mysql_exceptions.OperationalError, e:
                 if e.args[0] == 1050:
                     cursor.close()
@@ -125,8 +130,8 @@ class Patches(Extension):
         cursor.close()
 
     def __get_patches_for_repository(self, repo_id, cursor):
-        query = "SELECT p.commit_id from patches p, scmlog s " + \
-                "WHERE p.commit_id = s.id and repository_id = ?"
+        query = """SELECT p.commit_id from patches p, scmlog s 
+                WHERE p.commit_id = s.id and repository_id = ?"""
         cursor.execute(statement(query, self.db.place_holder), (repo_id,))
         commits = [res[0] for res in cursor.fetchall()]
 
@@ -142,8 +147,10 @@ class Patches(Extension):
         while finished_job is not None:
             p = DBPatch(None, finished_job.commit_id, finished_job.data)
 
-            execute_statement(statement(DBPatch.__insert__, self.db.place_holder),
-                              (p.id, p.commit_id, to_utf8(p.patch).decode("utf-8")),
+            execute_statement(statement(DBPatch.__insert__, 
+                                        self.db.place_holder),
+                              (p.id, p.commit_id, 
+                               to_utf8(p.patch).decode("utf-8")),
                               write_cursor,
                               db,
                               "Couldn't insert, duplicate patch?",
@@ -167,7 +174,8 @@ class Patches(Extension):
         cnn = self.db.connect()
 
         cursor = cnn.cursor()
-        cursor.execute(statement("SELECT id from repositories where uri = ?", db.place_holder), (repo_uri,))
+        cursor.execute(statement("SELECT id from repositories where uri = ?", 
+                                 db.place_holder), (repo_uri,))
         repo_id = cursor.fetchone()[0]
 
         # If table does not exist, the list of commits is empty,
@@ -177,7 +185,8 @@ class Patches(Extension):
         try:
             self.__create_table(cnn)
         except TableAlreadyExists:
-            cursor.execute(statement("SELECT max(id) from patches", db.place_holder))
+            cursor.execute(statement("SELECT max(id) from patches", 
+                                     db.place_holder))
             id = cursor.fetchone()[0]
             if id is not None:
                 DBPatch.id_counter = id + 1
@@ -192,7 +201,8 @@ class Patches(Extension):
 
         write_cursor = cnn.cursor()
         icursor = ICursor(cursor, self.INTERVAL_SIZE)
-        icursor.execute(statement("SELECT id, rev, composed_rev from scmlog where repository_id = ?",
+        icursor.execute(statement("SELECT id, rev, composed_rev " + \
+                                  "from scmlog where repository_id = ?",
                                     db.place_holder), (repo_id,))
         rs = icursor.fetchmany()
         while rs:

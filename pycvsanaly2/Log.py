@@ -22,8 +22,10 @@ from repositoryhandler.backends.watchers import LOG
 from AsyncQueue import AsyncQueue, TimeOut
 from utils import printerr
 
+
 class RepoOrLogfileRequired(Exception):
     '''Repository or Logfile is required to read a log'''
+
 
 class LogReader:
 
@@ -32,7 +34,7 @@ class LogReader:
         self.repo = None
         self.uri = None
 
-    def set_repo(self, repo, uri = None):
+    def set_repo(self, repo, uri=None):
         self.repo = repo
         if uri is not None:
             self.uri = uri
@@ -55,7 +57,7 @@ class LogReader:
         f.close()
 
     def _logreader(self, repo, queue):
-        def new_line(data, user_data = None):
+        def new_line(data, user_data=None):
             queue.put(data)
 
         repo.add_watch(LOG, new_line)
@@ -82,7 +84,7 @@ class LogReader:
             line = queue.get_unlocked()
             new_line_cb(line, user_data)
         
-    def start(self, new_line_cb, user_data = None):
+    def start(self, new_line_cb, user_data=None):
         if self.logfile is not None:
             try:
                 self._read_from_logfile(new_line_cb, user_data)
@@ -92,7 +94,8 @@ class LogReader:
             self._read_from_repository(new_line_cb, user_data)
         else:
             raise RepoOrLogfileRequired("In order to start the log reader " + \
-                                         "a repository or a logfile has to be provided")
+                    "a repository or a logfile has to be provided")
+
 
 class LogWriter:
 
@@ -112,14 +115,16 @@ class LogWriter:
         if self.buffer:
             self.fd.write(self.buffer)
         self.fd.close()
+        
 
 if __name__ == '__main__':
     import sys
     import os
     from utils import uri_to_filename
-    from repositoryhandler.backends import create_repository, create_repository_from_path
+    from repositoryhandler.backends import (create_repository, 
+                                            create_repository_from_path)
 
-    def new_line(line, user_data = None):
+    def new_line(line, user_data=None):
         print line.strip('\n')
         if user_data is not None:
             user_data.add_line(line)
@@ -144,4 +149,3 @@ if __name__ == '__main__':
 
     reader.start(new_line, writer)
     writer and writer.close()
-    

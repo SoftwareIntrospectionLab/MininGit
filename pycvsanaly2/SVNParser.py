@@ -25,24 +25,52 @@ import datetime
 
 from Parser import Parser
 from Repository import Commit, Action, Person
-from repositoryhandler.backends import create_repository
 from utils import printout, printdbg
 
-class SVNParser(Parser):
 
-    (
-        COMMIT,
-        FILES,
-        MESSAGE
-    ) = range(3)
+class SVNParser(Parser):
+    """A parser for Bazaar.
+    
+    # These are a couple of tests for the longer regexes that had
+    # to be split up when trying to get PEP-8 line length compliance
+    >>> p = SVNParser()
+    >>> commit = "r3 | dsandler | 2006-01-12 14:16:11 -0600 " + \
+                    "(Thu, 12 Jan 2006) | 1 line"
+    >>> re.match(p.patterns['commit'], commit) #doctest: +ELLIPSIS
+    <_sre.SRE_Match object...>
+    >>> commit = "r3 | dsandler | 2006-01-12 14:16:11 -0600"
+    >>> re.match(p.patterns['commit'], commit) #doctest: +ELLIPSIS
+    >>> dash = "--------------------------------------------------" +\
+               "----------------------"
+    >>> re.match(p.patterns['separator'], dash) #doctest: +ELLIPSIS
+    <_sre.SRE_Match object...>
+    >>> re.match(p.patterns['separator'], "-")
+    
+    >>> move = "".join([ \
+    " A /subversion/trunk/subversion/libsvn_fs_fs/temp_serializer.c ", \
+    "(from /subversion/branches/integrate-cache-item-serialization/", \
+    "subversion/libsvn_fs_fs/temp_serializer.c:1068739)"])
+    >>> re.match(p.patterns['file-moved'], move) #doctest: +ELLIPSIS
+    <_sre.SRE_Match object...>
+    >>> move = "A /subversion/trunk/subversion/libsvn_fs_fs/temp_serializer.c "
+    >>> re.match(p.patterns['file-moved'], move) #doctest: +ELLIPSIS
+    """
+
+    (COMMIT, FILES, MESSAGE) = range(3)
 
     patterns = {}
-    patterns['commit'] = re.compile("^r(\d*) \| (.*) \| (\d\d\d\d)[/-](\d\d)[/-](\d\d) (\d\d):(\d\d):(\d\d) ([+-]\d\d\d\d) \(.*\) \| (.*) line")
+    patterns['commit'] = re.compile("".join([
+        "^r(\d*) \| (.*) \| ",
+        "(\d{4})[/-](\d\d)[/-](\d\d) ",
+        "(\d\d):(\d\d):(\d\d) ",
+        "([+-]\d{4}) \(.*\) \| (.*) line"]))
     patterns['paths'] = re.compile("^Changed paths:$")
     patterns['file'] = re.compile("^[ ]+([MADR]) (.*)$")
-    patterns['file-moved'] = re.compile("^[ ]+([MADR]) (.*) \(from (.*):([0-9]+)\)$")
-    patterns['separator'] = re.compile("^------------------------------------------------------------------------$")
-    patterns['invalid'] = re.compile("^r(\d*) \| \(no author\) \| \(no date\) \| 1 line$")
+    patterns['file-moved'] = re.compile("^[ ]+([MADR]) (.*) " +
+                                        "\(from (.*):([0-9]+)\)$")
+    patterns['separator'] = re.compile("^-{72}$")
+    patterns['invalid'] = re.compile("^r(\d*) \| \(no author\) \| " +
+                                     "\(no date\) \| 1 line$")
     
     def __init__(self):
         Parser.__init__(self)
@@ -79,14 +107,17 @@ class SVNParser(Parser):
                 # Move or copy action
                 if action.type == 'A':
                     del_action = find_action(commit.actions, 'D', action.f2)
-                    if del_action is not None and del_action not in remove_actions:
-                        # FIXME: See http://research.libresoft.es/cgi-bin/trac.cgi/wiki/Tools/CvsanalyRevamped#Filesmovedandcopiedinthesamerevision
-                        printdbg("SVN Parser: File %s has been renamed to %s", (action.f2, action.f1))
+                    if del_action is not None and del_action \
+                    not in remove_actions:
+                        # FIXME: See http://goo.gl/eymoH
+                        printdbg("SVN Parser: File %s has been renamed to %s", 
+                                 (action.f2, action.f1))
                         action.type = 'V'
                         remove_actions.append(del_action)
                     else:
                         action.type = 'C'
-                        printdbg("SVN Parser: File %s has been copied to %s", (action.f2, action.f1))
+                        printdbg("SVN Parser: File %s has been copied to %s", 
+                                 (action.f2, action.f1))
 
                         # Try to guess if it was a tag
                         # Yes, with svn we are always guessing :-/
@@ -99,11 +130,13 @@ class SVNParser(Parser):
                             
                 elif action.type == 'R':
                     # TODO
-                    printdbg("SVN Parser: File %s replaced to %s", (action.f2, action.f1))
+                    printdbg("SVN Parser: File %s replaced to %s", 
+                             (action.f2, action.f1))
                     pass
 
         for action in remove_actions:
-            printdbg("SVN Parser: Removing action %s %s", (action.type, action.f1))
+            printdbg("SVN Parser: Removing action %s %s", 
+                     (action.type, action.f1))
             commit.actions.remove(action)
 
     def __guess_branch_from_path(self, path):
@@ -132,9 +165,10 @@ class SVNParser(Parser):
 
         return tag
 
-    def __append_message_line(self, line = None):
+    def __append_message_line(self, line=None):
         if self.msg_lines <= 0:
-            printout("Warning (%d): parsing svn log, unexpected line in message: %s", (self.n_line, line))
+            printout("Warning (%d): parsing svn log, unexpected line " + \
+                     "in message: %s", (self.n_line, line))
             self.msg_lines = 0
             return
         
@@ -146,7 +180,8 @@ class SVNParser(Parser):
 
     def _parse_line(self, line):
         if not line:
-            if self.commit is not None and self.state == SVNParser.COMMIT or self.state == SVNParser.FILES:
+            if self.commit is not None and self.state == SVNParser.COMMIT \
+            or self.state == SVNParser.FILES:
                 self.state = SVNParser.MESSAGE
             elif self.state == SVNParser.MESSAGE:
                 self.__append_message_line()
@@ -172,11 +207,13 @@ class SVNParser(Parser):
         if self.patterns['separator'].match(line):
             if self.commit is None or self.state == SVNParser.COMMIT:
                 return
-            elif self.state == SVNParser.MESSAGE or self.state == SVNParser.FILES:
+            elif self.state == SVNParser.MESSAGE \
+            or self.state == SVNParser.FILES:
                 # We can go directly from FILES to COMMIT
                 # when there is an empty log message
                 if self.msg_lines > 0:
-                    printout("Warning (%d): parsing svn log, missing lines in commit message!", (self.n_line,))
+                    printout("Warning (%d): parsing svn log, missing " + \
+                             "lines in commit message!", (self.n_line,))
                 
                 self.__convert_commit_actions(self.commit)
                 self.handler.commit(self.commit)
@@ -184,7 +221,8 @@ class SVNParser(Parser):
                 self.commit = None
                 self.msg_lines = 0
             else:
-                printout("Warning (%d): parsing svn log, unexpected separator", (self.n_line,))
+                printout("Warning (%d): parsing svn log, unexpected separator", 
+                         (self.n_line,))
                 
             return
 
@@ -197,8 +235,12 @@ class SVNParser(Parser):
             commit.committer = Person()
             commit.committer.name = match.group(2)
             
-            commit.date = datetime.datetime(int(match.group(3)), int(match.group(4)), int(match.group(5)),
-                                             int(match.group(6)), int(match.group(7)), int(match.group(8)))
+            commit.date = datetime.datetime(int(match.group(3)), 
+                                            int(match.group(4)), 
+                                            int(match.group(5)),
+                                            int(match.group(6)), 
+                                            int(match.group(7)), 
+                                            int(match.group(8)))
             self.msg_lines = int(match.group(10))
             self.commit = commit
             self.handler.committer(commit.committer)
@@ -210,7 +252,8 @@ class SVNParser(Parser):
             self.commit.message += line + '\n'
             return
         elif match and self.state != SVNParser.COMMIT:
-            printout("Warning (%d): parsing svn log, unexpected line %s", (self.n_line, line))
+            printout("Warning (%d): parsing svn log, unexpected line %s", 
+                     (self.n_line, line))
             return
 
         # Files
@@ -218,7 +261,8 @@ class SVNParser(Parser):
             if self.patterns['paths'].match(line):
                 self.state = SVNParser.FILES
             else:
-                printout("Warning(%d): parsing svn log, unexpected line %s", (self.n_line, line))
+                printout("Warning(%d): parsing svn log, unexpected line %s", 
+                         (self.n_line, line))
 
             return
         
@@ -226,7 +270,8 @@ class SVNParser(Parser):
         match = self.patterns['file-moved'].match(line)
         if match:
             if self.state != SVNParser.FILES:
-                printout("Warning (%d): parsing svn log, unexpected line %s", (self.n_line, line))
+                printout("Warning (%d): parsing svn log, unexpected line %s", 
+                         (self.n_line, line))
                 return
             
             action = Action()
@@ -247,7 +292,8 @@ class SVNParser(Parser):
         match = self.patterns['file'].match(line)
         if match:
             if self.state != SVNParser.FILES:
-                printout("Warning (%d): parsing svn log, unexpected line %s", (self.n_line, line))
+                printout("Warning (%d): parsing svn log, unexpected line %s", 
+                         (self.n_line, line))
                 return
             
             path = match.group(2)

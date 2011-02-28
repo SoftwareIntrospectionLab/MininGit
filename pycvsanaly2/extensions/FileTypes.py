@@ -17,16 +17,20 @@
 # Authors :
 #       Carlos Garcia Campos <carlosgc@gsyc.escet.urjc.es>
 
-from pycvsanaly2.Database import SqliteDatabase, MysqlDatabase, TableAlreadyExists, statement
-from pycvsanaly2.extensions import Extension, register_extension, ExtensionRunError
+from pycvsanaly2.Database import (SqliteDatabase, MysqlDatabase, 
+    TableAlreadyExists, statement)
+from pycvsanaly2.extensions import (Extension, register_extension, 
+    ExtensionRunError)
 from pycvsanaly2.extensions.file_types import guess_file_type
 from pycvsanaly2.utils import to_utf8, uri_to_filename
+
 
 class DBFileType:
 
     id_counter = 1
 
-    __insert__ = "INSERT INTO file_types (id, file_id, type) values (?, ?, ?)"
+    __insert__ = """INSERT INTO file_types (id, file_id, type) 
+                    values (?, ?, ?)"""
 
     def __init__(self, id, type, file_id):
         if id is None:
@@ -37,6 +41,7 @@ class DBFileType:
 
         self.type = to_utf8(type)
         self.file_id = file_id
+
 
 class FileTypes(Extension):
     
@@ -101,7 +106,8 @@ class FileTypes(Extension):
         cnn = self.db.connect()
 
         cursor = cnn.cursor()
-        cursor.execute(statement("SELECT id from repositories where uri = ?", db.place_holder), (repo_uri,))
+        cursor.execute(statement("SELECT id from repositories where uri = ?", 
+                                 db.place_holder), (repo_uri,))
         repo_id = cursor.fetchone()[0]
         
         files = []
@@ -109,7 +115,8 @@ class FileTypes(Extension):
         try:
             self.__create_table(cnn)
         except TableAlreadyExists:
-            cursor.execute(statement("SELECT max(id) from file_types", db.place_holder))
+            cursor.execute(statement("SELECT max(id) from file_types", 
+                                     db.place_holder))
             id = cursor.fetchone()[0]
             if id is not None:
                 DBFileType.id_counter = id + 1
@@ -118,11 +125,12 @@ class FileTypes(Extension):
         except Exception, e:
             raise ExtensionRunError(str(e))
 
-        query = "select a.file_id fid, f.file_name fname " + \
-                "from action_files a, files f " + \
-                "where f.id = a.file_id and " + \
-                "not exists (select id from file_links where parent_id = a.file_id) " + \
-                "and f.repository_id = ? group by fid, fname"
+        query = """select a.file_id fid, f.file_name fname
+                from action_files a, files f
+                where f.id = a.file_id and
+                not exists 
+                (select id from file_links where parent_id = a.file_id)
+                and f.repository_id = ? group by fid, fname"""
 
         cursor.execute(statement(query, db.place_holder), (repo_id,))
         write_cursor = cnn.cursor()
@@ -138,8 +146,11 @@ class FileTypes(Extension):
                 types.append(DBFileType(None, type, file_id))
 
             if types:
-                file_types = [(type.id, type.file_id, type.type) for type in types]
-                write_cursor.executemany(statement(DBFileType.__insert__, self.db.place_holder), file_types)
+                file_types = [(type.id, type.file_id, type.type) \
+                              for type in types]
+                write_cursor.executemany(statement(DBFileType.__insert__, 
+                                                   self.db.place_holder), 
+                                                   file_types)
 
             rs = cursor.fetchmany()
             

@@ -35,110 +35,110 @@ import re
 # (most common languages first)
 
 config_files_code = [
-    re.compile('\.c$'), # C 
-    re.compile('\.pc$'), # C
-    re.compile('\.ec$'), # C
-    re.compile('\.ecp$'), # C
-    re.compile('\.C$'), # C++
-    re.compile('\.cpp$'), # C++
-    re.compile('\.c\+\+$'), # C++
-    re.compile('\.cxx$'), # C++
-    re.compile('\.cc$'), # C++
-    re.compile('\.pcc$'), # C++
-    re.compile('\.cpy$'), # C++
-    re.compile('\.h$'), # C or C++ header
-    re.compile('\.hh$'), # C++ header
-    re.compile('\.hpp$'), # C++ header
-    re.compile('\.hxx$'), # C++ header
-    re.compile('\.sh$'), # Shell
-    re.compile('\.pl$'), # Perl
-    re.compile('\.pm$'), # Perl
-    re.compile('\.pod$'), # Perl
-    re.compile('\.perl$'), # Perl
-    re.compile('\.cgi$'), # CGI
-    re.compile('\.php$'), # PHP
-    re.compile('\.php3$'), # PHP
-    re.compile('\.php4$'), # PHP
-    re.compile('\.inc$'), # PHP
-    re.compile('\.py$'), # Python
-    re.compile('\.java$'), # Java
-    re.compile('\.class$'), # Java Class (or at least a class in some OOPL)
-    re.compile('\.ada$'), # ADA
-    re.compile('\.ads$'), # ADA
-    re.compile('\.adb$'), # ADA
-    re.compile('\.pad$'), # ADA
-    re.compile('\.s$'), # Assembly
-    re.compile('\.S$'), # Assembly
-    re.compile('\.asm$'), # Assembly
-    re.compile('\.awk$'), # awk
-    re.compile('\.cs$'), # C#
-    re.compile('\.csh$'), # CShell (including tcsh)
-    re.compile('\.cob$'), # COBOL
-    re.compile('\.cbl$'), # COBOL
-    re.compile('\.COB$'), # COBOL
-    re.compile('\.CBL$'), # COBOL
-    re.compile('\.exp$'), # Expect
-    re.compile('\.l$'), # (F)lex
-    re.compile('\.ll$'), # (F)lex
-    re.compile('\.lex$'), # (F)lex
-    re.compile('\.f$'), # Fortran
-    re.compile('\.f77$'), # Fortran
-    re.compile('\.F$'), # Fortran
-    re.compile('\.hs$'), # Haskell
-    re.compile('\.lhs$'), # Not preprocessed Haskell
-    re.compile('\.el$'), # LISP (including Scheme)
-    re.compile('\.scm$'), # LISP (including Scheme)
-    re.compile('\.lsp$'), # LISP (including Scheme)
-    re.compile('\.jl$'), # LISP (including Scheme)
-    re.compile('\.ml$'), # ML
-    re.compile('\.ml3$'), # ML
-    re.compile('\.m3$'), # Modula3
-    re.compile('\.i3$'), # Modula3
-    re.compile('\.m$'), # Objective-C
-    re.compile('\.p$'), # Pascal
-    re.compile('\.pas$'), # Pascal
-    re.compile('\.rb$'), # Ruby
-    re.compile('\.sed$'), # sed
-    re.compile('\.tcl$'), # TCL
-    re.compile('\.tk$'), # TCL
-    re.compile('\.itk$'), # TCL
-    re.compile('\.y$'), # Yacc
-    re.compile('\.yy$'), # Yacc
-    re.compile('\.idl$'), # CORBA IDL
-    re.compile('\.gnorba$'), # GNOME CORBA IDL
-    re.compile('\.oafinfo$'), # GNOME OAF
-    re.compile('\.mcopclass$'), # MCOP IDL compiler generated class
-    re.compile('\.autoforms$'), # Autoform
-    re.compile('\.atf$'), # Autoform
+    re.compile('\.c$'),  # C 
+    re.compile('\.pc$'),  # C
+    re.compile('\.ec$'),  # C
+    re.compile('\.ecp$'),  # C
+    re.compile('\.C$'),  # C++
+    re.compile('\.cpp$'),  # C++
+    re.compile('\.c\+\+$'),  # C++
+    re.compile('\.cxx$'),  # C++
+    re.compile('\.cc$'),  # C++
+    re.compile('\.pcc$'),  # C++
+    re.compile('\.cpy$'),  # C++
+    re.compile('\.h$'),  # C or C++ header
+    re.compile('\.hh$'),  # C++ header
+    re.compile('\.hpp$'),  # C++ header
+    re.compile('\.hxx$'),  # C++ header
+    re.compile('\.sh$'),  # Shell
+    re.compile('\.pl$'),  # Perl
+    re.compile('\.pm$'),  # Perl
+    re.compile('\.pod$'),  # Perl
+    re.compile('\.perl$'),  # Perl
+    re.compile('\.cgi$'),  # CGI
+    re.compile('\.php$'),  # PHP
+    re.compile('\.php3$'),  # PHP
+    re.compile('\.php4$'),  # PHP
+    re.compile('\.inc$'),  # PHP
+    re.compile('\.py$'),  # Python
+    re.compile('\.java$'),  # Java
+    re.compile('\.class$'),  # Java Class (or at least a class in some OOPL)
+    re.compile('\.ada$'),  # ADA
+    re.compile('\.ads$'),  # ADA
+    re.compile('\.adb$'),  # ADA
+    re.compile('\.pad$'),  # ADA
+    re.compile('\.s$'),  # Assembly
+    re.compile('\.S$'),  # Assembly
+    re.compile('\.asm$'),  # Assembly
+    re.compile('\.awk$'),  # awk
+    re.compile('\.cs$'),  # C#
+    re.compile('\.csh$'),  # CShell (including tcsh)
+    re.compile('\.cob$'),  # COBOL
+    re.compile('\.cbl$'),  # COBOL
+    re.compile('\.COB$'),  # COBOL
+    re.compile('\.CBL$'),  # COBOL
+    re.compile('\.exp$'),  # Expect
+    re.compile('\.l$'),  # (F)lex
+    re.compile('\.ll$'),  # (F)lex
+    re.compile('\.lex$'),  # (F)lex
+    re.compile('\.f$'),  # Fortran
+    re.compile('\.f77$'),  # Fortran
+    re.compile('\.F$'),  # Fortran
+    re.compile('\.hs$'),  # Haskell
+    re.compile('\.lhs$'),  # Not preprocessed Haskell
+    re.compile('\.el$'),  # LISP (including Scheme)
+    re.compile('\.scm$'),  # LISP (including Scheme)
+    re.compile('\.lsp$'),  # LISP (including Scheme)
+    re.compile('\.jl$'),  # LISP (including Scheme)
+    re.compile('\.ml$'),  # ML
+    re.compile('\.ml3$'),  # ML
+    re.compile('\.m3$'),  # Modula3
+    re.compile('\.i3$'),  # Modula3
+    re.compile('\.m$'),  # Objective-C
+    re.compile('\.p$'),  # Pascal
+    re.compile('\.pas$'),  # Pascal
+    re.compile('\.rb$'),  # Ruby
+    re.compile('\.sed$'),  # sed
+    re.compile('\.tcl$'),  # TCL
+    re.compile('\.tk$'),  # TCL
+    re.compile('\.itk$'),  # TCL
+    re.compile('\.y$'),  # Yacc
+    re.compile('\.yy$'),  # Yacc
+    re.compile('\.idl$'),  # CORBA IDL
+    re.compile('\.gnorba$'),  # GNOME CORBA IDL
+    re.compile('\.oafinfo$'),  # GNOME OAF
+    re.compile('\.mcopclass$'),  # MCOP IDL compiler generated class
+    re.compile('\.autoforms$'),  # Autoform
+    re.compile('\.atf$'),  # Autoform
     re.compile('\.gnuplot$'),
-    re.compile('\.xs$'), # Shared library? Seen a lot of them in gnome-perl
-    re.compile('\.js$'), # JavaScript (and who knows, maybe more)
+    re.compile('\.xs$'),  # Shared library? Seen a lot of them in gnome-perl
+    re.compile('\.js$'),  # JavaScript (and who knows, maybe more)
     re.compile('\.patch$'),
-    re.compile('\.diff$'), # Sometimes patches appear this way
-    re.compile('\.ids$'), # Not really sure what this means
-    re.compile('\.upd$'), # ¿¿¿??? (from Kcontrol)
+    re.compile('\.diff$'),  # Sometimes patches appear this way
+    re.compile('\.ids$'),  # Not really sure what this means
+    re.compile('\.upd$'),  # ¿¿¿??? (from Kcontrol)
     re.compile('$.ad$'),  # ¿¿¿??? (from Kdisplay and mc)
-    re.compile('$.i$'), # Appears in the kbindings for Qt
-    re.compile('$.pri$'), # from Qt
-    re.compile('\.schema$'), # Not really sure what this means
-    re.compile('\.fd$'), # Something to do with latex
-    re.compile('\.cls$'), # Something to do with latex
-    re.compile('\.pro$'), # Postscript generation
-    re.compile('\.ppd$'), # PDF generation
-    re.compile('\.dlg$'), # Not really sure what this means
-    re.compile('\.plugin$'), # Plug-in file
-    re.compile('\.dsp'), # Microsoft Developer Studio Project File
-    re.compile('\.vim$'), # vim syntax file
-    re.compile('\.trm$'), # gnuplot term file
-    re.compile('\.font$'), # Font mapping
-    re.compile('\.ccg$'), # C++ files - Found in gtkmm*
-    re.compile('\.hg$'), # C++ headers - Found in gtkmm*
-    re.compile('\.dtd'), # XML Document Type Definition
-    re.compile('\.bat'), # DOS batch files
-    re.compile('\.vala'), # Vala
+    re.compile('$.i$'),  # Appears in the kbindings for Qt
+    re.compile('$.pri$'),  # from Qt
+    re.compile('\.schema$'),  # Not really sure what this means
+    re.compile('\.fd$'),  # Something to do with latex
+    re.compile('\.cls$'),  # Something to do with latex
+    re.compile('\.pro$'),  # Postscript generation
+    re.compile('\.ppd$'),  # PDF generation
+    re.compile('\.dlg$'),  # Not really sure what this means
+    re.compile('\.plugin$'),  # Plug-in file
+    re.compile('\.dsp$'),  # Microsoft Developer Studio Project File
+    re.compile('\.vim$'),  # vim syntax file
+    re.compile('\.trm$'),  # gnuplot term file
+    re.compile('\.font$'),  # Font mapping
+    re.compile('\.ccg$'),  # C++ files - Found in gtkmm*
+    re.compile('\.hg$'),  # C++ headers - Found in gtkmm*
+    re.compile('\.dtd$'),  # XML Document Type Definition
+    re.compile('\.bat$'),  # DOS batch files
+    re.compile('\.vala$'),  # Vala
     re.compile('\.py\.in$'),
-    re.compile('\.rhtml$'), # eRuby
-    re.compile('\.sql$') # SQL script
+    re.compile('\.rhtml$'),  # eRuby
+    re.compile('\.sql$')  # SQL script
     ]
 
 # Development documentation files (for hacking generally)
@@ -188,7 +188,7 @@ config_files_devel_doc = [
     re.compile('notes$'),
     re.compile('missing$'),
     re.compile('done$'),
-    re.compile('\.omf$'), # XML-based format used in GNOME
+    re.compile('\.omf$'),  # XML-based format used in GNOME
     re.compile('\.lsm$'),
     re.compile('^doxyfile$'),
     re.compile('\.kdevprj$'),
@@ -223,18 +223,16 @@ config_files_building = [
     re.compile('rules$'),
     re.compile('\.kdelnk$'),
     re.compile('\.menu$'),
-    re.compile('linguas$'), # Build translations
-    re.compile('potfiles.*$'), # Build translations
-    re.compile('\.shlibs$'), # Shared libraries
+    re.compile('linguas$'),  # Build translations
+    re.compile('potfiles.*$'),  # Build translations
+    re.compile('\.shlibs$'),  # Shared libraries
 #    re.compile('%debian%'),
 #    re.compile('%specs/%'),
-    re.compile('\.spec$') # It seems they're necessary for RPM building
+    re.compile('\.spec$')  # It seems they're necessary for RPM building
     ]
 
 
-
 # Documentation files
-
 config_files_documentation = [
 #   'doc/%'),
 #    re.compile('%HOWTO%'),
@@ -258,7 +256,7 @@ config_files_documentation = [
     re.compile('\.rdf$'),
     re.compile('\.phtm$'),
     re.compile('\.tmpl$'),
-    re.compile('\.ref$'), # References
+    re.compile('\.ref$'),  # References
     re.compile('\.css$'),
 #    re.compile('%tutorial%'),
     re.compile('\.templates$'),
@@ -268,7 +266,7 @@ config_files_documentation = [
     re.compile('\.xmi$'),
     re.compile('\.xsl$'),
     re.compile('\.entities$'),
-    re.compile('\.[1-7]$'), # Man pages
+    re.compile('\.[1-7]$'),  # Man pages
     re.compile('\.man$'),
     re.compile('\.manpages$'),
     re.compile('\.doc$'),
@@ -277,14 +275,14 @@ config_files_documentation = [
     re.compile('\.qt3$'),
     re.compile('man\d?/.*\.\d$'),
     re.compile('\.docs$'),
-    re.compile('\.sdw$'), # OpenOffice.org Writer document
-    re.compile('\.odt$'), # OpenOffice.org document
-    re.compile('\.en$'), # Files in English language
-    re.compile('\.de$'), # Files in German
-    re.compile('\.es$'), # Files in Spanish
-    re.compile('\.fr$'), # Files in French
-    re.compile('\.it$'), # Files in Italian
-    re.compile('\.cz$') # Files in Czech
+    re.compile('\.sdw$'),  # OpenOffice.org Writer document
+    re.compile('\.odt$'),  # OpenOffice.org document
+    re.compile('\.en$'),  # Files in English language
+    re.compile('\.de$'),  # Files in German
+    re.compile('\.es$'),  # Files in Spanish
+    re.compile('\.fr$'),  # Files in French
+    re.compile('\.it$'),  # Files in Italian
+    re.compile('\.cz$')  # Files in Czech
     ]
 
 # Images
@@ -308,11 +306,11 @@ config_files_images = [
     re.compile('\.tif$'),
     re.compile('\.swf$'),
     re.compile('\.svgz$'),
-    re.compile('\.shape$'), # XML files used for shapes for instance in Kivio
-    re.compile('\.sml$'), # XML files used for shapes for instance in Kivio
-    re.compile('\.bdf$'), #  vfontcap  - Vector Font Capability Database (VFlib Version 2)
+    re.compile('\.shape$'),  # XML files used for shapes for instance in Kivio
+    re.compile('\.sml$'),  # XML files used for shapes for instance in Kivio
+    re.compile('\.bdf$'),  # vfontcap - Vector Font Capability DB (VFlib v2)
     re.compile('\.ico$'),
-    re.compile('\.dia$') # We consider .dia as images, I don't want them in unknown
+    re.compile('\.dia$')  # Consider .dia as images, don't want them in unknown
     ]
 
 # Translation files
@@ -367,22 +365,21 @@ config_files_packages = [
 
 # The list should keep this order
 # ie. we want ltmain.sh -> build instead of code
-config_files = [
-    ('image'         , config_files_images),
-    ('i18n'          , config_files_translation),
-    ('ui'            , config_files_ui),
-    ('multimedia'    , config_files_sound),
-    ('package'       , config_files_packages),
-    ('build'         , config_files_building),
-    ('code'          , config_files_code),
-    ('documentation' , config_files_documentation),
-    ('devel-doc'     , config_files_devel_doc)
-    ]
+config_files = [('image', config_files_images),
+    ('i18n', config_files_translation),
+    ('ui', config_files_ui),
+    ('multimedia', config_files_sound),
+    ('package', config_files_packages),
+    ('build', config_files_building),
+    ('code', config_files_code),
+    ('documentation', config_files_documentation),
+    ('devel-doc', config_files_devel_doc)]
 
-def guess_file_type (filename):
+
+def guess_file_type(filename):
     for type, patt_list in config_files:
         for patt in patt_list:
-            if patt.search (filename.lower ()):
+            if patt.search(filename.lower()):
                 return type
             
     return 'unknown'
@@ -392,13 +389,14 @@ if __name__ == '__main__':
     import os
 
     path = sys.argv[1]
-    if os.path.isdir (path):
-        for root, dirs, files in os.walk (path):
+    if os.path.isdir(path):
+        for root, dirs, files in os.walk(path):
             for skip in ('.svn', 'CVS', '.git'):
                 if skip in dirs:
-                    dirs.remove (skip)
+                    dirs.remove(skip)
 
             for file in files:
-                print "%s: %s" % (os.path.join (root, file), guess_file_type (file))
+                print "%s: %s" % (os.path.join(root, file), 
+                                  guess_file_type(file))
     else:
-        print guess_file_type (path)
+        print guess_file_type(path)

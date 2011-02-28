@@ -22,6 +22,7 @@
 from ContentHandler import ContentHandler
 from utils import printerr, printout
 
+
 class Parser:
 
     CONTENT_ORDER = ContentHandler.ORDER_REVISION
@@ -62,29 +63,35 @@ class Parser:
         self.handler.end()        
     
 if __name__ == '__main__':
-    from repositoryhandler.backends import create_repository, create_repository_from_path
-    from ParserFactory import create_parser_from_logfile, create_parser_from_repository
+    from repositoryhandler.backends import (create_repository, 
+                                            create_repository_from_path)
+    from ParserFactory import (create_parser_from_logfile, 
+                               create_parser_from_repository)
     from Log import LogReader
     
     class StdoutContentHandler(ContentHandler):
         def commit(self, commit):
             print "Commit"
-            print "rev: %s, committer: %s <%s>, date: %s" % (commit.revision, commit.committer.name, commit.committer.email, commit.date)
+            print "rev: %s, committer: %s <%s>, date: %s" % \
+                (commit.revision, commit.committer.name, 
+                 commit.committer.email, commit.date)
             if commit.author is not None:
-                print "Author: %s <%s>" % (commit.author.name, commit.author.email)
+                print "Author: %s <%s>" % (commit.author.name, 
+                                           commit.author.email)
             if commit.tags is not None:
                 print "Tags: %s" % (str(commit.tags))
             print "files: "
             for action in commit.actions:
                 print "%s %s " % (action.type, action.f1)
                 if action.f2 is not None:
-                    print "(%s: %s) on branch %s" % (action.f2, action.rev, commit.branch or action.branch_f1)
+                    print "(%s: %s) on branch %s" % (action.f2, action.rev, 
+                        commit.branch or action.branch_f1)
                 else:
                     print "on branch %s" % (commit.branch or action.branch_f1)
             print "Message"
             print commit.message
 
-    def new_line(line, user_data = None):
+    def new_line(line, user_data=None):
         user_data.feed(line)
             
     reader = LogReader()
@@ -106,5 +113,3 @@ if __name__ == '__main__':
     p.set_content_handler(StdoutContentHandler())
     reader.start(new_line, p)
     p.end()
-
-

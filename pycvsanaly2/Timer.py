@@ -18,6 +18,7 @@
 
 import time
 
+
 class Timer:
 
     def __init__(self):
@@ -32,7 +33,7 @@ class Timer:
         self._end = time.time()
 
     def resume(self):
-        elapsed = self._end - self._start;
+        elapsed = self._end - self._start
         self._start = time.time()
         self._start -= elapsed
         self._active = True
@@ -41,7 +42,7 @@ class Timer:
         if self._active:
             self._end = time.time()
 
-        elapsed = self._end - self._start;
+        elapsed = self._end - self._start
 
         return elapsed
 
@@ -71,4 +72,3 @@ if __name__ == '__main__':
     t.resume()
     time.sleep(2)
     print "Elapsed %f " % (t.elapsed())
-    

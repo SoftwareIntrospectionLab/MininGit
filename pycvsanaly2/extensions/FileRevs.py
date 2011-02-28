@@ -24,13 +24,15 @@ if __name__ == '__main__':
     import sys
     sys.path.insert(0, "../../")
 
+
 class FileRevs:
 
     INTERVAL_SIZE = 1000
-    __query__ = '''select s.rev rev, s.id commit_id, af.file_id, af.action_type, s.composed_rev 
+    __query__ = """select s.rev rev, s.id commit_id, af.file_id, 
+        af.action_type, s.composed_rev 
         from scmlog s, action_files af 
         where s.id = af.commit_id and s.repository_id = ? 
-        order by s.date'''
+        order by s.date"""
 
     def __init__(self, db, cnn, cursor, repoid):
         self.db = db
@@ -38,7 +40,8 @@ class FileRevs:
         self.repoid = repoid
 
         self.icursor = ICursor(cursor, self.INTERVAL_SIZE)
-        self.icursor.execute(statement(self.__query__, db.place_holder), (repoid,))
+        self.icursor.execute(statement(self.__query__, db.place_holder), 
+                             (repoid,))
         self.rs = iter(self.icursor.fetchmany())
         self.prev_commit = -1
         self.current = None
@@ -74,7 +77,8 @@ class FileRevs:
             #         # Get the matrix for revision
             #         self.prev_commit = commit_id
             #         aux_cursor = self.cnn.cursor()
-            #         self.fp.update_for_revision(aux_cursor, commit_id, self.repoid)
+            #         self.fp.update_for_revision(aux_cursor, commit_id, 
+            #            self.repoid)
             #         aux_cursor.close()
             #         continue
             # elif action_type == 'D':
@@ -84,7 +88,8 @@ class FileRevs:
             #         # Get the matrix for revision
             #         self.prev_commit = commit_id
             #         aux_cursor = self.cnn.cursor()
-            #         self.fp.update_for_revision(aux_cursor, commit_id, self.repoid)
+            #         self.fp.update_for_revision(aux_cursor, 
+            #            commit_id, self.repoid)
             #         aux_cursor.close()
 
             return self.current
@@ -100,15 +105,18 @@ class FileRevs:
             rev = revision
 
         try:
-            relative_path = self.fp.get_path(file_id, commit_id, self.repoid).strip("/")
+            relative_path = self.fp.get_path(file_id, commit_id, 
+                                             self.repoid).strip("/")
         except AttributeError, e:
             if self.fp.get_commit_id() != commit_id:
                 # Commented out as update_for_all exists, delete if OK
                 # aux_cursor = self.cnn.cursor()
-                #                 self.fp.update_for_revision(aux_cursor, commit_id, self.repoid)
+                #                 self.fp.update_for_revision(aux_cursor, 
+                #                    commit_id, self.repoid)
                 #                 aux_cursor.close()
 
-                relative_path = self.fp.get_path(file_id, commit_id, self.repoid).strip("/")
+                relative_path = self.fp.get_path(file_id, commit_id, 
+                                                 self.repoid).strip("/")
             else:
                 raise e
 
@@ -121,7 +129,8 @@ if __name__ == '__main__':
 
     config = Config()
     config.load()
-    db = create_database(config.db_driver, sys.argv[1], config.db_user, config.db_password, config.db_hostname)
+    db = create_database(config.db_driver, sys.argv[1], config.db_user, 
+                         config.db_password, config.db_hostname)
     cnn = db.connect()
     cursor = cnn.cursor()
 
