@@ -429,7 +429,7 @@ class SqliteDatabase(Database):
                             committer_id integer,
                             author_id integer,
                             date datetime,
-                            "message varchar,
+                            message varchar,
                             composed_rev bool, 
                             repository_id integer
                             )""")
@@ -454,7 +454,7 @@ class SqliteDatabase(Database):
                             )""")
             cursor.execute("""CREATE TABLE files (
                             id integer primary key,
-                            file_name varchar(255),+
+                            file_name varchar(255),
                             repository_id integer
                             )""")
             cursor.execute("""CREATE TABLE file_links (
@@ -476,7 +476,8 @@ class SqliteDatabase(Database):
             cursor.execute("CREATE index scmlog_date on scmlog(date)")
             cursor.execute("CREATE index scmlog_repo on scmlog(repository_id)")
             self._create_views(cursor)
-        except sqlite3.dbapi2.OperationalError:
+        except sqlite3.dbapi2.OperationalError as e:
+            printdbg("Exception creating SQLite tables: " + str(e))
             raise TableAlreadyExists
         except:
             raise

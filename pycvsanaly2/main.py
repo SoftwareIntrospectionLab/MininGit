@@ -42,7 +42,7 @@ from Log import LogReader, LogWriter
 from ExtensionsManager import (ExtensionsManager, InvalidExtension, 
     InvalidDependency)
 from Config import Config, ErrorLoadingConfig
-from utils import printerr, printout, uri_to_filename
+from utils import printerr, printout, uri_to_filename, printdbg
 from _config import *
 
 
@@ -233,6 +233,7 @@ def main(argv):
     path = uri_to_filename(uri)
     if path is not None:
         try:
+            printdbg("Creating repositoryhandler instance")
             repo = create_repository_from_path(path)
         except RepositoryUnknownError:
             printerr("Path %s doesn't seem to point to a repository " + \
@@ -253,6 +254,7 @@ def main(argv):
             return 1
 
     if not config.no_parse:
+        printdbg("Preparing logging")
         # Create reader
         reader = LogReader()
         reader.set_repo(repo, path or uri)
@@ -273,6 +275,7 @@ def main(argv):
         # TODO: check parser type == logfile type
 
     try:
+        printdbg("Starting ExtensionsManager")
         emg = ExtensionsManager(config.extensions, 
                                 hard_order=config.hard_order)
     except InvalidExtension, e:
@@ -289,6 +292,7 @@ def main(argv):
     db_exists = False
 
     try:
+        printdbg("Creating database")
         db = create_database(config.db_driver,
                              config.db_database,
                              config.db_user,
@@ -308,10 +312,13 @@ def main(argv):
     
     cnn = db.connect()
     cursor = cnn.cursor()
+    
     try:
+        printdbg("Creating tables")
         db.create_tables(cursor)
         cnn.commit()
     except TableAlreadyExists:
+        printdbg("Tables not created, database already exists")
         db_exists = True
     except DatabaseException, e:
         printerr("Database error: %s", (e.message,))
@@ -324,6 +331,7 @@ def main(argv):
 
     # Add repository to Database
     if db_exists:
+        printdbg("Database exists, so looking for existing repository")
         cursor.execute(statement("SELECT id from repositories where uri = ?", 
                                  db.place_holder), (uri,))
         rep = cursor.fetchone()
