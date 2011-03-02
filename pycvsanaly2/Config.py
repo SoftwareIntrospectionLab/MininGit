@@ -45,6 +45,8 @@ class Config:
                       'metrics_noerr': False,
                       # Threading options
                       'max_threads': 10,
+                       # Content options
+                       'no_content': False,
                       # Regex for matching bug fixes in BugFixMessage
                       'bug_fix_regexes': ["defect(s)?", "patch(ing|es|ed)?", 
                                           "bug(s|fix(es)?)?", 
@@ -148,6 +150,10 @@ class Config:
         try:
             self.bug_fix_regexes_case_sensitive = \
                 config.bug_fix_regexes_case_sensitive
+        except:
+            pass
+        try:
+            self.no_content = config.no_content
         except:
             pass
 

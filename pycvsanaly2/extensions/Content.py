@@ -276,12 +276,17 @@ class Content(Extension):
         # but in the source, these are referred to as commit IDs.
         # Don't ask me why!
         while finished_job is not None:
+            file_contents = None
+                        
+            if not Config().no_content:
+                file_contents = str(finished_job.file_contents)
+            
             query = """insert into content(commit_id, file_id, content, loc) 
                 values(?,?,?,?)"""
             insert_statement = statement(query, db.place_holder)
             parameters = (finished_job.commit_id,
                           finished_job.file_id,
-                          str(finished_job.file_contents),
+                          file_contents,
                           finished_job.file_number_of_lines)
                                 
             execute_statement(insert_statement, parameters, write_cursor, db,
