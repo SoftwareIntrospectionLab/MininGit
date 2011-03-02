@@ -29,7 +29,7 @@ from utils import printout, printdbg
 
 
 class SVNParser(Parser):
-    """A parser for Bazaar.
+    """A parser for SVN.
     
     # These are a couple of tests for the longer regexes that had
     # to be split up when trying to get PEP-8 line length compliance
