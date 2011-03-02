@@ -63,7 +63,9 @@ Options:
   -l, --repo-logfile=path        Logfile to use instead of getting log from the repository
   -s, --save-logfile[=path]      Save the repository log to the given path
   -n, --no-parse                 Skip the parsing process. It only makes sense in conjunction with --extensions
-      --extensions=ext1,ext2,    List of extensions to run        
+      --extensions=ext1,ext2,    List of extensions to run
+      --hard-order               Execute extensions in exactly the order given. 
+                                 Won't follow extension dependencies.
 
 Database:
 
@@ -77,6 +79,11 @@ Metrics Options:
 
       --metrics-all              Get metrics for every revision, not only for HEAD
       --metrics-noerr            Ignore errors when calculating metrics
+      
+Content options:
+      --no-content               When running the Content extension, don't 
+                                 insert the content (ie. you just want the
+                                 lines of code count)
 """
 
 def main(argv):
@@ -86,7 +93,7 @@ def main(argv):
     long_opts = ["help", "version", "debug", "quiet", "profile", "config-file=", 
                  "repo-logfile=", "save-logfile=", "no-parse", "db-user=", "db-password=",
                  "db-hostname=", "db-database=", "db-driver=", "extensions=",
-                 "hard-order", "metrics-all", "metrics-noerr"]
+                 "hard-order", "metrics-all", "metrics-noerr", "no-content"]
 
     # Default options
     debug = None
@@ -105,6 +112,7 @@ def main(argv):
     metrics_all = None
     metrics_noerr = None
     hard_order = None
+    no_content = None
 
     try:
         opts, args = getopt.getopt(argv, short_opts, long_opts)
@@ -151,6 +159,8 @@ def main(argv):
             metrics_all = True
         elif opt in("--metrics-noerr", ):
             metrics_noerr = True
+        elif opt in ("--no-content", ):
+            no_content = True
 
     if len(args) <= 0:
         uri = os.getcwd()
@@ -197,6 +207,8 @@ def main(argv):
         config.metrics_all = metrics_all
     if metrics_noerr is not None:
         config.metrics_noerr = metrics_noerr
+    if no_content is not None:
+        config.no_content = no_content
 
     if not config.extensions and config.no_parse:
         # Do nothing!!!
