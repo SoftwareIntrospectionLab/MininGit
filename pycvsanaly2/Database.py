@@ -372,7 +372,7 @@ class Database:
         raise NotImplementedError
 
     def _create_views(self, cursor):
-        view = """CREATE OR REPLACE VIEW action_files AS
+        view = """CREATE VIEW action_files AS
                   SELECT a.file_id as file_id, a.id as action_id,
                          a.type as action_type, a.commit_id as commit_id
                   FROM actions as a
@@ -401,7 +401,7 @@ class SqliteDatabase(Database):
 
     def _create_views(self, cursor):
         Database._create_views(self, cursor)
-        view = """create or replace view actions_file_names as
+        view = """create view actions_file_names as
                   select a.id id, type, file_id, new_file_name, commit_id
                   from actions a, scmlog s
                   LEFT JOIN file_copies fc ON a.id = fc.action_id
@@ -525,7 +525,7 @@ class MysqlDatabase(Database):
 
     def _create_views(self, cursor):
         Database._create_views(self, cursor)
-        view = """create or replace view actions_file_names as
+        view = """create view actions_file_names as
                   select a.id id, type, file_id, new_file_name, commit_id
                   from (actions a, scmlog s)
                   LEFT JOIN file_copies fc ON a.id = fc.action_id
