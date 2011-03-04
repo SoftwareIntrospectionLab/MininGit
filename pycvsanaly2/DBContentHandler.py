@@ -229,16 +229,21 @@ class DBContentHandler(ContentHandler):
 
             name = to_utf8(person.name)
             email = person.email
+            
+            if email is not None:
+                email = to_utf8(email).decode("utf-8")
+            
             cursor.execute(statement(
                 "SELECT id from people where name = ?", self.db.place_holder), 
                 (to_utf8(name).decode("utf-8"),))
             rs = cursor.fetchone()
             if not rs:
                 p = DBPerson(None, person)
+                
                 cursor.execute(statement(DBPerson.__insert__,
                                 self.db.place_holder), 
                                 (p.id, to_utf8(p.name).decode("utf-8"), 
-                                 to_utf8(email).decode("utf-8")))
+                                 email))
                 person_id = p.id
             else:
                 person_id = rs[0]
