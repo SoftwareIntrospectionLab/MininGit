@@ -27,8 +27,86 @@ from pycvsanaly2.utils import printdbg, printerr, printout, \
 from pycvsanaly2.profile import profiler_start, profiler_stop
 from pycvsanaly2.Config import Config
 from repositoryhandler.backends.watchers import LS
+from Jobs import JobPool, Job
+from repositoryhandler.backends import RepositoryCommandError
 import re
 from io import BytesIO
+import os
+
+# This class holds a single repository retrieve task,
+# and keeps the source code until the object is garbage-collected
+class FileCountJob(Job):
+    def __init__(self, row_id, rev):
+        self.row_id = row_id
+        self.rev = rev
+        self.ls_lines = ""
+
+    def run(self, repo, repo_uri):
+        def write_line(data, io):
+            io.write(data)
+        
+        self.repo = repo
+        self.repo_uri = repo_uri
+        self.repo_type = self.repo.get_type()
+
+        io = BytesIO()
+        wid = repo.add_watch(LS, write_line, io)
+        
+        # Git doesn't need retries because all of the revisions
+        # are already on disk
+        if self.repo_type == 'git':
+            retries = 0
+        else:
+            retries = 3
+            
+        done = False
+        failed = False
+        
+        # Try downloading the file listing
+        while not done and not failed:
+            try:
+                self.repo.ls(self.repo_uri, self.rev)
+                done = True
+            except RepositoryCommandError, e:
+                if retries > 0:
+                    printerr("Command %s returned %d(%s), try again",\
+                            (e.cmd, e.returncode, e.error))
+                    retries -= 1
+                    io.seek(0)
+                elif retries == 0:
+                    failed = True
+                    printerr("Error obtaining %s@%s. " +
+                                "Command %s returned %d(%s)", \
+                                (self.path, self.rev, e.cmd, \
+                                e.returncode, e.error))
+            except Exception, e:
+                failed = True
+                printerr("Error obtaining %s@%s. Exception: %s", \
+                        (self.path, self.rev, str(e)))
+
+        self.repo.remove_watch(LS, wid)
+
+        if failed:
+            printerr("Failure due to error")
+        else:
+            try:
+                self.ls_lines = io.getvalue()
+                io.close()
+            except Exception, e:
+                printerr("Error getting ls-lines." +
+                            "Exception: %s", (str(e),))
+            finally:
+                #TODO: This should close, but it throws an error
+                # sometimes. It's fixable using an algorithm like
+                # <http://goo.gl/9gPCw>
+                #fd.close()
+                pass
+            
+    def _get_ls_line_count(self):
+        return len(self.ls_lines.splitlines())
+    
+    ls_line_count = property(_get_ls_line_count)
+
 
 class FileCount(Extension):
     def __prepare_table(self, connection):
@@ -71,14 +149,32 @@ class FileCount(Extension):
             
         connection.commit()
         cursor.close()
-    
-    def run(self, repo, uri, db):
-        def write_line(data, io):
-            io.write(data)
-            
-        # Start the profiler, per every other extension
-        profiler_start("Running bug prediction extension")
+        
+    def __process_finished_jobs(self, job_pool, write_cursor, db):
+        finished_job = job_pool.get_next_done()
+        processed_jobs = 0
 
+        while finished_job is not None:
+            query = """update scmlog
+                        set file_count = ?
+                        where id = ?"""
+            insert_statement = statement(query, db.place_holder)
+            parameters = (finished_job.ls_line_count, finished_job.row_id)
+                                
+            execute_statement(insert_statement, parameters, write_cursor, db,
+                       "Couldn't update scmlog with ls line count", 
+                       exception=ExtensionRunError)
+            
+            processed_jobs += 1
+            finished_job = job_pool.get_next_done(0)
+            # print "Before return: %s"%(datetime.now()-start)
+            
+        return processed_jobs
+    
+    def run(self, repo, uri, db):            
+        # Start the profiler, per every other extension
+        profiler_start("Running FileCount extension")
+        
         # Open a connection to the database and get cursors
         self.db = db
         connection = self.db.connect()
@@ -106,6 +202,11 @@ class FileCount(Extension):
                     "Error creating repository %s. Exception: %s" % \
                     (repo.get_uri(), str(e)))
             
+        queuesize = Config().max_threads
+
+        job_pool = JobPool(repo, path or repo.get_uri(), 
+                           queuesize=queuesize)
+            
         # Get the commits from this repository
         query = """select s.id, s.rev from scmlog s
             where s.repository_id = ?"""
@@ -113,40 +214,32 @@ class FileCount(Extension):
 
         self.__prepare_table(connection)
 
+        i = 0
+
         for row in read_cursor:
-            io = BytesIO()
             row_id = row[0]
             rev = row[1]
             
-            update = """update scmlog
-                        set file_count = ?
-                        where id = ?"""
-
-            wid = repo.add_watch(LS, write_line, io)
+            job = FileCountJob(row_id, rev)
+            job_pool.push(job)
             
-            try:
-                repo.ls(path, rev)
-            except Exception as e:
-                printerr("Error obtaining File Count. Exception: %s", \
-                        (str(e),))
+            i = i + 1
+            
+            if i >= queuesize:
+                printdbg("FileCount queue is now at %d, flushing to database", (i,))
 
-            repo.remove_watch(LS, wid)
+                processed_jobs = self.__process_finished_jobs(job_pool, 
+                                                              write_cursor, db)
 
-            try:
-                ls_listing = io.getvalue()
-            except Exception, e:
-                printerr("Error getting contents." +
-                            "Exception: %s", (str(e),))
-                continue
+                connection.commit()
+                i = i - processed_jobs
+                
+                if processed_jobs < (queuesize / 5):
+                    job_pool.join()
 
-            execute_statement(statement(update, db.place_holder), 
-                              (len(ls_listing.splitlines()), row_id), 
-                              write_cursor,
-                              db,
-                              "Couldn't update scmlog",
-                              exception=ExtensionRunError)
-            io.close()
-
+        
+        job_pool.join()
+        self.__process_finished_jobs(job_pool, write_cursor, db)
         read_cursor.close()
         connection.commit()
         connection.close()
