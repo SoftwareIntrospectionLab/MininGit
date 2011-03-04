@@ -18,7 +18,7 @@
 #       Carlos Garcia Campos <carlosgc@gsyc.escet.urjc.es>
 
 from repositoryhandler.backends.watchers import DIFF
-
+from repositoryhandler.Command import CommandError, CommandRunningError
 from pycvsanaly2.Database import (SqliteDatabase, MysqlDatabase, 
         TableAlreadyExists, statement, ICursor, execute_statement)
 from pycvsanaly2.Config import Config
@@ -41,18 +41,30 @@ class PatchJob(Job):
 
         io = BytesIO()
         wid = self.repo.add_watch(DIFF, diff_line, io)
-        try:
-            self.repo.show(self.repo_uri, self.rev)
-            self.data = io.getvalue()
-        except Exception, e:
-            printerr("Error running show command: %s", (str(e),))
-            self.data = None
-
-        self.repo.remove_watch(DIFF, wid)
-        io.close()
         
-        self.data = self.data.strip()
-
+        done = False
+        failed = False
+        retries = 3
+        
+        while not done and not failed:
+            try:
+                self.repo.show(self.repo_uri, self.rev)
+                self.data = io.getvalue().strip()
+                done = True
+            except (CommandError, CommandRunningError) as e:
+                if retries > 0:
+                    printerr("Error running show command: %s, trying again", 
+                             (str(e),))
+                    retries -= 1
+                    io.seek(0)
+                elif retries <= 0:
+                    failed = True
+                    printerr("Error running show command: %s, FAILED", 
+                             (str(e),))
+                    self.data = None
+    
+        self.repo.remove_watch(DIFF, wid)
+        
         return self.data
 
     def run(self, repo, repo_uri):
