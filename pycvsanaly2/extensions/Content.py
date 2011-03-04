@@ -397,7 +397,8 @@ class Content(Extension):
             job_pool.push(job)
             i = i + 1
             if i >= queuesize:
-                printdbg("Content queue is now at %d, flushing to database", (i,))
+                printdbg("Content queue is now at %d, flushing to database", 
+                         (i,))
                 
                 # TODO: Remove these comments if they aren't useful
                 # print "Before __process_finished_jobs: \

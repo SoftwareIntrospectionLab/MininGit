@@ -33,6 +33,7 @@ import re
 from io import BytesIO
 import os
 
+
 # This class holds a single repository retrieve task,
 # and keeps the source code until the object is garbage-collected
 class FileCountJob(Job):
@@ -226,7 +227,8 @@ class FileCount(Extension):
             i = i + 1
             
             if i >= queuesize:
-                printdbg("FileCount queue is now at %d, flushing to database", (i,))
+                printdbg("FileCount queue is now at %d, flushing to database", 
+                         (i,))
 
                 processed_jobs = self.__process_finished_jobs(job_pool, 
                                                               write_cursor, db)
@@ -236,7 +238,6 @@ class FileCount(Extension):
                 
                 if processed_jobs < (queuesize / 5):
                     job_pool.join()
-
         
         job_pool.join()
         self.__process_finished_jobs(job_pool, write_cursor, db)

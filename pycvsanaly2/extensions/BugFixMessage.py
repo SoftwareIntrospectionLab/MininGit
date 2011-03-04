@@ -28,6 +28,7 @@ from pycvsanaly2.profile import profiler_start, profiler_stop
 from pycvsanaly2.Config import Config
 import re
 
+
 class BugFixMessage(Extension):
     def __prepare_table(self, connection):
         cursor = connection.cursor()
