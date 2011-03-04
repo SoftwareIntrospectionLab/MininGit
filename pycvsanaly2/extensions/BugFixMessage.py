@@ -28,9 +28,6 @@ from pycvsanaly2.profile import profiler_start, profiler_stop
 from pycvsanaly2.Config import Config
 import re
 
-
-# This class holds a single repository retrieve task,
-# and keeps the source code until the object is garbage-collected
 class BugFixMessage(Extension):
     def __prepare_table(self, connection):
         cursor = connection.cursor()
@@ -201,7 +198,7 @@ class BugFixMessage(Extension):
 
     def run(self, repo, uri, db):
         # Start the profiler, per every other extension
-        profiler_start("Running bug prediction extension")
+        profiler_start("Running BugFixMessage extension")
 
         # Open a connection to the database and get cursors
         self.db = db
@@ -223,7 +220,7 @@ class BugFixMessage(Extension):
             repo_id = read_cursor.fetchone()[0]
         except NotImplementedError:
             raise ExtensionRunError( \
-                    "BugPrediction extension is not supported for %s repos" % \
+                    "BugFixMessage extension is not supported for %s repos" % \
                     (repo.get_type()))
         except Exception, e:
             raise ExtensionRunError( \

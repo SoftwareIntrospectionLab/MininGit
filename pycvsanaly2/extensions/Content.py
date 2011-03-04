@@ -124,7 +124,7 @@ class ContentJob(Job):
                 #fd.close()
                 pass
                 
-    def get_file_contents(self):
+    def _get_file_contents(self):
             """Returns contents of the file, stripped of whitespace 
             at either end
             """
@@ -139,10 +139,10 @@ class ContentJob(Job):
             except:
                 return None
     
-    def set_file_contents(self, contents):
+    def _set_file_contents(self, contents):
         self._file_contents = contents
         
-    def get_number_of_lines(self):
+    def _get_number_of_lines(self):
         """Return the number of lines contained within the file, stripped
         of whitespace at either end.
 
@@ -150,27 +150,27 @@ class ContentJob(Job):
         # depending on what your doctest runner is. That's why
         # it accesses the setter. There's no need to do this in your code.
         >>> cj = ContentJob(None, None, None, None)
-        >>> cj.set_file_contents("Hello")
+        >>> cj._set_file_contents("Hello")
         >>> cj.file_number_of_lines
         1
-        >>> cj.set_file_contents("Hello \\n world")
+        >>> cj._set_file_contents("Hello \\n world")
         >>> cj.file_number_of_lines
         2
-        >>> cj.set_file_contents("")
+        >>> cj._set_file_contents("")
         >>> cj.file_number_of_lines
         0
-        >>> cj.set_file_contents(None)
+        >>> cj._set_file_contents(None)
         >>> cj.file_number_of_lines
 
-        >>> cj.set_file_contents("\\n\\n Hello \\n\\n")
+        >>> cj._set_file_contents("\\n\\n Hello \\n\\n")
         >>> cj.file_number_of_lines
         1
 
-        >>> cj.set_file_contents("a\\nb")
+        >>> cj._set_file_contents("a\\nb")
         >>> cj.file_number_of_lines
         2
 
-        >>> cj.set_file_contents("a\\nb\\nc\\nd\\nea\\nb\\nc\\nd\\ne")
+        >>> cj._set_file_contents("a\\nb\\nc\\nd\\nea\\nb\\nc\\nd\\ne")
         >>> cj.file_number_of_lines
         9
         """
@@ -185,8 +185,8 @@ class ContentJob(Job):
 
         return len(contents.splitlines())
     
-    file_number_of_lines = property(get_number_of_lines)
-    file_contents = property(get_file_contents, set_file_contents)
+    file_number_of_lines = property(_get_number_of_lines)
+    file_contents = property(_get_file_contents, _set_file_contents)
 
 
 class Content(Extension):
@@ -343,7 +343,6 @@ class Content(Extension):
         printdbg("Setting queuesize to " + str(queuesize))
 
         # This is where the threading stuff comes in, I expect
-        # Commenting out as I don't really want to mess with this right now
         job_pool = JobPool(repo, path or repo.get_uri(), queuesize=queuesize)
 
         # This filters files if they're not source files.
@@ -398,7 +397,7 @@ class Content(Extension):
             job_pool.push(job)
             i = i + 1
             if i >= queuesize:
-                printdbg("Queue is now at %d, flushing to database", (i,))
+                printdbg("Content queue is now at %d, flushing to database", (i,))
                 
                 # TODO: Remove these comments if they aren't useful
                 # print "Before __process_finished_jobs: \
