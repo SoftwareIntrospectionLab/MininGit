@@ -118,8 +118,7 @@ class GitParser(Parser):
 
     def flush(self):
         if self.branches:
-            if self.branch.is_remote():
-                self.handler.commit(self.branch.tail.commit)
+            self.handler.commit(self.branch.tail.commit)
             self.branch = None
             self.branches = None
 
