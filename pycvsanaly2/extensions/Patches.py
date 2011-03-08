@@ -49,7 +49,7 @@ class PatchJob(Job):
         while not done and not failed:
             try:
                 self.repo.show(self.repo_uri, self.rev)
-                self.data = io.getvalue().strip()
+                self.data = to_utf8(io.getvalue().strip()).decode("utf-8")
                 done = True
             except (CommandError, CommandRunningError) as e:
                 if retries > 0:
@@ -161,8 +161,7 @@ class Patches(Extension):
 
             execute_statement(statement(DBPatch.__insert__, 
                                         self.db.place_holder),
-                              (p.id, p.commit_id, 
-                               to_utf8(p.patch).decode("utf-8")),
+                              (p.id, p.commit_id, p.patch),
                               write_cursor,
                               db,
                               "Couldn't insert, duplicate patch?",
