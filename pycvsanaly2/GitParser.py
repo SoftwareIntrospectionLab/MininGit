@@ -134,7 +134,7 @@ class GitParser(Parser):
         # Commit
         match = self.patterns['commit'].match(line)
         if match:
-            if self.commit is not None and self.branch.is_remote():
+            if self.commit is not None:
                 # Skip commits on svn tags
                 if self.branch.tail.svn_tag is None:
                     self.handler.commit(self.branch.tail.commit)
