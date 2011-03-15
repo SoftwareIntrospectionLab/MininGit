@@ -131,8 +131,6 @@ class GitParser(Parser):
         for patt in self.patterns['ignore']:
             if patt.match(line):
                 return
-
-        print line
         
         # Commit
         match = self.patterns['commit'].match(line)
