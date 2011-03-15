@@ -260,6 +260,7 @@ def main(argv):
         # Create reader
         reader = LogReader()
         reader.set_repo(repo, path or uri)
+        reader.set_branch(config.branch)
 
         # Create parser
         if config.repo_logfile is not None:
