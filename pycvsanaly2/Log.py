@@ -33,6 +33,7 @@ class LogReader:
         self.logfile = None
         self.repo = None
         self.uri = None
+        self.branch = None
 
     def set_repo(self, repo, uri=None):
         self.repo = repo
@@ -41,6 +42,9 @@ class LogReader:
         
     def set_logfile(self, filename):
         self.logfile = filename
+        
+    def set_branch(self, branch):
+        self.branch = branch
 
     def _read_from_logfile(self, new_line_cb, user_data):
         try:
@@ -61,7 +65,7 @@ class LogReader:
             queue.put(data)
 
         repo.add_watch(LOG, new_line)
-        repo.log(self.uri or repo.get_uri())
+        repo.log(self.uri or repo.get_uri(), branch=self.branch)
         
     def _read_from_repository(self, new_line_cb, user_data):
         queue = AsyncQueue()

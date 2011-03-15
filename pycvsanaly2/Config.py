@@ -40,6 +40,7 @@ class Config:
                       'db_hostname': 'localhost',
                       'extensions': [],
                       'hard_order': False,
+                      'branch': "master",
                       # Metrics extension options
                       'metrics_all': False,
                       'metrics_noerr': False,
@@ -129,6 +130,10 @@ class Config:
             pass
         try:
             self.hard_order = config.hard_order
+        except:
+            pass
+        try:
+            self.branch = config.branch
         except:
             pass
         try:

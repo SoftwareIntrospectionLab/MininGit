@@ -1,4 +1,3 @@
-# Copyright (C) 2007 LibreSoft
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,6 +23,7 @@ import datetime
 from Parser import Parser
 from Repository import Commit, Action, Person
 from utils import printout, printdbg
+from Config import Config
 
 
 class GitParser(Parser):
@@ -117,7 +117,7 @@ class GitParser(Parser):
                                   repo.get_uri()) is not None
 
     def flush(self):
-        if self.branches:
+        if self.branches or Config().branch:
             self.handler.commit(self.branch.tail.commit)
             self.branch = None
             self.branches = None
@@ -131,6 +131,8 @@ class GitParser(Parser):
             if patt.match(line):
                 return
 
+        print line
+        
         # Commit
         match = self.patterns['commit'].match(line)
         if match:
@@ -146,6 +148,14 @@ class GitParser(Parser):
             if parents:
                 parents = parents.split()
             git_commit = self.GitCommit(self.commit, parents)
+
+            # If a specific branch has been configured, there
+            # won't be any decoration, so a branch needs to be
+            # created
+            if Config().branch is not None:
+                self.branch = self.GitBranch(self.GitBranch.LOCAL, 
+                                             Config().branch, 
+                                             git_commit)
 
             decorate = match.group(5)
             branch = None
