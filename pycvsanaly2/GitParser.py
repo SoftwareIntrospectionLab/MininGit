@@ -96,8 +96,8 @@ class GitParser(Parser):
     patterns['local-branch'] = re.compile("refs/heads/([^,]*)")
     patterns['tag'] = re.compile("tag: refs/tags/([^,]*)")
     patterns['stash'] = re.compile("refs/stash")
-    patterns['merge'] = re.compile("^Merge: .*$")
-    patterns['ignore'] = [re.compile("^AuthorDate: .*$")]
+    patterns['ignore'] = [re.compile("^AuthorDate: .*$"), 
+                          re.compile("^Merge: .*$")]
     patterns['svn-tag'] = re.compile("^svn path=/tags/(.*)/?; " +
                                      "revision=([0-9]+)$")
 
@@ -110,7 +110,6 @@ class GitParser(Parser):
         self.commit = None
         self.branch = None
         self.branches = []
-        self.ignore_commit = False
 
     def set_repository(self, repo, uri):
         Parser.set_repository(self, repo, uri)
@@ -119,9 +118,7 @@ class GitParser(Parser):
 
     def flush(self):
         if self.branches:
-            if not self.ignore_commit:
-                self.handler.commit(self.branch.tail.commit)
-            self.ignore_commit = False
+            self.handler.commit(self.branch.tail.commit)
             self.branch = None
             self.branches = None
 
@@ -133,20 +130,14 @@ class GitParser(Parser):
         for patt in self.patterns['ignore']:
             if patt.match(line):
                 return
-            
-        match = self.patterns['merge'].match(line)
-        if match:
-            self.ignore_commit = True
 
         # Commit
         match = self.patterns['commit'].match(line)
         if match:
             if self.commit is not None:
                 # Skip commits on svn tags
-                if self.branch.tail.svn_tag is None and not self.ignore_commit:
+                if self.branch.tail.svn_tag is None:
                     self.handler.commit(self.branch.tail.commit)
-                
-                self.ignore_commit = False
 
             self.commit = Commit()
             self.commit.revision = match.group(1)
