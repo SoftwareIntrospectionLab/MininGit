@@ -73,6 +73,8 @@ Options:
       --extensions=ext1,ext2,    List of extensions to run        
       --hard-order               Execute extensions in exactly the order given. 
                                  Won't follow extension dependencies.
+      --branch=[branch]          Specify branch that should be monitored (only
+                                 works for Git right now)
 
 Database:
 
@@ -104,7 +106,7 @@ def main(argv):
                  "config-file=", "repo-logfile=", "save-logfile=", 
                  "no-parse", "db-user=", "db-password=", "db-hostname=", 
                  "db-database=", "db-driver=", "extensions=", "hard-order", 
-                 "metrics-all", "metrics-noerr", "no-content"]
+                 "metrics-all", "metrics-noerr", "no-content", "branch="]
 
     # Default options
     debug = None
@@ -124,6 +126,7 @@ def main(argv):
     metrics_noerr = None
     hard_order = None
     no_content = None
+    branch = None
 
     try:
         opts, args = getopt.getopt(argv, short_opts, long_opts)
@@ -166,6 +169,8 @@ def main(argv):
             extensions = value.split(',')
         elif opt in("--hard-order"):
             hard_order = True
+        elif opt in("--branch"):
+            branch = value
         elif opt in("--metrics-all", ):
             metrics_all = True
         elif opt in("--metrics-noerr", ):
@@ -215,6 +220,8 @@ def main(argv):
                                   if item not in config.extensions])
     if hard_order is not None:
         config.hard_order = hard_order
+    if branch is not None:
+        config.branch = branch
     if metrics_all is not None:
         config.metrics_all = metrics_all
     if metrics_noerr is not None:

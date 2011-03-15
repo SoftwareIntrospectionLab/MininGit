@@ -40,7 +40,7 @@ class Config:
                       'db_hostname': 'localhost',
                       'extensions': [],
                       'hard_order': False,
-                      'branch': "master",
+                      'branch': None,
                       # Metrics extension options
                       'metrics_all': False,
                       'metrics_noerr': False,
