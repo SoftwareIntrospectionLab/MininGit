@@ -47,11 +47,10 @@ class FilePaths:
         self.__dict__['db'] = db
   
     def update_for_revision(self, cursor, commit_id, repo_id):
-        adj = self.__dict__['cached_adj'].get(commit_id)
-        if adj is not None:
-            return
         db = self.__dict__['db']
 
+        if commit_id == self.__dict__['rev']:
+            return
         prev_commit_id = self.__dict__['rev']
         self.__dict__['rev'] = commit_id
 
@@ -125,8 +124,6 @@ class FilePaths:
                 adj.adj[f2] = f1
             rs = cursor.fetchmany()
 
-        self.__dict__['cached_adj'][commit_id] = deepcopy(adj)
-
         # profiler_stop("Updating adjacency matrix for commit %d", 
         # (commit_id,), True)
 
@@ -149,8 +146,14 @@ class FilePaths:
         return "/" + "/".join(tokens)
 
     def get_path(self, file_id, commit_id, repo_id):
-        # profiler_start("Getting path for file %d at commit %d", 
-        # (file_id, commit_id))
+        """
+        Unless update_all is called up-front, commit_id 
+        passed into this method should be sequentially
+        from first commit to the last, though the same
+        commit_id can be passed several times.
+        """
+        #If update_all is not call before, cached_adj is
+        #always empty
         adj = self.__dict__['cached_adj'].get(commit_id)
         if adj is not None:
             self.__dict__['adj'] = adj
@@ -162,9 +165,6 @@ class FilePaths:
             cursor.close()
             adj = self.__dict__['adj']
         path = self.__build_path(file_id, adj)
-
-        # profiler_stop("Getting path for file %d at commit %d", 
-        # (file_id, commit_id), True)
 
         return path
 
@@ -180,6 +180,15 @@ class FilePaths:
         return self.__dict__['rev']
 
     def update_all(self, repo_id):
+        """
+        update_all enable cache for adjacency matrices
+        Pros: File paths in different revisions can be
+        accessed randomly, i.e. after calling update_all,
+        get_path can be called with any revision in any
+        order.
+        Cons: It consumes significant memory to store
+        the adjacency matrices
+        """
         profiler_start("Update all file paths")
         db = self.__dict__['db']
         cnn = db.connect()
@@ -193,7 +202,11 @@ class FilePaths:
         all_commits = [i[0] for i in cursor.fetchall()]
         for id in all_commits:
             if old_id != id:
-                self.update_for_revision(cursor, id, repo_id)
+                adj = self.__dict__['cached_adj'].get(id)
+                if adj is None:
+                    self.update_for_revision(cursor, id, repo_id)
+                    self.__dict__['cached_adj'][id] = \
+                    deepcopy(self.__dict__['adj'])
                 old_id = id
         cursor.close()
         cnn.close()
