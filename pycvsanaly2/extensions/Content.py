@@ -254,6 +254,20 @@ class Content(Extension):
                 raise
             finally:
                 cursor.close()
+                
+        # This one works regardless of DB
+        try:
+            cursor = connection.cursor()
+
+            cursor.execute("""CREATE VIEW content_loc as
+            SELECT c.*, (LENGTH(content) - 
+            LENGTH(REPLACE(c.content, x'0a', ''))) + 1 as loc 
+            from content c""")
+        except Exception, e:
+            # Not getting a view created isn't the end of the world
+            pass
+        finally:
+            cursor.close()
 
         connection.commit()
 
