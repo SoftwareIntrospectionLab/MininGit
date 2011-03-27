@@ -22,7 +22,7 @@ from pycvsanaly2.extensions import Extension, register_extension, \
 from pycvsanaly2.Database import SqliteDatabase, MysqlDatabase, statement, \
     execute_statement
 from pycvsanaly2.Config import Config
-from pycvsanaly2.utils import printdbg, printerr, uri_to_filename, to_utf8
+from pycvsanaly2.utils import printdbg, printerr, printout, uri_to_filename, to_utf8
 from pycvsanaly2.profile import profiler_start, profiler_stop
 from FileRevs import FileRevs
 from repositoryhandler.backends import RepositoryCommandError
@@ -260,12 +260,13 @@ class Content(Extension):
             cursor = connection.cursor()
 
             cursor.execute("""CREATE VIEW content_loc as
-            SELECT c.*, (LENGTH(content) - 
+            SELECT c.id, c.commit_id, c.file_id, c.content, 
+            (LENGTH(c.content) - 
             LENGTH(REPLACE(c.content, x'0a', ''))) + 1 as loc 
             from content c""")
         except Exception, e:
             # Not getting a view created isn't the end of the world
-            pass
+            printout("Warning: Couldn't create content_loc view (does it already exist?)")
         finally:
             cursor.close()
 
