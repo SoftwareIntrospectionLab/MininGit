@@ -844,7 +844,7 @@ class Metrics(Extension):
         if unlocked:
             job = job_pool.get_next_done_unlocked()
         else:
-            job = job_pool.get_next_done()
+            job = job_pool.get_next_done(0.5)
             
         while job is not None:
             id_counter = job.get_id()

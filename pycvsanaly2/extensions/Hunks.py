@@ -239,7 +239,6 @@ class Hunks(Extension):
         self.db = db
         connection = self.db.connect()
         read_cursor = connection.cursor()
-        read_cursor_1 = connection.cursor()
         write_cursor = connection.cursor()
         
         # Try to get the repository and get its ID from the database
@@ -278,7 +277,7 @@ class Hunks(Extension):
         rs = icursor.fetchmany()
 
         while rs:
-            for commit_id, patch_content, rev in rs:                
+            for commit_id, patch_content, rev in rs:  
                 for hunk in self.get_commit_data(patch_content):
                     # Get the file ID from the database for linking
                     # TODO: This isn't going to work if two files are committed
@@ -291,11 +290,12 @@ class Hunks(Extension):
                     and a.file_id = f.id"""
     
                     hunk_file_name = re.sub(r'^[ab]\/', '', 
-                                            hunk.file_name.strip())               
-    
+                                            hunk.file_name.strip())
+                    read_cursor_1 = connection.cursor()
                     read_cursor_1.execute(statement(file_id_query,
                         db.place_holder), (commit_id,))
                     possible_files = read_cursor_1.fetchall()
+                    read_cursor_1.close()
                 
                     file_id = None
     
@@ -343,12 +343,11 @@ class Hunks(Extension):
                                        db,
                                        "Couldn't insert hunk, dup record?",
                                        exception=ExtensionRunError)
-                
-            connection.commit
+            
+            connection.commit()
             rs = icursor.fetchmany()
 
         read_cursor.close()
-        read_cursor_1.close()
         connection.commit()
         connection.close()
 

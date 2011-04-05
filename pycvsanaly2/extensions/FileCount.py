@@ -152,7 +152,7 @@ class FileCount(Extension):
         cursor.close()
         
     def __process_finished_jobs(self, job_pool, write_cursor, db):
-        finished_job = job_pool.get_next_done()
+        finished_job = job_pool.get_next_done(0)
         processed_jobs = 0
 
         while finished_job is not None:

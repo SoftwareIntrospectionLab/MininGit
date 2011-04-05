@@ -41,13 +41,14 @@ class Config:
                       'extensions': [],
                       'hard_order': False,
                       'branch': None,
+                      'low_memory': False,
                       # Metrics extension options
                       'metrics_all': False,
                       'metrics_noerr': False,
                       # Threading options
                       'max_threads': 10,
-                       # Content options
-                       'no_content': False,
+                      # Content options
+                      'no_content': False, 
                       # Regex for matching bug fixes in BugFixMessage
                       'bug_fix_regexes': ["defect(s)?", "patch(ing|es|ed)?", 
                                           "bug(s|fix(es)?)?", 
@@ -130,6 +131,10 @@ class Config:
             pass
         try:
             self.hard_order = config.hard_order
+        except:
+            pass
+        try:
+            self.low_memory = config.low_memory
         except:
             pass
         try:

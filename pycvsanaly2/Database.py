@@ -333,6 +333,7 @@ class ICursor:
         self.i += self.interval_size
 
         printdbg(q)
+        
         if self.args:
             self.cursor.execute(q, self.args)
         else:

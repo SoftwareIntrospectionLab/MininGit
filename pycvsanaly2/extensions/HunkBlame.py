@@ -422,6 +422,7 @@ class HunkBlame(Blame):
         except:
             printdbg("Couldn't drop cache because of " + str(e))
 
+        fp.close()
         read_cursor.close()
         write_cursor.close()
         cnn.close()

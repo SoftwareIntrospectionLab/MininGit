@@ -25,7 +25,12 @@ if __name__ == '__main__':
 from pycvsanaly2.Database import statement
 from pycvsanaly2.utils import printdbg
 from pycvsanaly2.profile import profiler_start, profiler_stop
+from pycvsanaly2.Config import Config
 from copy import deepcopy
+import pickle
+import shelve
+import os
+from time import time
 
 
 class FilePaths:
@@ -154,7 +159,7 @@ class FilePaths:
         """
         #If update_all is not call before, cached_adj is
         #always empty
-        adj = self.__dict__['cached_adj'].get(commit_id)
+        adj = self.__dict__['cached_adj'].get(str(commit_id))
         if adj is not None:
             self.__dict__['adj'] = adj
             self.__dict__['rev'] = commit_id
@@ -163,6 +168,8 @@ class FilePaths:
             cursor = cnn.cursor()
             self.update_for_revision(cursor, commit_id, repo_id)
             cursor.close()
+            cnn.commit()
+            cnn.close()
             adj = self.__dict__['adj']
         path = self.__build_path(file_id, adj)
 
@@ -188,8 +195,23 @@ class FilePaths:
         order.
         Cons: It consumes significant memory to store
         the adjacency matrices
+
+        If the config has low_memory set to true, shelve will
+        be used instead, to write the cache out to disk.
         """
         profiler_start("Update all file paths")
+        
+        self.__dict__['cached_adj'] = {}
+        
+        if Config().low_memory:
+            self.shelve_file_name = str(time()) + "-shelve.db"
+            
+            # If there is an old file, shelf will complain viciously
+            if os.path.exists(self.shelve_file_name):
+                os.remove(self.shelve_file_name)
+            
+            self.__dict__['cached_adj'] = shelve.open(self.shelve_file_name, writeback=True)
+        
         db = self.__dict__['db']
         cnn = db.connect()
 
@@ -197,20 +219,40 @@ class FilePaths:
         query = """select distinct(s.id) from scmlog s, actions a
                     where s.id = a.commit_id and repository_id=?
                     order by s.id"""
-        cursor.execute(statement(query, db.place_holder), (repo_id,))        
+        cursor.execute(statement(query, db.place_holder), (repo_id,))
+        cnn       
         old_id = -1
         all_commits = [i[0] for i in cursor.fetchall()]
         for id in all_commits:
             if old_id != id:
-                adj = self.__dict__['cached_adj'].get(id)
+                adj = self.__dict__['cached_adj'].get(str(id))
+
                 if adj is None:
                     self.update_for_revision(cursor, id, repo_id)
-                    self.__dict__['cached_adj'][id] = \
+                    self.__dict__['cached_adj'][str(id)] = \
                     deepcopy(self.__dict__['adj'])
                 old_id = id
         cursor.close()
         cnn.close()
         profiler_stop("Update all file paths", delete=True)
+        
+    def close(self):
+        """Closes FilePaths to ensure all caches are deleted"""
+        
+        if Config().low_memory:
+            # FIXME: This should be closed, but sometimes shelve
+            # just won't do it. The best way is to timeout the try,
+            # but not closing and just deleting will do the same
+            # think, just in a more yucky way
+            printdbg("Syncing shelf")
+            self.__dict__['cached_adj'].sync()
+            printdbg("Closing shelf")
+            self.__dict__['cached_adj'].close()
+            printdbg("Deleting shelve " + self.shelve_file_name)
+            os.remove(self.shelve_file_name)
+            # Clean up cached adj in case this gets called without
+            # update_all later
+            self.__dict__['cached_adj'] = {}
 
 if __name__ == '__main__':
     import sys

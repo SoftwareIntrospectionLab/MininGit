@@ -75,6 +75,14 @@ Options:
                                  Won't follow extension dependencies.
       --branch=[branch]          Specify branch that should be monitored (only
                                  works for Git right now)
+      --low-memory               Changes cvsanaly to store certain caches on
+                                 the hard drive. This is not well-supported,
+                                 only use if you are having out-of-memory
+                                 problems (usually because your repo is very
+                                 large). This may also cause cvsanaly to run
+                                 slower, as it is not caching in memory, and
+                                 is somewhat paranoid about the integrity of
+                                 the on-disk cache, so will often empty it.
 
 Database:
 
@@ -125,6 +133,7 @@ def main(argv):
     metrics_all = None
     metrics_noerr = None
     hard_order = None
+    low_memory = None
     no_content = None
     branch = None
 
@@ -169,6 +178,8 @@ def main(argv):
             extensions = value.split(',')
         elif opt in("--hard-order"):
             hard_order = True
+        elif opt in("--low-memory"):
+            low_memory = True
         elif opt in("--branch"):
             branch = value
         elif opt in("--metrics-all", ):
@@ -220,6 +231,8 @@ def main(argv):
                                   if item not in config.extensions])
     if hard_order is not None:
         config.hard_order = hard_order
+    if low_memory is not None:
+        config.low_memory = low_memory
     if branch is not None:
         config.branch = branch
     if metrics_all is not None:

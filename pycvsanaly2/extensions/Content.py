@@ -268,7 +268,7 @@ class Content(Extension):
 
     def __process_finished_jobs(self, job_pool, write_cursor, db):
 #        start = datetime.now()
-        finished_job = job_pool.get_next_done()
+        finished_job = job_pool.get_next_done(0)
 #        print "After getting first job: %s"%(datetime.now()-start)
         processed_jobs = 0
         # commit_id is the commit ID. For some reason, the 

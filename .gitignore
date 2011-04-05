@@ -10,3 +10,4 @@ dist/
 config*
 test.sh
 nbproject/
+.nfs*

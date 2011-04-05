@@ -260,6 +260,7 @@ class BugFixMessage(Extension):
         read_cursor.close()
         connection.commit()
         connection.close()
+        fp.close()
 
         # This turns off the profiler and deletes its timings
         profiler_stop("Running BugFixMessage extension", delete=True)

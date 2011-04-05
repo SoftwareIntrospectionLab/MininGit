@@ -150,10 +150,10 @@ class Patches(Extension):
         return commits
 
     def __process_finished_jobs(self, job_pool, write_cursor, db):
-        finished_job = job_pool.get_next_done()
+        finished_job = job_pool.get_next_done(0)
 
         # scmlog_id is the commit ID. For some reason, the 
-        # documentaion advocates tablename_id as the reference,
+        # documentation advocates tablename_id as the reference,
         # but in the source, these are referred to as commit IDs.
         # Don't ask me why!
         while finished_job is not None:
@@ -166,7 +166,7 @@ class Patches(Extension):
                               db,
                               "Couldn't insert, duplicate patch?",
                               exception=ExtensionRunError)
-
+            
             finished_job = job_pool.get_next_done(0)
 
     def run(self, repo, uri, db):
@@ -194,8 +194,10 @@ class Patches(Extension):
         commits = []
 
         try:
+            printdbg("Creating patches table")
             self.__create_table(cnn)
         except TableAlreadyExists:
+            printdbg("Patches table exists already, getting max ID")
             cursor.execute(statement("SELECT max(id) from patches", 
                                      db.place_holder))
             id = cursor.fetchone()[0]
@@ -216,6 +218,7 @@ class Patches(Extension):
                                   "from scmlog where repository_id = ?",
                                     db.place_holder), (repo_id,))
         rs = icursor.fetchmany()
+        
         while rs:
             for commit_id, revision, composed_rev in rs:
                 if commit_id in commits: 
@@ -237,8 +240,8 @@ class Patches(Extension):
                     cnn.commit()
                     i = 0
 
-            cnn.commit()
             rs = icursor.fetchmany()
+            cnn.commit()
 
         job_pool.join()
         self.__process_finished_jobs(job_pool, write_cursor, db)
@@ -246,5 +249,5 @@ class Patches(Extension):
         write_cursor.close()
         cursor.close()
         cnn.close()
-
+        
 register_extension("Patches", Patches)

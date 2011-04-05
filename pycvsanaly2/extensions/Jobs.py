@@ -57,7 +57,8 @@ class JobPool:
     def push(self, job):
         self.queue.put(job)
 
-    def get_next_done(self, timeout=None):
+    # Default timeout is 5 minutes
+    def get_next_done(self, timeout=(5*60)):
         if not self.jobs_done:
             return None
         

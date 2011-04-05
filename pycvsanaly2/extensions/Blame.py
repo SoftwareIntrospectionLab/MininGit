@@ -186,7 +186,7 @@ class Blame(Extension):
         if unlocked:
             job = job_pool.get_next_done_unlocked()
         else:
-            job = job_pool.get_next_done()
+            job = job_pool.get_next_done(0.5)
 
         args = []
         
