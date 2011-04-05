@@ -11,3 +11,5 @@ config*
 test.sh
 nbproject/
 .nfs*
+Guilty/*
+repositoryhandler/*
