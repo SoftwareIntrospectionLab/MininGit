@@ -220,7 +220,7 @@ class FilePaths:
                     where s.id = a.commit_id and repository_id=?
                     order by s.id"""
         cursor.execute(statement(query, db.place_holder), (repo_id,))
-        cnn       
+        
         old_id = -1
         all_commits = [i[0] for i in cursor.fetchall()]
         for id in all_commits:
