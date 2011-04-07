@@ -26,6 +26,8 @@ class DBRepository:
 
     __insert__ = "INSERT INTO repositories (id, uri, name, type) " + \
         "values (?, ?, ?, ?)"
+        
+    __delete__ = "DELETE FROM repositories where uri = ?"
 
     def __init__(self, id, uri, name, type):
         if id is None:
@@ -46,6 +48,8 @@ class DBLog:
     __insert__ = """INSERT INTO scmlog (id, rev, committer_id, author_id, 
                     date, message, composed_rev, repository_id) 
                     values (?, ?, ?, ?, ?, ?, ?, ?)"""
+                    
+    __delete__ = """DELETE FROM scmlog where repository_id = ?"""
     
     def __init__(self, id, commit):
         if id is None:
@@ -68,6 +72,8 @@ class DBFile:
 
     __insert__ = """INSERT INTO files (id, file_name, repository_id) 
                     values (?, ?, ?)"""
+                    
+    __delete__ = """DELETE FROM files where repository_id = ?"""
     
     def __init__(self, id, file_name):
         if id is None:
@@ -86,6 +92,8 @@ class DBFileLink:
 
     __insert__ = """INSERT INTO file_links (id, parent_id, file_id, commit_id) 
                     values (?, ?, ?, ?)"""
+                    
+    __delete__ = """DELETE FROM file_links where commit_id = ?"""
 
     def __init__(self, id, parent, child):
         if id is None:
@@ -105,6 +113,8 @@ class DBPerson:
 
     __insert__ = """INSERT INTO people (id, name, email) 
                     values (?, ?, ?)"""
+                    
+    __delete__ = """DELETE FROM people where id = ?"""
 
     def __init__(self, id, person):
         if id is None:
@@ -122,6 +132,8 @@ class DBBranch:
     id_counter = 1
 
     __insert__ = "INSERT INTO branches (id, name) values (?, ?)"
+    
+    __delete__ = "DELETE FROM branches where id = ?"
 
     def __init__(self, id, name):
         if id is None:
@@ -140,6 +152,8 @@ class DBAction:
     __insert__ = """INSERT INTO actions (id, type, file_id, commit_id, 
                     branch_id) 
                     values (?, ?, ?, ?, ?)"""
+                    
+    __delete__ = """DELETE FROM actions where commit_id = ?"""
     
     def __init__(self, id, type):
         if id is None:
@@ -161,6 +175,8 @@ class DBFileCopy:
     __insert__ = """INSERT INTO file_copies (id, to_id, from_id, 
                     from_commit_id, new_file_name, action_id) 
                     values (?, ?, ?, ?, ?, ?)"""
+                    
+    __delete__ = """DELETE FROM file_copies where action_id = ?"""
 
     def __init__(self, id, file_id):
         if id is None:
@@ -182,6 +198,8 @@ class DBTag:
     id_counter = 1
 
     __insert__ = "INSERT INTO tags (id, name) values (?, ?)"
+    
+    __delete__ = "DELETE FROM tags where id = ?"
 
     def __init__(self, id, name):
         if id is None:
@@ -199,6 +217,8 @@ class DBTagRev:
 
     __insert__ = """INSERT INTO tag_revisions (id, tag_id, commit_id) 
                     values (?, ?, ?)"""
+                    
+    __delete__ = """DELETE FROM tag_revisions where commit_id = ?"""
     
     def __init__(self, id):
         if id is None:
@@ -212,7 +232,7 @@ class DBTagRev:
 
  
 def initialize_ids(db, cursor):
-    # Respositories
+    # Repositories
     cursor.execute(statement("SELECT max(id) from repositories", 
                              db.place_holder))
     id = cursor.fetchone()[0]
@@ -296,11 +316,11 @@ class DatabaseNotFound(DatabaseException):
     
     
 class AccessDenied(DatabaseException):
-    '''Access denied to databse'''
+    '''Access denied to database'''
     
     
 class TableAlreadyExists(DatabaseException):
-    '''Table alredy exists in database'''
+    '''Table already exists in database'''
     
 
 def statement(str, ph_mark):
@@ -487,6 +507,8 @@ class SqliteDatabase(Database):
         import sqlite3.dbapi2
 
         return sqlite3.dbapi2.Binary(data)
+    
+    def backout(self, cursor, repo, uri):
 
        
 class MysqlDatabase(Database):
