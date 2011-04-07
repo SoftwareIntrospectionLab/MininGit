@@ -78,8 +78,26 @@ class ExtensionsManager:
             return False
 
         return True
+    
+    def backout_extension(self, name, extension, repo, uri, db):
+        # Trim off the ordering numeral before printing
+        if self.hard_order:
+            name = name[1:]
+            
+        printout("Backing out extension %s", (name,))
+        
+        try:
+            extension.backout(repo, uri, db)
+        except ExtensionRunError, e:
+            printerr("Error backing out extension %s: %s", (name, str(e)))
+            return False
+
+        return True
+    
+    def backout_extensions(self, repo, uri, db):
+        self.run_extensions(repo, uri, db, backout=True)
                     
-    def run_extensions(self, repo, uri, db):
+    def run_extensions(self, repo, uri, db, backout=False):
         done = []
         list = sorted(self.exts)
            
@@ -94,7 +112,12 @@ class ExtensionsManager:
                 for dep in extension.deps:
                     if dep in done:
                         continue
-                    result = self.run_extension(dep, self.exts[dep](), 
+                    
+                    if not backout:
+                        result = self.run_extension(dep, self.exts[dep](),
+                                                repo, uri, db)
+                    else:
+                        result = self.backout_extension(dep, self.exts[dep](),
                                                 repo, uri, db)
                     done.append(dep)
                     if not result:

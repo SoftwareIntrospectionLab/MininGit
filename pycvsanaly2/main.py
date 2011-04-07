@@ -40,6 +40,7 @@ from Database import (create_database, TableAlreadyExists, AccessDenied,
     initialize_ids, DatabaseException)
 from DBProxyContentHandler import DBProxyContentHandler
 from Log import LogReader, LogWriter
+from extensions import get_all_extensions
 from ExtensionsManager import (ExtensionsManager, InvalidExtension, 
     InvalidDependency)
 from Config import Config, ErrorLoadingConfig
@@ -108,13 +109,14 @@ Content options:
 
 def main(argv):
     # Short (one letter) options. Those requiring argument followed by :
-    short_opts = "hVgqnf:l:s:u:p:d:H:"
+    short_opts = "hVgqbnf:l:s:u:p:d:H:"
     # Long options (all started by --). Those requiring argument followed by =
     long_opts = ["help", "version", "debug", "quiet", "profile", 
                  "config-file=", "repo-logfile=", "save-logfile=", 
                  "no-parse", "db-user=", "db-password=", "db-hostname=", 
                  "db-database=", "db-driver=", "extensions=", "hard-order", 
-                 "metrics-all", "metrics-noerr", "no-content", "branch="]
+                 "metrics-all", "metrics-noerr", "no-content", "branch=",
+                 "backout",]
 
     # Default options
     debug = None
@@ -136,6 +138,7 @@ def main(argv):
     low_memory = None
     no_content = None
     branch = None
+    backout = None
 
     try:
         opts, args = getopt.getopt(argv, short_opts, long_opts)
@@ -188,6 +191,8 @@ def main(argv):
             metrics_noerr = True
         elif opt in ("--no-content", ):
             no_content = True
+        elif opt in ("-b", "--backout"):
+            backout = True
 
     if len(args) <= 0:
         uri = os.getcwd()
@@ -296,21 +301,6 @@ def main(argv):
             return 1
 
         # TODO: check parser type == logfile type
-
-    try:
-        printdbg("Starting ExtensionsManager")
-        emg = ExtensionsManager(config.extensions, 
-                                hard_order=config.hard_order)
-    except InvalidExtension, e:
-        printerr("Invalid extension %s", (e.name,))
-        return 1
-    except InvalidDependency, e:
-        printerr("Extension %s depends on extension %s which is not a " + \
-                 "valid extension", (e.name1, e.name2))
-        return 1
-    except Exception, e:
-        printerr("Unknown extensions error: %s", (str(e),))
-        return 1
     
     db_exists = False
 
@@ -335,6 +325,31 @@ def main(argv):
     
     cnn = db.connect()
     cursor = cnn.cursor()
+    
+    if backout:
+        printout("Backing out repo from database")
+        #db.backout(cursor, repo, path or uri)
+        # Run extensions
+        get_all_extensions()
+        #printout(str(get_all_extensions()))
+        printout("Backing out all extensions")
+        #emg.run_extensions(repo, path or uri, db)
+        return 1
+    
+    try:
+        printdbg("Starting ExtensionsManager")
+        emg = ExtensionsManager(config.extensions, 
+                                hard_order=config.hard_order)
+    except InvalidExtension, e:
+        printerr("Invalid extension %s", (e.name,))
+        return 1
+    except InvalidDependency, e:
+        printerr("Extension %s depends on extension %s which is not a " + \
+                 "valid extension", (e.name1, e.name2))
+        return 1
+    except Exception, e:
+        printerr("Unknown extensions error: %s", (str(e),))
+        return 1
     
     try:
         printdbg("Creating tables")

@@ -17,11 +17,15 @@
 # Authors :
 #       Carlos Garcia Campos <carlosgc@gsyc.escet.urjc.es>
 
+import os
+from glob import glob
+from pycvsanaly2.utils import printdbg
+
 __all__ = ['Extension', 'get_extension', 'register_extension']
 
 
 class ExtensionUnknownError(Exception):
-    '''Unkown extension'''
+    '''Unknown extension'''
 
 
 class ExtensionRunError(Exception):
@@ -33,6 +37,9 @@ class Extension:
     deps = []
     
     def run(self, repo, uri, db):
+        raise NotImplementedError
+    
+    def backout(self, repo, uri, db):
         raise NotImplementedError
 
 
@@ -59,3 +66,26 @@ def get_extension(extension_name):
                                     extension_name)
 
     return _extensions[extension_name]
+
+def get_all_extensions():
+    # Do something to get a list of extensions, probably like a file
+    # glob, then do a get_extension on each one. Return the entire
+    # _extensions list
+    
+    # Get a list of the paths that are sitting in the directory with this
+    # script, ie. all possible extensions
+    possible_file_paths = glob(os.path.realpath(os.path.dirname(__file__)) \
+                               + "/*.py")
+    
+    # This splitting will extract the file name from the expression.
+    # The list has special Python files, like __init.py__ filtered.
+    for extension in [os.path.splitext(os.path.split(fp)[1])[0] for 
+                      fp in possible_file_paths if (not fp.startswith('__')
+                      and not fp.endswith('__.py'))]:
+        try:
+            printdbg("Getting extension " + extension)
+            get_extension(extension)
+        except ExtensionUnknownError:
+            pass
+        
+    return _extensions
