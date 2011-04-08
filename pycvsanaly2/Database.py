@@ -508,8 +508,6 @@ class SqliteDatabase(Database):
 
         return sqlite3.dbapi2.Binary(data)
     
-    def backout(self, cursor, repo, uri):
-
        
 class MysqlDatabase(Database):
 
@@ -694,13 +692,18 @@ def create_database(driver, database, username=None, password=None,
 
 
 # Useful DB utility functions
-def execute_statement(statement, parameters, write_cursor, db, error_message, 
+def execute_statement(statement, parameters, cursor, db, error_message, 
                       exception=Exception):
+    """Run a statement. Note that the cursor is *mutable*, and will contain
+        the results after running.
+    """
+    printdbg(statement)
+    
     if isinstance(db, SqliteDatabase):
         import sqlite3.dbapi2
         
         try:
-            write_cursor.execute(statement, parameters)
+            return cursor.execute(statement, parameters)
         except sqlite3.dbapi2.OperationalError as e:
             printerr(error_message + ": %s", (e,))
         except Exception as e:
@@ -710,11 +713,17 @@ def execute_statement(statement, parameters, write_cursor, db, error_message,
         import _mysql_exceptions
     
         try:
-            write_cursor.execute(statement, parameters)
+            return cursor.execute(statement, parameters)
         except _mysql_exceptions.OperationalError as e:
             printerr(error_message + ": %s", (e,))
         except Exception as e:
             raise exception(e)
+
+def get_repo_id(uri, cursor, db):
+    execute_statement("SELECT id from repositories where uri = ?",
+                      (uri,), cursor, db, "Couldn't get repo ID")
+    
+    return cursor.fetchone()[0]
 
 if __name__ == '__main__':
     db = create_database('sqlite', '/tmp/foo.db')

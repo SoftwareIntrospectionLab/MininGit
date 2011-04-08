@@ -19,8 +19,8 @@
 
 from Database import (DBRepository, DBLog, DBFile, DBFileLink,
                       DBPerson, DBBranch, DBAction, DBFileCopy,
-                      DBTag, DBTagRev)
-from utils import printdbg
+                      DBTag, DBTagRev, execute_statement, get_repo_id)
+from utils import printdbg, printout
 
 class DBDeletionHandler:
     """A class for deleting a repository's information from a repository.
@@ -38,113 +38,87 @@ class DBDeletionHandler:
     makes the code easier to follow.
     """
     
-    def __init__(self, db, repo, uri):
+    def __init__(self, db, repo, uri, connection):
         self.db = db
         self.repo = repo
         self.uri = uri
+        self.connection = connection
         
-        # Getting the repo ID should be put in the database class
-        # and the extensions also refactored to use it
-        self.repo_id = True
+        cursor = self.connection.cursor()
+        self.repo_id = get_repo_id(self.uri, cursor, self.db)
+        cursor.close()
     
     def begin(self):
-        self.delete_tags()
-        self.delete_tag_revisions()
-        self.delete_file_copies()
-        self.delete_branches()
-        self.delete_actions()
-        self.delete_people()
-        self.delete_file_links()
-        self.delete_files()
-        self.delete_log()
-        self.delete_repo()
+        statements = (
+            ("tags", """DELETE FROM tags
+                       WHERE id IN (SELECT tr.id 
+                                    FROM tag_revisions tr, scmlog s
+                                    WHERE tr.commit_id = s.id
+                                    AND s.repository_id = ?)
+                    """),
+            ("tag_revisions", """DELETE FROM tag_revisions
+                                WHERE commit_id IN (SELECT s.id 
+                                                    FROM scmlog s
+                                                    WHERE s.repository_id = ?)
+                             """),
+            ("file_copies", """DELETE FROM file_copies
+                              WHERE action_id IN (SELECT a.id 
+                                                  FROM actions a, scmlog s
+                                                  WHERE a.commit_id = s.id
+                                                  AND s.repository_id = ?)
+                           """),
+            ("branches", """DELETE from branches
+                           WHERE id IN (SELECT a.branch_id
+                                        FROM actions a, scmlog s
+                                        WHERE a.commit_id = s.id
+                                        AND s.repository_id = ?)
+                        """),
+            ("actions", """DELETE FROM actions
+                          WHERE commit_id IN (SELECT s.id
+                                              FROM scmlog s
+                                              WHERE s.repository_id = ?)
+                       """),
+            ("authors", """DELETE FROM people
+                          WHERE id IN (SELECT s.author_id
+                                       FROM scmlog s
+                                       WHERE s.repository_id = ?)
+                       """),
+            ("committers", """DELETE FROM people
+                             WHERE id IN (SELECT s.committer_id
+                                          FROM scmlog s
+                                          WHERE s.repository_id = ?)
+                          """),
+            ("file_links", """DELETE FROM file_links
+                             WHERE commit_id IN (SELECT s.id
+                                                 FROM scmlog s
+                                                 WHERE s.repository_id = ?)
+                          """),
+            ("files", """DELETE FROM files WHERE repository_id = ?"""),
+            ("commit log", """DELETE FROM scmlog WHERE repository_id = ?"""),
+            ("repository", """DELETE FROM repositories WHERE id = ?""")
+        )
         
-    def do_delete(self, statement, params=None):
+        for (data_name, statement) in statements:
+            printout("Deleting " + data_name)
+            self.do_delete(statement)
+        
+        self.connection.commit()
+        
+    def do_delete(self, delete_statement, params=None,
+                  error_message = "Delete failed, data will need manual cleanup"):
         # You can't reference instance variables in default
         # parameters, so I have to do this.
         if params is None:
             params = (self.repo_id,)
         
+        try:
+            delete_cursor = self.connection.cursor()
+            execute_statement(delete_statement, params, delete_cursor,
+                              self.db, error_message)
+        except Exception:
+            printdbg("Deletion exception")
+        finally:
+            delete_cursor.close()
         
-    def delete_tags(self):
-        # Delete tags by looking at tag_revisions attached to commits in this
-        # repo
-        printdbg("Deleting tags")
-        delete_statement = """DELETE FROM tags
-            WHERE id IN (SELECT tr.id 
-                             FROM tag_revisions tr, scmlog s
-                             WHERE tr.commit_id = s.id
-                             AND s.repository_id = ?)
-        """
         
-    def delete_tag_revisions(self):
-        printdbg("Deleting tag revisions")
-        delete_statement = """DELETE FROM tag_revisions
-            WHERE commit_id IN (SELECT s.id 
-                                FROM scmlog s
-                                WHERE s.repository_id = ?)
-        """
-            
-    def delete_file_copies(self):
-        printdbg("Deleting file copies")
-        delete_statement = """DELETE FROM file_copies
-            WHERE action_id IN (SELECT a.id 
-                                FROM actions a, scmlog s
-                                WHERE a.commit_id = s.id
-                                AND s.repository_id = ?)
-        """
-        
-    def delete_branches(self):
-        printdbg("Deleting branches")
-        delete_statement = """DELETE from branches
-            WHERE id IN (SELECT a.branch_id
-                         FROM actions a, scmlog s
-                         WHERE a.commit_id = s.id
-                         AND s.repository_id = ?)
-        """
-        
-    def delete_actions(self):
-        printdbg("Deleting actions")
-        delete_statement = """DELETE FROM actions
-            WHERE commit_id IN (SELECT s.id
-                                FROM scmlog s
-                                WHERE s.repository_id = ?)
-        """
     
-    def delete_people(self):
-        printdbg("Deleting people")
-        delete_statement = """DELETE FROM people
-            WHERE id IN (SELECT s.author_id
-                         FROM scmlog s
-                         WHERE s.repository_id = ?
-                         union
-                         SELECT s.committer_id
-                         FROM scmlog s
-                         WHERE s.repository_id = ?)
-        """
-        
-    def delete_file_links(self):
-        printdbg("Deleting file links")
-        delete_statement = """DELETE FROM file_links
-            WHERE commit_id IN (SELECT s.id
-                                FROM scmlog s
-                                WHERE s.repository_id = ?)
-        """
-        
-    def delete_files(self):
-        printdbg("Deleting files")
-        delete_statement = """DELETE FROM files
-            WHERE repository_id = ?
-        """
-        
-    def delete_log(self):
-        printdbg("Deleting commit log")
-        delete_statement = """DELETE FROM scmlog
-            WHERE repository_id = ?
-        """
-        
-    def delete_repo(self):
-        printdbg("Deleting repository")
-        delete_statement = """DELETE FROM repositories
-            WHERE repository_id = ?
-        """

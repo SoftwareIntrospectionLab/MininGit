@@ -46,6 +46,7 @@ from ExtensionsManager import (ExtensionsManager, InvalidExtension,
 from Config import Config, ErrorLoadingConfig
 from utils import printerr, printout, uri_to_filename, printdbg
 from _config import *
+from DBDeletionHandler import DBDeletionHandler
 
 
 def usage():
@@ -324,10 +325,11 @@ def main(argv):
         return 1
     
     cnn = db.connect()
-    cursor = cnn.cursor()
     
     if backout:
         printout("Backing out repo from database")
+        backout_handler = DBDeletionHandler(db, repo, uri, cnn)
+        backout_handler.begin()
         #db.backout(cursor, repo, path or uri)
         # Run extensions
         get_all_extensions()
@@ -335,6 +337,8 @@ def main(argv):
         printout("Backing out all extensions")
         #emg.run_extensions(repo, path or uri, db)
         return 1
+
+    cursor = cnn.cursor()
     
     try:
         printdbg("Starting ExtensionsManager")
