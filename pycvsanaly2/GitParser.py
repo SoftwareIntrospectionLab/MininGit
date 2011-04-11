@@ -246,9 +246,13 @@ class GitParser(Parser):
                     self.branches.insert(0, self.branch)
             else:
                 self.branch.set_tail(git_commit)
-
+            
+            if parents and len(parents) > 1:
+                #Skip merge commits
+                self.commit = None
             return
-
+        elif self.commit is None:
+            return
         # Committer
         match = self.patterns['committer'].match(line)
         if match:
