@@ -114,7 +114,8 @@ def main(argv):
                  "config-file=", "repo-logfile=", "save-logfile=", 
                  "no-parse", "db-user=", "db-password=", "db-hostname=", 
                  "db-database=", "db-driver=", "extensions=", "hard-order", 
-                 "metrics-all", "metrics-noerr", "no-content", "branch="]
+                 "metrics-all", "metrics-noerr", "no-content", "branch=",
+                 "low-memory"]
 
     # Default options
     debug = None

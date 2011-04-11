@@ -398,7 +398,7 @@ class SqliteDatabase(Database):
     def connect(self):
         import sqlite3.dbapi2 as db
 
-        return db.connect(self.database)
+        return db.connect(self.database, 30)
 
     def _create_views(self, cursor):
         Database._create_views(self, cursor)
