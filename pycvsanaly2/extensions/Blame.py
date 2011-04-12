@@ -27,8 +27,8 @@ from FileRevs import FileRevs
 from Jobs import JobPool, Job
 from repositoryhandler.backends import RepositoryCommandError
 from repositoryhandler.backends.watchers import BLAME
-from Guilty.Parser import create_parser
-from Guilty.OutputDevs import OutputDevice
+from guilty.parser import create_parser
+from guilty.outputdevs import OutputDevice
 import os
 
 

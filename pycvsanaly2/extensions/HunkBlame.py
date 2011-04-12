@@ -25,7 +25,7 @@ from pycvsanaly2.Database import (SqliteDatabase, MysqlDatabase,
     TableAlreadyExists, statement)
 from repositoryhandler.backends import RepositoryCommandError
 from repositoryhandler.backends.watchers import BLAME
-from Guilty.Parser import create_parser
+from guilty.parser import create_parser
 from Jobs import JobPool, Job
 from FilePaths import FilePaths
 import os
