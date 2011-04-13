@@ -324,22 +324,6 @@ def main(argv):
                  (config.db_driver,))
         return 1
     
-    cnn = db.connect()
-    
-    if backout:
-        printout("Backing out repo from database")
-        backout_handler = DBDeletionHandler(db, repo, uri, cnn)
-        backout_handler.begin()
-        #db.backout(cursor, repo, path or uri)
-        # Run extensions
-        get_all_extensions()
-        #printout(str(get_all_extensions()))
-        printout("Backing out all extensions")
-        #emg.run_extensions(repo, path or uri, db)
-        return 1
-
-    cursor = cnn.cursor()
-    
     try:
         printdbg("Starting ExtensionsManager")
         emg = ExtensionsManager(config.extensions, 
@@ -354,6 +338,22 @@ def main(argv):
     except Exception, e:
         printerr("Unknown extensions error: %s", (str(e),))
         return 1
+    
+    cnn = db.connect()
+    
+    if backout:
+        printout("Backing out repo from database")
+        backout_handler = DBDeletionHandler(db, repo, uri, cnn)
+        backout_handler.begin()
+        #db.backout(cursor, repo, path or uri)
+        # Run extensions
+        get_all_extensions()
+        #printout(str(get_all_extensions()))
+        printout("Backing out all extensions")
+        emg.backout_extensions(repo, path or uri, db)
+        return 1
+
+    cursor = cnn.cursor()
     
     try:
         printdbg("Creating tables")
