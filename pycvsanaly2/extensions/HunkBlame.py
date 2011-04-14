@@ -428,5 +428,13 @@ class HunkBlame(Blame):
         cnn.close()
 
         profiler_stop("Running HunkBlame extension", delete=True)
+        
+    def backout(self, repo, uri, db):
+        update_statement = """delete from hunk_blames where
+                              hunk_id in (select id from hunks h, scmlog s
+                                          where h.commit_id = s.id
+                                          and s.repository_id = ?)"""
+
+        self._do_backout(repo, uri, db, update_statement)
 
 register_extension("HunkBlame", HunkBlame)

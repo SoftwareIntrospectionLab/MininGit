@@ -353,5 +353,12 @@ class Hunks(Extension):
 
         # This turns off the profiler and deletes its timings
         profiler_stop("Running hunks extension", delete=True)
+        
+    def backout(self, repo, uri, db):
+        update_statement = """delete from hunks
+                              where commit_id in (select s.id from scmlog s
+                                          where s.repository_id = ?)"""
+
+        self._do_backout(repo, uri, db, update_statement)
 
 register_extension("Hunks", Hunks)
