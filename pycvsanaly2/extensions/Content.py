@@ -46,7 +46,6 @@ class ContentJob(Job):
         def write_line(data, io):
             io.write(data)
         
-        # start = datetime.now()
         self.repo = repo
         self.repo_uri = repo_uri
         self.repo_type = self.repo.get_type()
@@ -82,12 +81,10 @@ class ContentJob(Job):
             
         done = False
         failed = False
-        # print "Before downloadning file revision: %s"%(datetime.now()-start)
         # Try downloading the file revision
         while not done and not failed:
             try:
                 self.repo.cat(os.path.join(self.repo_uri, self.path), self.rev)
-                # print "After cat: %s"%(datetime.now()-start)
                 done = True
             except RepositoryCommandError, e:
                 if retries > 0:
@@ -105,7 +102,6 @@ class ContentJob(Job):
                 failed = True
                 printerr("Error obtaining %s@%s. Exception: %s", \
                         (self.path, self.rev, str(e)))
-        #print "After downloadning file revision: %s"%(datetime.now()-start)                
         self.repo.remove_watch(CAT, wid)
 
         if failed:
@@ -269,7 +265,6 @@ class Content(Extension):
     def __process_finished_jobs(self, job_pool, write_cursor, db):
 #        start = datetime.now()
         finished_job = job_pool.get_next_done(0)
-#        print "After getting first job: %s"%(datetime.now()-start)
         processed_jobs = 0
         # commit_id is the commit ID. For some reason, the 
         # documentation advocates tablename_id as the reference,
@@ -295,7 +290,6 @@ class Content(Extension):
             
             processed_jobs += 1
             finished_job = job_pool.get_next_done(0)
-            # print "Before return: %s"%(datetime.now()-start)
             
         return processed_jobs
 
@@ -380,7 +374,6 @@ class Content(Extension):
                 printerr("No path found for file %d at commit %d", 
                          (file_id, commit_id))
                 continue
-#            print "After getting path: %s"%(datetime.now()-loop_start)
             if composed:
                 rev = revision.split("|")[0]
             else:
@@ -400,20 +393,12 @@ class Content(Extension):
                 printdbg("Content queue is now at %d, flushing to database", 
                          (i,))
                 
-                # TODO: Remove these comments if they aren't useful
-                # print "Before __process_finished_jobs: \
-                #    %s"%(datetime.now()-loop_start)
                 processed_jobs = self.__process_finished_jobs(job_pool, 
                                                               write_cursor, db)
-                # print "%d jobs processed at %s" % \
-                #    (processed_jobs, datetime.now()-loop_start)
                 connection.commit()
                 i = i - processed_jobs
                 if processed_jobs < (queuesize / 5):
-                    # print "Before joining jobs: \
-                    #    %s"%(datetime.now()-loop_start)
                     job_pool.join()
-                # print "End of loop: %s"%(datetime.now()-loop_start)
 
         job_pool.join()
         self.__process_finished_jobs(job_pool, write_cursor, db)

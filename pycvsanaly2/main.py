@@ -117,7 +117,7 @@ def main(argv):
                  "no-parse", "db-user=", "db-password=", "db-hostname=", 
                  "db-database=", "db-driver=", "extensions=", "hard-order", 
                  "metrics-all", "metrics-noerr", "no-content", "branch=",
-                 "backout",]
+                 "backout","low-memory"]
 
     # Default options
     debug = None
@@ -247,6 +247,8 @@ def main(argv):
         config.metrics_noerr = metrics_noerr
     if no_content is not None:
         config.no_content = no_content
+    if backout is not None:
+        config.extensions = get_all_extensions()
 
     if not config.extensions and config.no_parse:
         # Do nothing!!!
@@ -340,17 +342,17 @@ def main(argv):
         return 1
     
     cnn = db.connect()
-    
+        
     if backout:
+        # Run extensions
+        #printout(str(get_all_extensions()))
+        printout("Backing out all extensions")
+        emg.backout_extensions(repo, path or uri, db)
         printout("Backing out repo from database")
         backout_handler = DBDeletionHandler(db, repo, uri, cnn)
         backout_handler.begin()
         #db.backout(cursor, repo, path or uri)
-        # Run extensions
-        get_all_extensions()
-        #printout(str(get_all_extensions()))
-        printout("Backing out all extensions")
-        emg.backout_extensions(repo, path or uri, db)
+
         return 1
 
     cursor = cnn.cursor()

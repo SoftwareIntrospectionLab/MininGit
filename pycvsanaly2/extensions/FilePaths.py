@@ -210,7 +210,8 @@ class FilePaths:
             if os.path.exists(self.shelve_file_name):
                 os.remove(self.shelve_file_name)
             
-            self.__dict__['cached_adj'] = shelve.open(self.shelve_file_name, writeback=True)
+            self.__dict__['cached_adj'] = shelve.open(self.shelve_file_name, 
+                                                        writeback=False)
         
         db = self.__dict__['db']
         cnn = db.connect()
