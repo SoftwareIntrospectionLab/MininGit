@@ -18,7 +18,7 @@
 #       Carlos Garcia Campos <carlosgc@gsyc.escet.urjc.es>
 
 from extensions import get_extension, ExtensionRunError, ExtensionUnknownError
-from utils import printerr, printout
+from utils import printerr, printout, printdbg
 
 
 class ExtensionException(Exception):
@@ -91,10 +91,14 @@ class ExtensionsManager:
         except ExtensionRunError, e:
             printerr("Error backing out extension %s: %s", (name, str(e)))
             return False
+        except NotImplementedError, e:
+            printerr("Extension %s doesn't have a backout function", (name,))
+            return False
 
         return True
     
     def backout_extensions(self, repo, uri, db):
+        printdbg("Called backout extensions")
         self.run_extensions(repo, uri, db, backout=True)
                     
     def run_extensions(self, repo, uri, db, backout=False):
@@ -108,17 +112,13 @@ class ExtensionsManager:
 
             result = True
             # Run dependencies first
-            if not self.hard_order:
+            if not self.hard_order and not backout:
                 for dep in extension.deps:
                     if dep in done:
                         continue
                     
-                    if not backout:
-                        result = self.run_extension(dep, self.exts[dep](),
-                                                repo, uri, db)
-                    else:
-                        result = self.backout_extension(dep, self.exts[dep](),
-                                                repo, uri, db)
+                    result = self.run_extension(dep, self.exts[dep](),
+                                                    repo, uri, db)
                     done.append(dep)
                     if not result:
                         break
@@ -127,5 +127,8 @@ class ExtensionsManager:
                 printout("Skipping extension %s since one or more of its " + \
                          "dependencies failed", (name,))
                 continue
-                    
-            self.run_extension(name, extension, repo, uri, db)
+            
+            if not backout: 
+                self.run_extension(name, extension, repo, uri, db)
+            if backout:
+                self.backout_extension(name, extension, repo, uri, db)

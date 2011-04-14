@@ -42,6 +42,7 @@ class Config:
                       'hard_order': False,
                       'branch': None,
                       'low_memory': False,
+                      'backout': False,
                       # Metrics extension options
                       'metrics_all': False,
                       'metrics_noerr': False,
@@ -164,6 +165,11 @@ class Config:
             pass
         try:
             self.no_content = config.no_content
+        except:
+            pass
+        
+        try:
+            self.backout = config.backout
         except:
             pass
 

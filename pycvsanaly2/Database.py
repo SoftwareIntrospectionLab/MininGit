@@ -697,7 +697,7 @@ def execute_statement(statement, parameters, cursor, db, error_message,
     """Run a statement. Note that the cursor is *mutable*, and will contain
         the results after running.
     """
-    printdbg(statement)
+    printdbg(statement + ", " + str(parameters))
     
     if isinstance(db, SqliteDatabase):
         import sqlite3.dbapi2

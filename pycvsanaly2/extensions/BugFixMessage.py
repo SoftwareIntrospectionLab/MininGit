@@ -18,12 +18,12 @@
 #       Chris Lewis <cflewis@soe.ucsc.edu>
 
 from pycvsanaly2.extensions import Extension, register_extension, \
-        ExtensionRunError
+        ExtensionRunError, ExtensionBackoutError
 from pycvsanaly2.extensions.FilePaths import FilePaths
 from pycvsanaly2.Database import SqliteDatabase, MysqlDatabase, \
-        TableAlreadyExists, statement, execute_statement
+        TableAlreadyExists, statement, execute_statement, get_repo_id
 from pycvsanaly2.utils import printdbg, printerr, printout, \
-        remove_directory, uri_to_filename
+        remove_directory, uri_to_filename, get_repo_uri
 from pycvsanaly2.profile import profiler_start, profiler_stop
 from pycvsanaly2.Config import Config
 import re
@@ -35,7 +35,7 @@ class BugFixMessage(Extension):
 
         if isinstance(self.db, SqliteDatabase):
             import sqlite3.dbapi2
-            
+
             try:
                 cursor.execute("""ALTER TABLE scmlog
                     ADD is_bug_fix INTEGER default 0""")
@@ -67,10 +67,10 @@ class BugFixMessage(Extension):
                 raise
             finally:
                 cursor.close()
-            
+
         connection.commit()
         cursor.close()
-    
+
     def __match_string(self, regexes, flags, string):
         """Checks whether a string matches a series of regexes"""
         for r in regexes:
@@ -81,19 +81,19 @@ class BugFixMessage(Extension):
                          "(" + delimiters + "+|$)", string, flags):
                 printdbg("[STRING] matched on " + str(r) + " " + string)
                 return True
-                
+
         return False
 
     def fixes_bug(self, commit_message):
         """Check whether a commit message indicated a bug was present.
-        
+
         # This is set in the config. Uncomment if you wish to try out
         # specific regexes
         #>>> Config().bug_fix_regexes = ["defect(s)?", "patch(ing|es|ed)?", \
                 "bug(s|fix(es)?)?", "debug(ged)?", "fix(es|ed)?", "\#\d+"]
         #>>> Config().bug_fix_regexes_case_sensitive = ["[A-Z]+-\d+",]
         >>> b = BugFixMessage()
-        
+
         # Easy ones
         >>> b.fixes_bug("Bug")
         True
@@ -111,7 +111,7 @@ class BugFixMessage(Extension):
         True
         >>> b.fixes_bug("Patching")
         True
-        
+
         # Embeds in sentences
         >>> b.fixes_bug("Fixed a bug")
         True
@@ -129,13 +129,13 @@ class BugFixMessage(Extension):
         True
         >>> b.fixes_bug("Closes JENKINS-1234")
         True
-        
+
         # Embeds in long commit messages
         >>> b.fixes_bug("This was tough. Fixed now.")
         True
         >>> b.fixes_bug("Found X; debugged and solved.")
         True
-        
+
         # Regression tests from Apache
         # When adding these, keep weird punctuation intact.
         >>> b.fixes_bug("Fixups to build the whole shebang once again.")
@@ -160,7 +160,7 @@ class BugFixMessage(Extension):
         True
         >>> b.fixes_bug("    Win32: Eliminate useless debug error message")
         True
-        
+
         # Things that shouldn't match
         # Refactoring could go either way, depending on whether you think
         # renaming/refactoring is a "bug fix." Right now, we don't call that
@@ -190,7 +190,7 @@ class BugFixMessage(Extension):
         if self.__match_string(Config().bug_fix_regexes, \
         re.DOTALL | re.IGNORECASE, commit_message):
             return True
-        
+
         if self.__match_string(Config().bug_fix_regexes_case_sensitive, \
         re.DOTALL, commit_message):
             return True
@@ -206,19 +206,12 @@ class BugFixMessage(Extension):
         connection = self.db.connect()
         read_cursor = connection.cursor()
         write_cursor = connection.cursor()
-        
+
         # Try to get the repository and get its ID from the database
         try:
-            path = uri_to_filename(uri)
-            if path is not None:
-                repo_uri = repo.get_uri_for_path(path)
-            else:
-                repo_uri = uri
+            repo_uri = get_repo_uri(uri, repo)
+            repo_id = get_repo_id(repo_uri, read_cursor, db)
 
-            read_cursor.execute(statement( \
-                    "SELECT id from repositories where uri = ?", \
-                    db.place_holder), (repo_uri,))
-            repo_id = read_cursor.fetchone()[0]
         except NotImplementedError:
             raise ExtensionRunError( \
                     "BugFixMessage extension is not supported for %s repos" % \
@@ -227,7 +220,7 @@ class BugFixMessage(Extension):
             raise ExtensionRunError( \
                     "Error creating repository %s. Exception: %s" % \
                     (repo.get_uri(), str(e)))
-            
+
         # Get the commit notes from this repository
         query = """select s.id, s.message from scmlog s
             where s.repository_id = ?"""
@@ -240,7 +233,7 @@ class BugFixMessage(Extension):
         for row in read_cursor:
             row_id = row[0]
             commit_message = row[1]
-            
+
             update = """update scmlog
                         set is_bug_fix = ?
                         where id = ?"""
@@ -250,8 +243,8 @@ class BugFixMessage(Extension):
             else:
                 is_bug_fix = 0
 
-            execute_statement(statement(update, db.place_holder), 
-                              (is_bug_fix, row_id), 
+            execute_statement(statement(update, db.place_holder),
+                              (is_bug_fix, row_id),
                               write_cursor,
                               db,
                               "Couldn't update scmlog",
@@ -265,4 +258,11 @@ class BugFixMessage(Extension):
         # This turns off the profiler and deletes its timings
         profiler_stop("Running BugFixMessage extension", delete=True)
 
+    def backout(self, repo, uri, db):
+        backout_statement = """update scmlog
+                       set is_bug_fix = NULL
+                       where repository_id = ?"""
+
+        self._do_backout(repo, uri, db, backout_statement)
+          
 register_extension("BugFixMessage", BugFixMessage)

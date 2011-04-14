@@ -77,6 +77,14 @@ def uri_to_filename(uri):
         
     return os.path.abspath(uri)
 
+def get_repo_uri(uri, repo):
+    path = uri_to_filename(uri)
+    
+    if path is not None:
+        return repo.get_uri_for_path(path)
+    else:
+        return uri
+
 
 def printout(str='\n', args=None):
     if config.quiet:

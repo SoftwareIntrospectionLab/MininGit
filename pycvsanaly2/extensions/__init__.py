@@ -21,6 +21,9 @@ import os
 from glob import glob
 from pycvsanaly2.utils import printdbg
 
+from pycvsanaly2.Database import statement, execute_statement, get_repo_id
+from pycvsanaly2.utils import get_repo_uri
+
 __all__ = ['Extension', 'get_extension', 'register_extension']
 
 
@@ -30,6 +33,9 @@ class ExtensionUnknownError(Exception):
 
 class ExtensionRunError(Exception):
     '''Error running extension'''
+    
+class ExtensionBackoutError(Exception):
+    '''Error backing out data created by extension'''
 
 
 class Extension:
@@ -41,6 +47,24 @@ class Extension:
     
     def backout(self, repo, uri, db):
         raise NotImplementedError
+
+    def _do_backout(self, repo, uri, db, backout_statement):
+        connection = db.connect()
+        repo_cursor = connection.cursor()
+        repo_uri = get_repo_uri(uri, repo)
+        repo_id = get_repo_id(repo_uri, repo_cursor, db)
+        repo_cursor.close()
+          
+        update_cursor = connection.cursor()
+  
+        execute_statement(statement(backout_statement, db.place_holder),
+                            (repo_id,),
+                            update_cursor,
+                            db,
+                            "Couldn't backout extension",
+                            exception=ExtensionBackoutError)
+        update_cursor.close()
+        connection.close()
 
 
 from pycvsanaly2.utils import printerr

@@ -414,5 +414,12 @@ class Content(Extension):
 
         # This turns off the profiler and deletes it's timings
         profiler_stop("Running content extension", delete=True)
+        
+    def backout(self, repo, uri, db):
+        update_statement = """delete from content where
+                              commit_id in (select id from scmlog s
+                                            where s.repository_id = ?)"""
+
+        self._do_backout(repo, uri, db, update_statement)
 
 register_extension("Content", Content)
