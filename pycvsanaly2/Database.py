@@ -322,6 +322,9 @@ class AccessDenied(DatabaseException):
 class TableAlreadyExists(DatabaseException):
     '''Table already exists in database'''
     
+class RepoNotFound(DatabaseException):
+    '''Repository couldn't be found'''
+    
 
 def statement(str, ph_mark):
     if "?" == ph_mark or "?" not in str:
@@ -697,8 +700,7 @@ def execute_statement(statement, parameters, cursor, db, error_message,
     """Run a statement. Note that the cursor is *mutable*, and will contain
         the results after running.
     """
-    printdbg(statement + ", " + str(parameters))
-    
+        
     if isinstance(db, SqliteDatabase):
         import sqlite3.dbapi2
         
@@ -722,6 +724,13 @@ def execute_statement(statement, parameters, cursor, db, error_message,
 def get_repo_id(uri, cursor, db):
     execute_statement("SELECT id from repositories where uri = ?",
                       (uri,), cursor, db, "Couldn't get repo ID")
+    
+    result = cursor.fetchone()
+    
+    if result:
+        return result[0]
+    else:
+        raise RepoNotFound
     
     return cursor.fetchone()[0]
 

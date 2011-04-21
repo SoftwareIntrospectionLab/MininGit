@@ -351,10 +351,12 @@ def main(argv):
         printout("Backing out repo from database")
         backout_handler = DBDeletionHandler(db, repo, uri, cnn)
         backout_handler.begin()
-        #db.backout(cursor, repo, path or uri)
-
+        
+        # Final commit just in case
+        cnn.commit()
+        cnn.close()
         return 1
-
+    
     cursor = cnn.cursor()
     
     try:

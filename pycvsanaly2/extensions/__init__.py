@@ -21,7 +21,8 @@ import os
 from glob import glob
 from pycvsanaly2.utils import printdbg
 
-from pycvsanaly2.Database import statement, execute_statement, get_repo_id
+from pycvsanaly2.Database import (statement, execute_statement, get_repo_id,
+                                  RepoNotFound)
 from pycvsanaly2.utils import get_repo_uri
 
 __all__ = ['Extension', 'get_extension', 'register_extension']
@@ -52,8 +53,15 @@ class Extension:
         connection = db.connect()
         repo_cursor = connection.cursor()
         repo_uri = get_repo_uri(uri, repo)
-        repo_id = get_repo_id(repo_uri, repo_cursor, db)
-        repo_cursor.close()
+        
+        try:
+            repo_id = get_repo_id(repo_uri, repo_cursor, db)
+        except RepoNotFound:
+            # Repository isn't in there, so it's likely already backed out
+            printerr("Repository not found, is it in the database?")
+            return True
+        finally:
+            repo_cursor.close()
           
         update_cursor = connection.cursor()
   
@@ -64,6 +72,7 @@ class Extension:
                             "Couldn't backout extension",
                             exception=ExtensionBackoutError)
         update_cursor.close()
+        connection.commit()
         connection.close()
 
 

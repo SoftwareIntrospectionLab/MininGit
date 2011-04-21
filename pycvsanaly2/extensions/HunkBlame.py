@@ -431,7 +431,7 @@ class HunkBlame(Blame):
         
     def backout(self, repo, uri, db):
         update_statement = """delete from hunk_blames where
-                              hunk_id in (select id from hunks h, scmlog s
+                              hunk_id in (select h.id from hunks h, scmlog s
                                           where h.commit_id = s.id
                                           and s.repository_id = ?)"""
 

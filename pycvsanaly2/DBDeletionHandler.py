@@ -17,10 +17,8 @@
 # Authors :
 #       Chris Lewis <cflewis@soe.ucsc.edu>
 
-from Database import (DBRepository, DBLog, DBFile, DBFileLink,
-                      DBPerson, DBBranch, DBAction, DBFileCopy,
-                      DBTag, DBTagRev, execute_statement, get_repo_id)
-from utils import printdbg, printout
+from Database import (execute_statement, get_repo_id, statement, RepoNotFound)
+from utils import printdbg, printout, printerr
 
 class DBDeletionHandler:
     """A class for deleting a repository's information from a repository.
@@ -45,8 +43,15 @@ class DBDeletionHandler:
         self.connection = connection
         
         cursor = self.connection.cursor()
-        self.repo_id = get_repo_id(self.uri, cursor, self.db)
-        cursor.close()
+        
+        try:
+            self.repo_id = get_repo_id(self.uri, cursor, self.db)
+        except RepoNotFound:
+            # Repository not found, probably already backed out
+            printerr("Repository not found, is it in the database?")
+            self.repo_id = None
+        finally:
+            cursor.close()
     
     def begin(self):
         statements = (
@@ -106,6 +111,10 @@ class DBDeletionHandler:
         
     def do_delete(self, delete_statement, params=None,
                   error_message = "Delete failed, data will need manual cleanup"):
+        if self.repo_id is None:
+            # Repo wasn't found anyway, so continue
+            return True
+        
         # You can't reference instance variables in default
         # parameters, so I have to do this.
         if params is None:
@@ -113,7 +122,8 @@ class DBDeletionHandler:
         
         try:
             delete_cursor = self.connection.cursor()
-            execute_statement(delete_statement, params, delete_cursor,
+            execute_statement(statement(delete_statement, self.db.place_holder),
+                              params, delete_cursor,
                               self.db, error_message)
         except Exception:
             printdbg("Deletion exception")
