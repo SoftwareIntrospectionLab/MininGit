@@ -26,7 +26,7 @@ from pycvsanaly2.utils import printdbg, printerr, uri_to_filename, to_utf8
 from pycvsanaly2.profile import profiler_start, profiler_stop
 from FileRevs import FileRevs
 from repositoryhandler.backends import RepositoryCommandError
-from repositoryhandler.backends.watchers import CAT
+from repositoryhandler.backends.watchers import CAT, SIZE
 from Jobs import JobPool, Job
 from io import BytesIO
 import os
@@ -41,11 +41,9 @@ class ContentJob(Job):
         self.rev = rev
         self.path = path
         self._file_contents = ""
+        self.file_size = None
 
-    def run(self, repo, repo_uri):
-        def write_line(data, io):
-            io.write(data)
-        
+    def run(self, repo, repo_uri):        
         self.repo = repo
         self.repo_uri = repo_uri
         self.repo_type = self.repo.get_type()
@@ -67,10 +65,20 @@ class ContentJob(Job):
         ext_ptr = filename.rfind('.')
         if ext_ptr != -1:
             suffix = filename[ext_ptr:]
-
+            
+        self._file_contents = self.listen_for_data(self.repo.cat, CAT)
+        self.file_size = self.listen_for_data(self.repo.size, SIZE)
+        
+        if self.file_size:
+            self.file_size = int(self.file_size)
+            
+    def listen_for_data(self, repo_func, watcher):
+        def write_line(data, io):
+            io.write(data)
+        
         io = BytesIO()
 
-        wid = self.repo.add_watch(CAT, write_line, io)
+        wid = self.repo.add_watch(watcher, write_line, io)
         
         # Git doesn't need retries because all of the revisions
         # are already on disk
@@ -84,7 +92,7 @@ class ContentJob(Job):
         # Try downloading the file revision
         while not done and not failed:
             try:
-                self.repo.cat(os.path.join(self.repo_uri, self.path), self.rev)
+                repo_func(os.path.join(self.repo_uri, self.path), self.rev)
                 done = True
             except RepositoryCommandError, e:
                 if retries > 0:
@@ -102,14 +110,15 @@ class ContentJob(Job):
                 failed = True
                 printerr("Error obtaining %s@%s. Exception: %s", \
                         (self.path, self.rev, str(e)))
-        self.repo.remove_watch(CAT, wid)
+        self.repo.remove_watch(watcher, wid)
 
         if failed:
             printerr("Failure due to error")
         else:
             try:
-                self._file_contents = io.getvalue()
+                results = io.getvalue()
                 io.close()
+                return results
             except Exception, e:
                 printerr("Error getting contents." +
                             "Exception: %s", (str(e),))
@@ -214,6 +223,7 @@ class Content(Extension):
                     file_id INTEGER NOT NULL,
                     content CLOB,
                     loc INTEGER,
+                    size INTEGER,
                     UNIQUE (commit_id, file_id))""")
                 cursor.execute("""create index commit_id_index 
                     on content(commit_id)""")
@@ -243,6 +253,7 @@ class Content(Extension):
                     file_id int(11) NOT NULL,
                     content mediumtext,
                     loc int(11),
+                    size int(11),
                     PRIMARY KEY(id),
                     UNIQUE (commit_id, file_id),
                     index(commit_id),
@@ -276,13 +287,14 @@ class Content(Extension):
             if not Config().no_content:
                 file_contents = str(finished_job.file_contents)
             
-            query = """insert into content(commit_id, file_id, content, loc) 
-                values(?,?,?,?)"""
+            query = """insert into content(commit_id, file_id, content, loc, size) 
+                values(?,?,?,?,?)"""
             insert_statement = statement(query, db.place_holder)
             parameters = (finished_job.commit_id,
                           finished_job.file_id,
                           file_contents,
-                          finished_job.file_number_of_lines)
+                          finished_job.file_number_of_lines,
+                          finished_job.file_size)
                                 
             execute_statement(insert_statement, parameters, write_cursor, db,
                        "Couldn't insert, duplicate record?", 
