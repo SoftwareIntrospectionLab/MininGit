@@ -105,6 +105,10 @@ Content options:
       --no-content               When running the Content extension, don't 
                                  insert the content (ie. you just want the
                                  lines of code count)
+File Count options:
+      --count-types=type1,type2  When running the File Count extension, only
+                                 count the types (based on regex in
+                                 extensions/file_types.py)
 """
 
 
@@ -117,7 +121,7 @@ def main(argv):
                  "no-parse", "db-user=", "db-password=", "db-hostname=", 
                  "db-database=", "db-driver=", "extensions=", "hard-order", 
                  "metrics-all", "metrics-noerr", "no-content", "branch=",
-                 "backout","low-memory"]
+                 "backout","low-memory","count-types="]
 
     # Default options
     debug = None
@@ -140,6 +144,7 @@ def main(argv):
     no_content = None
     branch = None
     backout = None
+    count_types = None
 
     try:
         opts, args = getopt.getopt(argv, short_opts, long_opts)
@@ -180,6 +185,8 @@ def main(argv):
             save_logfile = value
         elif opt in("--extensions", ):
             extensions = value.split(',')
+        elif opt in("--count-types", ):
+            count_types = value.split(',')
         elif opt in("--hard-order"):
             hard_order = True
         elif opt in("--low-memory"):
@@ -235,6 +242,9 @@ def main(argv):
     if extensions is not None:
         config.extensions.extend([item for item in extensions \
                                   if item not in config.extensions])
+    if count_types is not None:
+        config.count_types.extend([item for item in count_types \
+                                  if item not in config.count_types])
     if hard_order is not None:
         config.hard_order = hard_order
     if low_memory is not None:

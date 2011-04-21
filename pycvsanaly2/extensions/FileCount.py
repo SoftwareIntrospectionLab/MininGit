@@ -94,14 +94,11 @@ class FileCountJob(Job):
             try:
                 self.ls_lines = io.getvalue().splitlines()
                 io.close()
-                
-                printdbg("WAS: " + str(self.ls_lines))
-                
-                if Config().count_types is not None:
+                printdbg("Config count types is " + str(Config().count_types))
+                if Config().count_types:
                     self.ls_lines = [fp for fp in self.ls_lines if
                                      guess_file_type(fp) in 
                                      Config().count_types]
-                    printdbg("IS: " + str(self.ls_lines))
             except Exception, e:
                 printerr("Error getting ls-lines." +
                             "Exception: %s", (str(e),))

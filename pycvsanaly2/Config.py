@@ -51,7 +51,7 @@ class Config:
                       # Content options
                       'no_content': False,
                       # File count extension options
-                      'count_types': ['code',], 
+                      'count_types': [], 
                       # Regex for matching bug fixes in BugFixMessage
                       'bug_fix_regexes': ["defect(s)?", "patch(ing|es|ed)?", 
                                           "bug(s|fix(es)?)?", 
@@ -130,6 +130,11 @@ class Config:
         try:
             self.extensions.extend([item for item in config.extensions \
                                     if item not in self.extensions])
+        except:
+            pass
+        try:
+            self.count_types.extend([item for item in config.count_types \
+                                    if item not in self.count_types])
         except:
             pass
         try:
