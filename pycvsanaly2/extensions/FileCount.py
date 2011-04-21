@@ -94,7 +94,7 @@ class FileCountJob(Job):
             try:
                 self.ls_lines = io.getvalue().splitlines()
                 io.close()
-                printdbg("Config count types is " + str(Config().count_types))
+
                 if Config().count_types:
                     self.ls_lines = [fp for fp in self.ls_lines if
                                      guess_file_type(fp) in 
