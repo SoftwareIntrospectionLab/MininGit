@@ -67,7 +67,11 @@ class ContentJob(Job):
             suffix = filename[ext_ptr:]
             
         self._file_contents = self.listen_for_data(self.repo.cat, CAT)
-        self.file_size = self.listen_for_data(self.repo.size, SIZE)
+        
+        try:
+            self.file_size = self.listen_for_data(self.repo.size, SIZE)
+        except NotImplementedError:
+            self.file_size = None
         
         if self.file_size:
             self.file_size = int(self.file_size)
