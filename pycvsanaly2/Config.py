@@ -49,7 +49,9 @@ class Config:
                       # Threading options
                       'max_threads': 10,
                       # Content options
-                      'no_content': False, 
+                      'no_content': False,
+                      # File count extension options
+                      'count_types': ['code',], 
                       # Regex for matching bug fixes in BugFixMessage
                       'bug_fix_regexes': ["defect(s)?", "patch(ing|es|ed)?", 
                                           "bug(s|fix(es)?)?", 

@@ -26,6 +26,7 @@ from pycvsanaly2.utils import printdbg, printerr, printout, \
         remove_directory, uri_to_filename
 from pycvsanaly2.profile import profiler_start, profiler_stop
 from pycvsanaly2.Config import Config
+from pycvsanaly2.extensions.file_types import guess_file_type
 from repositoryhandler.backends.watchers import LS
 from Jobs import JobPool, Job
 from repositoryhandler.backends import RepositoryCommandError
@@ -91,8 +92,16 @@ class FileCountJob(Job):
             printerr("Failure due to error")
         else:
             try:
-                self.ls_lines = io.getvalue()
+                self.ls_lines = io.getvalue().splitlines()
                 io.close()
+                
+                printdbg("WAS: " + str(self.ls_lines))
+                
+                if Config().count_types is not None:
+                    self.ls_lines = [fp for fp in self.ls_lines if
+                                     guess_file_type(fp) in 
+                                     Config().count_types]
+                    printdbg("IS: " + str(self.ls_lines))
             except Exception, e:
                 printerr("Error getting ls-lines." +
                             "Exception: %s", (str(e),))
@@ -104,7 +113,7 @@ class FileCountJob(Job):
                 pass
             
     def _get_ls_line_count(self):
-        return len(self.ls_lines.splitlines())
+        return len(self.ls_lines)
     
     ls_line_count = property(_get_ls_line_count)
 
