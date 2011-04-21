@@ -93,7 +93,6 @@ class FileCountJob(Job):
         else:
             try:
                 self.ls_lines = io.getvalue().splitlines()
-                io.close()
 
                 if Config().count_types:
                     self.ls_lines = [fp for fp in self.ls_lines if
@@ -103,11 +102,7 @@ class FileCountJob(Job):
                 printerr("Error getting ls-lines." +
                             "Exception: %s", (str(e),))
             finally:
-                #TODO: This should close, but it throws an error
-                # sometimes. It's fixable using an algorithm like
-                # <http://goo.gl/9gPCw>
-                #fd.close()
-                pass
+                io.close()
             
     def _get_ls_line_count(self):
         return len(self.ls_lines)

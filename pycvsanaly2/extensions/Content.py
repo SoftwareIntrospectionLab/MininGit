@@ -121,17 +121,13 @@ class ContentJob(Job):
         else:
             try:
                 results = io.getvalue()
-                io.close()
                 return results
             except Exception, e:
                 printerr("Error getting contents." +
                             "Exception: %s", (str(e),))
             finally:
-                #TODO: This should close, but it throws an error
-                # sometimes. It's fixable using an algorithm like
-                # <http://goo.gl/9gPCw>
-                #fd.close()
-                pass
+                io.close()
+
                 
     def _get_file_contents(self):
             """Returns contents of the file, stripped of whitespace 
