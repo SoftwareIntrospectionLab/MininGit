@@ -722,8 +722,9 @@ def execute_statement(statement, parameters, cursor, db, error_message,
             raise exception(e)
 
 def get_repo_id(uri, cursor, db):
-    execute_statement("SELECT id from repositories where uri = ?",
-                      (uri,), cursor, db, "Couldn't get repo ID")
+    execute_statement(statement("SELECT id from repositories where uri = ?",
+                                db.place_holder),
+                                (uri,), cursor, db, "Couldn't get repo ID")
     
     result = cursor.fetchone()
     
