@@ -17,7 +17,8 @@
 # Authors :
 #       Carlos Garcia Campos <carlosgc@gsyc.escet.urjc.es>
 
-from extensions import get_extension, ExtensionRunError, ExtensionUnknownError
+from extensions import (get_extension, ExtensionRunError, 
+                        ExtensionUnknownError, ExtensionBackoutError)
 from utils import printerr, printout, printdbg
 
 
@@ -88,7 +89,7 @@ class ExtensionsManager:
         
         try:
             extension.backout(repo, uri, db)
-        except ExtensionRunError, e:
+        except (ExtensionRunError, ExtensionBackoutError), e:
             printerr("Error backing out extension %s: %s", (name, str(e)))
             return False
         except NotImplementedError, e:
