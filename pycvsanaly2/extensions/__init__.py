@@ -35,6 +35,7 @@ class ExtensionUnknownError(Exception):
 class ExtensionRunError(Exception):
     '''Error running extension'''
     
+    
 class ExtensionBackoutError(Exception):
     '''Error backing out data created by extension'''
 
@@ -99,6 +100,7 @@ def get_extension(extension_name):
                                     extension_name)
 
     return _extensions[extension_name]
+
 
 def get_all_extensions():
     # Do something to get a list of extensions, probably like a file

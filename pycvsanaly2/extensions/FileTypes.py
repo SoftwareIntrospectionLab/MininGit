@@ -159,7 +159,6 @@ class FileTypes(Extension):
         cursor.close()
         cnn.close()
         
-            
     def backout(self, repo, uri, db):
         update_statement = """delete from file_types where
                               file_id in (select id from files f

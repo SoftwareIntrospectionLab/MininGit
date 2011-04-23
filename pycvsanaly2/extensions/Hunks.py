@@ -327,7 +327,8 @@ class Hunks(Extension):
                             continue
                         else:
                             printerr("No file ID found for hunk " + \
-                                     hunk_file_name + " at commit " + commit_id)
+                                     hunk_file_name + \
+                                     " at commit " + commit_id)
 
                     insert = """insert into hunks(file_id, commit_id,
                                 old_start_line, old_end_line, new_start_line, 

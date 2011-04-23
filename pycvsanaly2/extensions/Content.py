@@ -127,7 +127,6 @@ class ContentJob(Job):
                             "Exception: %s", (str(e),))
             finally:
                 io.close()
-
                 
     def _get_file_contents(self):
             """Returns contents of the file, stripped of whitespace 
@@ -287,8 +286,9 @@ class Content(Extension):
             if not Config().no_content:
                 file_contents = str(finished_job.file_contents)
             
-            query = """insert into content(commit_id, file_id, content, loc, size) 
-                values(?,?,?,?,?)"""
+            query = """
+                insert into content(commit_id, file_id, content, loc, size) 
+                    values(?,?,?,?,?)"""
             insert_statement = statement(query, db.place_holder)
             parameters = (finished_job.commit_id,
                           finished_job.file_id,

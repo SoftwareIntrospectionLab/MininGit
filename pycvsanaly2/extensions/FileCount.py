@@ -248,7 +248,6 @@ class FileCount(Extension):
 
         # This turns off the profiler and deletes its timings
         profiler_stop("Running FileCount extension", delete=True)
-        
                 
     def backout(self, repo, uri, db):
         update_statement = """update scmlog

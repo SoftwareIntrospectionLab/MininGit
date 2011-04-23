@@ -157,8 +157,6 @@ class FilePaths:
         from first commit to the last, though the same
         commit_id can be passed several times.
         """
-        #If update_all is not call before, cached_adj is
-        #always empty
         adj = self.__dict__['cached_adj'].get(str(commit_id))
         if adj is not None:
             self.__dict__['adj'] = adj
@@ -171,6 +169,7 @@ class FilePaths:
             cnn.commit()
             cnn.close()
             adj = self.__dict__['adj']
+            self.__dict__['cached_adj'][str(commit_id)] = adj
         path = self.__build_path(file_id, adj)
 
         return path
@@ -201,8 +200,6 @@ class FilePaths:
         """
         profiler_start("Update all file paths")
         
-        self.__dict__['cached_adj'] = {}
-        
         if Config().low_memory:
             self.shelve_file_name = str(time()) + "-shelve.db"
             
@@ -219,7 +216,7 @@ class FilePaths:
         cursor = cnn.cursor()
         query = """select distinct(s.id) from scmlog s, actions a
                     where s.id = a.commit_id and repository_id=?
-                    order by s.id"""
+                    order by s.date"""
         cursor.execute(statement(query, db.place_holder), (repo_id,))
         
         old_id = -1
