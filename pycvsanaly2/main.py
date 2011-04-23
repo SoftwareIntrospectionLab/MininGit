@@ -121,7 +121,7 @@ def main(argv):
                  "no-parse", "db-user=", "db-password=", "db-hostname=", 
                  "db-database=", "db-driver=", "extensions=", "hard-order", 
                  "metrics-all", "metrics-noerr", "no-content", "branch=",
-                 "backout","low-memory","count-types="]
+                 "backout", "low-memory","count-types="]
 
     # Default options
     debug = None

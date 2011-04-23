@@ -20,6 +20,7 @@
 from Database import (execute_statement, get_repo_id, statement, RepoNotFound)
 from utils import printdbg, printout, printerr
 
+
 class DBDeletionHandler:
     """A class for deleting a repository's information from a repository.
     
@@ -110,7 +111,7 @@ class DBDeletionHandler:
         self.connection.commit()
         
     def do_delete(self, delete_statement, params=None,
-                  error_message = "Delete failed, data will need manual cleanup"):
+                  error_message="Delete failed, data needs manual cleanup"):
         if self.repo_id is None:
             # Repo wasn't found anyway, so continue
             return True
@@ -122,13 +123,11 @@ class DBDeletionHandler:
         
         try:
             delete_cursor = self.connection.cursor()
-            execute_statement(statement(delete_statement, self.db.place_holder),
+            execute_statement(statement(delete_statement, 
+                                        self.db.place_holder),
                               params, delete_cursor,
                               self.db, error_message)
         except Exception:
             printdbg("Deletion exception")
         finally:
             delete_cursor.close()
-        
-        
-    

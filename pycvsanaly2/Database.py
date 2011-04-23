@@ -321,7 +321,8 @@ class AccessDenied(DatabaseException):
     
 class TableAlreadyExists(DatabaseException):
     '''Table already exists in database'''
-    
+
+  
 class RepoNotFound(DatabaseException):
     '''Repository couldn't be found'''
     
@@ -720,6 +721,7 @@ def execute_statement(statement, parameters, cursor, db, error_message,
             printerr(error_message + ": %s", (e,))
         except Exception as e:
             raise exception(e)
+
 
 def get_repo_id(uri, cursor, db):
     execute_statement(statement("SELECT id from repositories where uri = ?",

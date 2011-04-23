@@ -287,7 +287,8 @@ class Hunks(Extension):
                     file_id_query = """select f.id, f.file_name 
                     from files f, actions a
                     where a.commit_id = ?
-                    and a.file_id = f.id"""
+                    and a.file_id = f.id
+                    """
     
                     hunk_file_name = re.sub(r'^[ab]\/', '', 
                                             hunk.file_name.strip())
