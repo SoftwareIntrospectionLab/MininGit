@@ -6,16 +6,21 @@ Description
 
 The CVSAnalY tool extracts information out of source code repository logs and stores it into a database.
 
+Quick installation
+------------------
+1. Get pip: `sudo easy_install pip`
+2. Use pip: `pip install "https://github.com/SoftwareIntrospectionLab/cvsanaly/tarball/master#egg=master"
 
-Requirements
-------------
+Slower installation
+-------------------
+### Requirements
 
 **Note for upgraders:** CVSAnalY now uses setuptools for installation. Depending on your [PYTHONPATH][pp], the old CVSAnalY might not be removed (or worse, override this release). Please check for and remove old installations before installing this version.
 
 CVSAnalY has the following dependencies:
 
 * Python 2.5 or higher
-* RepositoryHandler (can be installed by `pip` requirements, if you know how to use that. More instructions forthcoming. This needs to be placed in your [PYTHONPATH][pp].)
+* RepositoryHandler (this needs to be placed in your [PYTHONPATH][pp])
 
     `git clone https://github.com/SoftwareIntrospectionLab/repositoryhandler.git`
 * Guilty (optional. Required for the Blame or HunkBlame extensions, also needs to be discoverable in the [PYTHONPATH][pp])
@@ -26,8 +31,7 @@ CVSAnalY has the following dependencies:
 * Git (optional. Required for Git support. Must be >= 1.7.1 for Patches/Hunks extensions to work)
 * Python MySQLDb (optional, but of course required if you wish to actually use MySQL as your database engine!)
 
-Install
--------
+### Install
 
 You don't need to do anything if you are happy using CVSAnalY from the path you downloaded it to. This is easiest if you intend on staying up-to-date with our releases from our Git repositories. You can also move the directory around to wherever you wish.
 
@@ -51,20 +55,6 @@ is installed):
 
 You are now ready to use CVSAnalY!
 
-Running CVSAnalY from its directory
------------------------------------
-Just checkout (from Git/SVN/CVS) to obtain a local
-version of your repository, and then run `cvsanaly2`, pointing to where you downloaded it.
-Here's an example using [Voldemort](https://github.com/voldemort/voldemort):
-
-    $ git clone git://github.com/voldemort/voldemort.git ~/Downloads/voldemort
-    $ cd [where you downloaded CVSAnalY to]
-    [CVSAnalY directory]$ ./cvsanaly2 ~/Downloads/voldemort 
-
-More options, and a more detailed info about the options, can be
-found by running `./cvsanaly2 --help`.
-
-
 Running CVSAnalY if you installed it
 ------------------------------------
 
@@ -78,6 +68,21 @@ Here's an example using [Voldemort](https://github.com/voldemort/voldemort)
 
 More options, and a more detailed info about the options, can be
 found by running `cvsanaly2 --help`.
+
+
+Running CVSAnalY from its directory
+-----------------------------------
+Just checkout (from Git/SVN/CVS) to obtain a local
+version of your repository, and then run `cvsanaly2`, pointing to where you downloaded it.
+Here's an example using [Voldemort](https://github.com/voldemort/voldemort):
+
+    $ git clone git://github.com/voldemort/voldemort.git ~/Downloads/voldemort
+    $ cd [where you downloaded CVSAnalY to]
+    [CVSAnalY directory]$ ./cvsanaly2 ~/Downloads/voldemort 
+
+More options, and a more detailed info about the options, can be
+found by running `./cvsanaly2 --help`.
+
 
 SCM Support
 -----------
