@@ -9,7 +9,7 @@ The CVSAnalY tool extracts information out of source code repository logs and st
 Quick installation
 ------------------
 1. Get pip: `sudo easy_install pip`
-2. Use pip: `pip install "https://github.com/SoftwareIntrospectionLab/cvsanaly/tarball/master#egg=master"
+2. Use pip: `pip install "https://github.com/SoftwareIntrospectionLab/cvsanaly/tarball/master#egg=master"`
 
 Slower installation
 -------------------
