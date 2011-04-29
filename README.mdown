@@ -83,7 +83,7 @@ SCM Support
 -----------
 At this point in time, **only Git is fully tested and supported across all of CVSAnalY and its extensions**. SVN is a "best effort" basis: things *shouldn't* break using SVN, but if they do, you're unlikely to have anyone respond to a bug tracker issue without a pull request patch.
 
-CVSAnalY was originally created to support CVS and SVN. Git support appeared later, and Bazaar support was started but abandoned. As development has continued, its become clear that Git represents the best possibilities for data mining source code repositories. Because Git allows all the source history to be downloaded to local storage, CVSAnalY actions are orders of magnitude faster. For example, the Content extension can get every revision of a file. With CVS and SVN, this requires sending the request to the central server, have the server (slowly) process it, and then get the content back. We've found that operations which take hours on Git can take weeks with SVN.
+CVSAnalY was originally created to support CVS and SVN. Git support appeared later, and Bazaar support was started but abandoned. As development has continued, it has become clear that Git represents the best possibilities for data mining source code repositories. Because Git allows all the source history to be downloaded to local storage, CVSAnalY actions are orders of magnitude faster. For example, the Content extension can get every revision of a file. With CVS and SVN, this requires sending the request to the central server, have the server (slowly) process it, and then get the content back. We've found that operations which take hours on Git can take weeks with SVN.
 
 If you have an SVN repository that you want to mine, but you can't find a Git mirror for it, we've had good success with [svn2git](https://github.com/nirvdrum/svn2git).
 
@@ -101,8 +101,8 @@ This happens because Python is trying to print out a Unicode string to a termina
 Credits
 -------
 
-CVSAnalY is developed by the GSyC/LibreSoft group at the
-Universidad Rey Juan Carlos in Móstoles, near Madrid (Spain). It is
+CVSAnalY is developed by the [GSyC/LibreSoft](http://libresoft.es) group at the
+[Universidad Rey Juan Carlos](http://www.urjc.es/) in Móstoles, near Madrid (Spain). It is
 part of a wider research on libre software engineering, aimed to gain
 knowledge on how libre software is developed and maintained.
 
@@ -111,9 +111,9 @@ CVSAnalY is actively contributed to by the [Software Introspection Lab](http://g
 More information
 ----------------
 
-[Official CVSAnalY page](http://tools.libresoft.es/cvsanaly)
-[The GSyC/LibreSoft group](http://libresoft.es)
-[UCSC Software Introspection Lab](http://games.soe.ucsc.edu/sil).
+* [Official CVSAnalY page](http://tools.libresoft.es/cvsanaly)
+* [The GSyC/LibreSoft group](http://libresoft.es)
+* [UCSC Software Introspection Lab](http://games.soe.ucsc.edu/sil).
 
 Main authors of CVSAnalY
 ------------------------
@@ -130,8 +130,8 @@ Contributors
 * Martin Michlmayr, <tbm@debian.org>
 * Alvaro del Castillo, <acs@barrapunto.com>
 * Santiago Duenas, <sduenas@libresoft.es>
-* Chris Lewis, ([Lewisham](https://github.com/Lewisham on GitHub) <cflewis@soe.ucsc.edu>
-* Zhongpeng Lin, ([linzhp](https://github.com/linzhp on GitHub) <zlin5@ucsc.edu>
+* Chris Lewis, ([Lewisham](https://github.com/Lewisham) on GitHub) <cflewis@soe.ucsc.edu>
+* Zhongpeng Lin, ([linzhp](https://github.com/linzhp) on GitHub) <zlin5@ucsc.edu>
 
 
 
