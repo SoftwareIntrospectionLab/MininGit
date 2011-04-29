@@ -33,10 +33,10 @@ class GitParser(Parser):
     # These are a couple of tests for the longer regexes that had
     # to be split up when trying to get PEP-8 line length compliance
     >>> p = GitParser()
-    >>> date = "CommitDate: Wed Jan 12 17:17:30 2011 -0800"
+    >>> date = "AuthorDate: Wed Jan 12 17:17:30 2011 -0800"
     >>> re.match(p.patterns['date'], date) #doctest: +ELLIPSIS
     <_sre.SRE_Match object...>
-    >>> date = "CommitDate: Wed Jan 12 17:17:30 2011-0800"
+    >>> date = "AuthorDate: Wed Jan 12 17:17:30 2011-0800"
     >>> re.match(p.patterns['date'], date) #doctest: +ELLIPSIS
     
     >>> commit = "".join(["commit d254e04dd51c3cac8cdc3355b4514a40c7a0baed ", \
@@ -89,7 +89,7 @@ class GitParser(Parser):
                                     "( ([^\(]+))?( \((.*)\))?$")
     patterns['author'] = re.compile("^Author:[ \t]+(.*)[ \t]+<(.*)>$")
     patterns['committer'] = re.compile("^Commit:[ \t]+(.*)[ \t]+<(.*)>$")
-    patterns['date'] = re.compile("^CommitDate: (.* \d+ \d+:\d+:\d+ \d{4})" + \
+    patterns['date'] = re.compile("^AuthorDate: (.* \d+ \d+:\d+:\d+ \d{4})" + \
                                   " ([+-]\d{4})$")
     patterns['file'] = re.compile("^([MAD])[ \t]+(.*)$")
     patterns['file-moved'] = re.compile("^([RC])[0-9]+[ \t]+(.*)[ \t]+(.*)$")
@@ -97,7 +97,7 @@ class GitParser(Parser):
     patterns['local-branch'] = re.compile("refs/heads/([^,]*)")
     patterns['tag'] = re.compile("tag: refs/tags/([^,]*)")
     patterns['stash'] = re.compile("refs/stash")
-    patterns['ignore'] = [re.compile("^AuthorDate: .*$"), 
+    patterns['ignore'] = [re.compile("^CommitDate: .*$"),
                           re.compile("^Merge: .*$")]
     patterns['svn-tag'] = re.compile("^svn path=/tags/(.*)/?; " +
                                      "revision=([0-9]+)$")
