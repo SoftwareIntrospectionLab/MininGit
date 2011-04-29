@@ -39,7 +39,7 @@ setup(
     scripts = ["cvsanaly2"],
     install_requires=['repositoryhandler>=0.3.2', 'guilty>=2.0'],
     dependency_links = ['https://github.com/SoftwareIntrospectionLab/repositoryhandler/tarball/develop#egg=repositoryhandler-0.3.2', 
-    'https://github.com/SoftwareIntrospectionLab/guilty/tarball/develop#egg=guilty-2.0'],
+    'https://github.com/SoftwareIntrospectionLab/guilty/tarball/master#egg=guilty-2.0'],
     classifiers = [
         "Development Status :: 4 - Beta",
         "Topic :: Software Development :: Version Control",
