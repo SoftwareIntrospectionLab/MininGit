@@ -169,7 +169,7 @@ class FilePaths:
             cnn.commit()
             cnn.close()
             adj = self.__dict__['adj']
-            self.__dict__['cached_adj'][str(commit_id)] = adj
+            self.__dict__['cached_adj'][str(commit_id)] = deepcopy(adj)
         path = self.__build_path(file_id, adj)
 
         return path

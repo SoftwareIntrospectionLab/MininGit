@@ -273,7 +273,7 @@ class Hunks(Extension):
 
         self.__prepare_table(connection)
         fp = FilePaths(db)
-        
+        fp.update_all(repo_id)
         rs = icursor.fetchmany()
 
         while rs:
