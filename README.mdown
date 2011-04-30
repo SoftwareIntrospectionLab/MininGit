@@ -4,44 +4,36 @@ CVSAnalY
 Description
 -----------
 
-The cvsanaly tool extracts information out of source code repository logs and stores it into a database.
+The CVSAnalY tool extracts information out of source code repository logs and stores it into a database.
 
-About this fork
----------------
-This fork of cvsanaly looks to bring the tool up-to-date (such as removing dependencies on SQLite by changing the base requirement to at least Python 2.5), as well as add some extra functionality (such as storing the code of revisions into tables). It is being developed by the [Software Introspection Lab](http://users.soe.ucsc.edu/~ejw) at the [University of California, Santa Cruz](http://www.ucsc.edu). It is **not an official fork**, and does not guarantee that it will maintain parity with the original cvsanaly2. 
+Quick installation
+------------------
+1. Get pip: `sudo easy_install pip`
+2. Use pip: `pip install "https://github.com/SoftwareIntrospectionLab/cvsanaly/tarball/master#egg=master"`
 
-All releases to the master branch should be stable for use.
+Slower installation
+-------------------
+### Requirements
 
-Differences to original
------------------------
-* Added an extension called Content, which will save the content of source files at each revision (this takes a long time).
-* Added an extension called Hunks, which will parse diffs and find the start/end lines of changes, changes with just removed lines are ignored (this takes a *really long time* unless using git).
-* Updated to use `sqlite3`, bundled with Python 2.5+
-* Fixed Unicode handling of git repositories
-* Installable, with required repositoryhandler dependency, via [pip](http://pip.openplans.org/), rather than requiring checking out multiple projects from source and performing manual installation.
-
-
-Requirements
-------------
+**Note for upgraders:** CVSAnalY now uses setuptools for installation. Depending on your [PYTHONPATH][pp], the old CVSAnalY might not be removed (or worse, override this release). Please check for and remove old installations before installing this version.
 
 CVSAnalY has the following dependencies:
 
 * Python 2.5 or higher
-* RepositoryHandler (can be installed by `pip` requirements, if you know how to use that. More instructions forthcoming. This needs to be placed in your [PYTHONPATH][pp].)
+* RepositoryHandler (this needs to be placed in your [PYTHONPATH][pp])
 
     `git clone https://github.com/SoftwareIntrospectionLab/repositoryhandler.git`
-* Guilty (If you need to run Blame or HunkBlame extensions, also needs to be discoverable in the [PYTHONPATH][pp])
+* Guilty (optional. Required for the Blame or HunkBlame extensions, also needs to be discoverable in the [PYTHONPATH][pp])
 
-	`git clone http://git.libresoft.es/guilty`
-* CVS (optional, for CVS support)
-* Subversion (optional, for SVN support)
-* Git (optional, for Git support. Must be >= 1.7.1 for Patches/Hunks extensions to work)
+	`git clone http://github.com/SoftwareIntrospectionLab/guilty.git`
+* CVS (optional. Required for CVS support. Make sure to read the "SCM Support" section.)
+* Subversion (optional. Required for SVN support. Make sure to read the "SCM Support section.)
+* Git (optional. Required for Git support. Must be >= 1.7.1 for Patches/Hunks extensions to work)
 * Python MySQLDb (optional, but of course required if you wish to actually use MySQL as your database engine!)
 
-Install
--------
+### Install
 
-You don't need to do anything if you are happy using CVSAnalY from the path you downloaded it to. This is easiest if you intend on staying up-to-date with our releases.
+You don't need to do anything if you are happy using CVSAnalY from the path you downloaded it to. This is easiest if you intend on staying up-to-date with our releases from our Git repositories. You can also move the directory around to wherever you wish.
 
 If you want to install it to a system location, you can do this by running the `setup.py` script:
 
@@ -61,19 +53,45 @@ is installed):
 
     export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:repohandlerdir
 
-You are ready to use cvsanaly2!
+You are now ready to use CVSAnalY!
 
-Running cvsanaly2
------------------
+Running CVSAnalY if you installed it
+------------------------------------
 
-For the impatient: just checkout (from svn or cvs) to obtain a local
-version of your repository, and then run cvsanaly2:
+Just checkout (from Git/SVN/CVS) to obtain a local
+version of your repository, and then run `cvsanaly2`.
+Here's an example using [Voldemort](https://github.com/voldemort/voldemort)
 
-    cd project/
-    ~/project$ cvsanaly2 
+    $ git clone git://github.com/voldemort/voldemort.git ~/Downloads/voldemort
+    $ cd ~/Downloads/voldemort
+    $ ~/Downloads/voldemort$ cvsanaly2 
 
 More options, and a more detailed info about the options, can be
-learnt by running `cvsanaly2 --help`
+found by running `cvsanaly2 --help`.
+
+
+Running CVSAnalY from its directory
+-----------------------------------
+Just checkout (from Git/SVN/CVS) to obtain a local
+version of your repository, and then run `cvsanaly2`, pointing to where you downloaded it.
+Here's an example using [Voldemort](https://github.com/voldemort/voldemort):
+
+    $ git clone git://github.com/voldemort/voldemort.git ~/Downloads/voldemort
+    $ cd [where you downloaded CVSAnalY to]
+    [CVSAnalY directory]$ ./cvsanaly2 ~/Downloads/voldemort 
+
+More options, and a more detailed info about the options, can be
+found by running `./cvsanaly2 --help`.
+
+
+SCM Support
+-----------
+At this point in time, **only Git is fully tested and supported across all of CVSAnalY and its extensions**. SVN is a "best effort" basis: things *shouldn't* break using SVN, but if they do, you're unlikely to have anyone respond to a bug tracker issue without a pull request patch.
+
+CVSAnalY was originally created to support CVS and SVN. Git support appeared later, and Bazaar support was started but abandoned. As development has continued, it has become clear that Git represents the best possibilities for data mining source code repositories. Because Git allows all the source history to be downloaded to local storage, CVSAnalY actions are orders of magnitude faster. For example, the Content extension can get every revision of a file. With CVS and SVN, this requires sending the request to the central server, have the server (slowly) process it, and then get the content back. We've found that operations which take hours on Git can take weeks with SVN.
+
+If you have an SVN repository that you want to mine, but you can't find a Git mirror for it, we've had good success with [svn2git](https://github.com/nirvdrum/svn2git).
+
 
 If you're having problems
 -------------------------
@@ -83,37 +101,24 @@ Sometimes, a lot of data can pass between CVSAnalY and MySQL, and packet limits 
 Follow the instructions [here](http://stackoverflow.com/questions/93128/mysql-got-a-packet-bigger-than-max-allowed-packet-bytes/104176#104176).
 
 ### UnicodeEncodeError: 'ascii' codec can't encode character
-This happens because Python is trying to print out a Unicode string to a terminal that has told Python it only supports ASCII. You can co-erce Python into printing Unicode by setting up your [sitecustomize.py](http://diveintopython.org/xml_processing/unicode.html). 
-
-How to get the original CVSAnalY2
----------------------------------
-
-	git clone http://git.libresoft.es/cvsanaly
-    git clone git://git.libresoft.es/git/cvsanaly	
+This happens because Python is trying to print out a Unicode string to a terminal that has told Python it only supports ASCII. You can coerce Python into printing Unicode by setting up your [sitecustomize.py](http://diveintopython.org/xml_processing/unicode.html). 	
 
 Credits
 -------
 
-CVSAnalY is developed by the GSyC/LibreSoft group at the
-Universidad Rey Juan Carlos in Móstoles, near Madrid (Spain). It is
+CVSAnalY is developed by the [GSyC/LibreSoft](http://libresoft.es) group at the
+[Universidad Rey Juan Carlos](http://www.urjc.es/) in Móstoles, near Madrid (Spain). It is
 part of a wider research on libre software engineering, aimed to gain
 knowledge on how libre software is developed and maintained.
+
+CVSAnalY is actively contributed to by the [Software Introspection Lab](http://games.soe.ucsc.edu/sil) at [University of California, Santa Cruz](http://www.ucsc.edu), and hosts Git mirrors at https://github.com/SoftwareIntrospectionLab . UCSC can review pull requests and bug reports using GitHub's systems. This is currently more active than the official LibreSoft repository ecosystem, and may be more likely to have your issue reviewed.
 
 More information
 ----------------
 
-CVSAnalY: <https://forge.morfeo-project.org/projects/libresoft-tools/>
-
-The GSyC/LibreSoft group: <http://libresoft.es>
-
-Fork authors
-------------
-* Chris Lewis, <cflewis@soe.ucsc.edu>
-* Zhongpeng Lin
-* Xiaoyan Zhu
-* Caitlin Sadowski
-* Jim Whitehead (advisor), <ejw@soe.ucsc.edu>
-
+* [Official CVSAnalY page](http://tools.libresoft.es/cvsanaly)
+* [The GSyC/LibreSoft group](http://libresoft.es)
+* [UCSC Software Introspection Lab](http://games.soe.ucsc.edu/sil).
 
 Main authors of CVSAnalY
 ------------------------
@@ -130,6 +135,10 @@ Contributors
 * Martin Michlmayr, <tbm@debian.org>
 * Alvaro del Castillo, <acs@barrapunto.com>
 * Santiago Duenas, <sduenas@libresoft.es>
+* Chris Lewis, ([Lewisham](https://github.com/Lewisham) on GitHub) <cflewis@soe.ucsc.edu>
+* Zhongpeng Lin, ([linzhp](https://github.com/linzhp) on GitHub) <zlin5@ucsc.edu>
+
+
 
 [pp]: http://docs.python.org/using/cmdline.html#envvar-PYTHONPATH
 
