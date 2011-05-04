@@ -75,8 +75,9 @@ Options:
       --extensions=ext1,ext2,    List of extensions to run        
       --hard-order               Execute extensions in exactly the order given. 
                                  Won't follow extension dependencies.
-      --branch=[branch]          Specify branch that should be monitored (only
-                                 works for Git right now)
+      --branch=[branch]          Specify local branch that should be monitored.
+                                 For remote branches add "remote_name/branch_name".
+                                 (only works for Git right now)
       --low-memory               Changes cvsanaly to store certain caches on
                                  the hard drive. This is not well-supported,
                                  only use if you are having out-of-memory
