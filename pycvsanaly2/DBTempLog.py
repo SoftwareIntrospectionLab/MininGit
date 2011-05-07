@@ -116,7 +116,9 @@ class DBTempLog:
         while True:
             commit = queue.get()
 
-            if not isinstance(commit, Commit):
+            # If we receive a string, assume it's a kill
+            # signal and end
+            if isinstance(commit, str):
                 queue.done()
                 break
 
@@ -185,7 +187,8 @@ class DBTempLog:
         self.queue.join()
         if self.writer_thread.isAlive():
             # Tell the thread to exit
-            # The value doesn't really matter
+            # The value doesn't matter, but it must be
+            # a string
             self.queue.put("END")
             self.writer_thread.join()
 
