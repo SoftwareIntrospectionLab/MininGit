@@ -27,20 +27,18 @@ from pycvsanaly2.utils import printdbg
 from pycvsanaly2.profile import profiler_start, profiler_stop
 from pycvsanaly2.Config import Config
 from copy import deepcopy
-import pickle
 import shelve
 import os
 from time import time
 
 
+class Adj:
+    def __init__(self):
+        self.files = {}
+        self.adj = {}
+
+
 class FilePaths:
-
-    class Adj:
-
-        def __init__(self):
-            self.files = {}
-            self.adj = {}
-    
     __shared_state = {'rev': None,
                       'adj': None,
                       'files': None,
@@ -62,7 +60,7 @@ class FilePaths:
         # profiler_start("Updating adjacency matrix for commit %d", 
         # (commit_id,))
         if self.__dict__['adj'] is None:
-            adj = FilePaths.Adj()
+            adj = Adj()
             self.__dict__['adj'] = adj
         else:
             adj = self.__dict__['adj']
