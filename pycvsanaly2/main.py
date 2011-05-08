@@ -75,8 +75,9 @@ Options:
       --extensions=ext1,ext2,    List of extensions to run        
       --hard-order               Execute extensions in exactly the order given. 
                                  Won't follow extension dependencies.
-      --branch=[branch]          Specify branch that should be monitored (only
-                                 works for Git right now)
+      --branch=[branch]          Specify local branch that should be monitored.
+                                 For remote branches add "remote_name/branch_name".
+                                 (only works for Git right now)
       --low-memory               Changes cvsanaly to store certain caches on
                                  the hard drive. This is not well-supported,
                                  only use if you are having out-of-memory
@@ -412,24 +413,27 @@ def main(argv):
     cnn.close()
 
     if not config.no_parse:
-        # Start the parsing process
-        printout("Parsing log for %s (%s)", (path or uri, repo.get_type()))
-        
-        def new_line(line, user_data):
-            parser, writer = user_data
-        
-            parser.feed(line)
-            writer and writer.add_line(line)
-        
-        writer = None
-        if config.save_logfile is not None:
-            writer = LogWriter(config.save_logfile)
-        
-        parser.set_content_handler(DBProxyContentHandler(db))
-        reader.start(new_line, (parser, writer))
-        parser.end()
-        writer and writer.close()
+        parse_log(path or uri, repo, parser, reader, config, db)
 
     # Run extensions
     printout("Executing extensions")
     emg.run_extensions(repo, path or uri, db)
+    
+def parse_log(uri, repo, parser, reader, config, db):
+    # Start the parsing process
+    printout("Parsing log for %s (%s)", (uri, repo.get_type()))
+    
+    def new_line(line, user_data):
+        parser, writer = user_data
+    
+        parser.feed(line)
+        writer and writer.add_line(line)
+    
+    writer = None
+    if config.save_logfile is not None:
+        writer = LogWriter(config.save_logfile)
+    
+    parser.set_content_handler(DBProxyContentHandler(db))
+    reader.start(new_line, (parser, writer))
+    parser.end()
+    writer and writer.close()

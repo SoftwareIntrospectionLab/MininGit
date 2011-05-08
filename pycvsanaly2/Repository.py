@@ -36,10 +36,10 @@ class Commit:
 
     def __setstate__(self, dict):
         self.__dict__.update(dict)
-    
+
     def __getattr__(self, name):
         return self.__dict__[name]
-        
+
     def __setattr__(self, name, value):
         self.__dict__[name] = value
 
@@ -48,6 +48,12 @@ class Commit:
 
     def __ne__(self, other):
         return not isinstance(other, Commit) or self.revision != other.revision
+
+    def __repr__(self):
+        return str(self.__dict__)
+
+    def __str__(self):
+        return self.__repr__()
 
 
 # Action types
@@ -74,7 +80,7 @@ class Action:
 
     def __setstate__(self, dict):
         self.__dict__.update(dict)
-        
+
     def __getattr__(self, name):
         return self.__dict__[name]
 
@@ -89,7 +95,7 @@ class Action:
             self.branch_f1 == other.branch_f1 and \
             self.branch_f2 == other.branch_f2 and \
             self.rev == other.rev
-    
+
     def __ne__(self, other):
         return not isinstance(other, Action) or \
             self.type != other.type or \
@@ -98,7 +104,12 @@ class Action:
             self.branch_f1 != other.branch_f1 or \
             self.branch_f2 != other.branch_f2 or \
             self.rev != other.rev
-    
+
+    def __repr__(self):
+      return str(self.__dict__)
+
+    def __str__(self):
+      return str(self.__repr__())
 
 class Person:
     def __init__(self):
@@ -113,7 +124,7 @@ class Person:
 
     def __setstate__(self, dict):
         self.__dict__.update(dict)
-        
+
     def __getattr__(self, name):
         return self.__dict__[name]
 
@@ -122,9 +133,15 @@ class Person:
 
     def __eq__(self, other):
         return isinstance(other, Person) and self.name == other.name
-    
+
     def __ne__(self, other):
         return not isinstance(other, Person) or self.name != other.name
+
+    def __repr__(self):
+        return str(self.__dict__)
+
+    def __str__(self):
+        return self.__repr__()
 
 if __name__ == '__main__':
     from cPickle import dump, load
@@ -135,7 +152,7 @@ if __name__ == '__main__':
     c.committer = 'carlosgc'
     c.date = datetime.datetime.now()
     c.message = "Modified foo files"
-    
+
     for i in range(5):
         a = Action()
         a.type = 'M'
@@ -154,7 +171,7 @@ if __name__ == '__main__':
     f.close()
 
     print "Commit"
-    print "rev: %s, committer: %s, date: %s" % (commit.revision, 
+    print "rev: %s, committer: %s, date: %s" % (commit.revision,
                                                 commit.committer, commit.date)
     if commit.author is not None:
         print "Author: %s" % (commit.author)
@@ -162,7 +179,7 @@ if __name__ == '__main__':
     for action in commit.actions:
         print "%s %s " % (action.type, action.f1)
         if action.f2 is not None:
-            print "(%s: %s) on branch %s" % (action.f2, action.rev, 
+            print "(%s: %s) on branch %s" % (action.f2, action.rev,
                                              commit.branch or action.branch)
         else:
             print "on branch %s" % (commit.branch or action.branch)
