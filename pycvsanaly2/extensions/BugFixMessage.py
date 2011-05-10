@@ -19,7 +19,6 @@
 
 from pycvsanaly2.extensions import Extension, register_extension, \
         ExtensionRunError, ExtensionBackoutError
-from pycvsanaly2.extensions.FilePaths import FilePaths
 from pycvsanaly2.Database import SqliteDatabase, MysqlDatabase, \
         TableAlreadyExists, statement, execute_statement, get_repo_id
 from pycvsanaly2.utils import printdbg, printerr, printout, \
@@ -227,8 +226,6 @@ class BugFixMessage(Extension):
         read_cursor.execute(statement(query, db.place_holder), (repo_id,))
 
         self.__prepare_table(connection)
-        fp = FilePaths(db)
-        fp.update_all(repo_id)
 
         for row in read_cursor:
             row_id = row[0]
@@ -253,7 +250,6 @@ class BugFixMessage(Extension):
         read_cursor.close()
         connection.commit()
         connection.close()
-        fp.close()
 
         # This turns off the profiler and deletes its timings
         profiler_stop("Running BugFixMessage extension", delete=True)
