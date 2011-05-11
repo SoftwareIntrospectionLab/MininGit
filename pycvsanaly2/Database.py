@@ -107,6 +107,27 @@ class DBFileLink:
         self.commit_id = None
 
 
+class DBFilePath:
+
+    id_counter = 1
+
+    __insert__ = """INSERT INTO file_paths (id, commit_id, file_id, file_path) 
+                    values (?, ?, ?, ?)"""
+
+    __delete__ = """DELETE FROM file_paths where commit_id = ?"""
+
+    def __init__(self, id, commit_id, file_id, file_path):
+        if id is None:
+            self.id = DBFilePath.id_counter
+            DBFilePath.id_counter += 1
+        else:
+            self.id = id
+
+        self.commit_id = commit_id
+        self.file_id = file_id
+        self.file_path = to_utf8(file_path)
+
+
 class DBPerson:
 
     id_counter = 1
@@ -273,6 +294,13 @@ def initialize_ids(db, cursor):
     id = cursor.fetchone()[0]
     if id is not None:
         DBFileLink.id_counter = id + 1
+
+    # File Paths
+    cursor.execute(statement("SELECT max(id) from file_paths", 
+                             db.place_holder))
+    id = cursor.fetchone()[0]
+    if id is not None:
+        DBFilePath.id_counter = id + 1
 
     # Branches
     cursor.execute(statement("SELECT max(id) from branches", 
@@ -488,6 +516,12 @@ class SqliteDatabase(Database):
                             file_id integer,
                             commit_id integer
                             )""")
+            cursor.execute("""CREATE TABLE file_paths (
+                            id integer primary key,
+                            commit_id integer,
+                            file_id integer,
+                            file_path varchar(255)
+                            )""")
             cursor.execute("""CREATE TABLE tags (
                             id integer primary key,
                             name varchar
@@ -606,6 +640,14 @@ class MysqlDatabase(Database):
                             -- FOREIGN KEY (parent_id) REFERENCES files(id),
                             -- FOREIGN KEY (file_id) REFERENCES files(id),
                             -- FOREIGN KEY (commit_id) REFERENCES scmlog(id)
+                            ) CHARACTER SET=utf8 ENGINE=MyISAM""")
+            cursor.execute("""CREATE TABLE file_paths (
+                            id INT primary key,
+                            commit_id INT,
+                            file_id INT,
+                            file_path varchar(255),
+                            INDEX (commit_id),
+                            INDEX (file_id)
                             ) CHARACTER SET=utf8 ENGINE=MyISAM""")
             cursor.execute("""CREATE TABLE branches (
                             id INT primary key,

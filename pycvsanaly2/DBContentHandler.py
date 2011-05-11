@@ -20,9 +20,9 @@
 import os
 
 from ContentHandler import ContentHandler
-from Database import (DBRepository, DBLog, DBFile, DBFileLink, DBAction,
-                      DBFileCopy, DBBranch, DBPerson, DBTag, DBTagRev,
-                      statement)
+from Database import (DBRepository, DBLog, DBFile, DBFileLink, DBFilePath,
+                      DBAction, DBFileCopy, DBBranch, DBPerson, DBTag,
+                      DBTagRev, statement)
 from profile import profiler_start, profiler_stop
 from utils import printdbg, printout, to_utf8, cvsanaly_cache_dir
 from cPickle import dump, load
@@ -213,6 +213,20 @@ class DBContentHandler(ContentHandler):
                               dbfilecopy.from_commit, 
                               dbfilecopy.new_file_name, 
                               dbfilecopy.action_id))
+
+    def __add_file_path(self, commit_id, file_id, path):
+        try:
+            file_path = path.split("://", 1)[1]
+        except IndexError:
+            file_path = path
+
+        dbfilepath = DBFilePath(None, commit_id, file_id, file_path)
+        self.cursor.execute(statement(DBFilePath.__insert__,
+                                      self.db.place_holder),
+                            (dbfilepath.id,
+                             dbfilepath.commit_id,
+                             dbfilepath.file_id,
+                             dbfilepath.file_path))
 
     def __get_person(self, person):
         """Get the person_id given a person struct
@@ -455,6 +469,9 @@ class DBContentHandler(ContentHandler):
         file_id = self.__add_new_file_and_link(file_name, parent_id, log.id)
         self.file_cache[path] = (file_id, parent_id)
 
+        # Save also file_path
+        self.__add_file_path(log.id, file_id, path)
+
         return file_id
 
     def __action_delete(self, path, log):
@@ -514,6 +531,9 @@ class DBContentHandler(ContentHandler):
         dbfilecopy.new_file_name = new_file_name
         self.__add_new_copy(dbfilecopy)
 
+        # Save also file_path
+        self.__add_file_path(log.id, file_id, path)
+
         return file_id
 
     def __action_copy(self, path, prefix, log, action, dbaction):
@@ -558,6 +578,9 @@ class DBContentHandler(ContentHandler):
         dbfilecopy.action_id = dbaction.id
         dbfilecopy.from_commit = from_commit_id
         self.__add_new_copy(dbfilecopy)
+
+        # Save also file_path
+        self.__add_file_path(log.id, file_id, path)
 
         return file_id
 
@@ -617,6 +640,9 @@ class DBContentHandler(ContentHandler):
         dbfilecopy.action_id = dbaction.id
         dbfilecopy.from_commit = from_commit_id
         self.__add_new_copy(dbfilecopy)
+
+        # Save also file_path
+        self.__add_file_path(log.id, file_id, path)
 
         return file_id
 
