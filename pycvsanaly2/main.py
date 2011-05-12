@@ -76,7 +76,8 @@ Options:
       --hard-order               Execute extensions in exactly the order given. 
                                  Won't follow extension dependencies.
       --branch=[branch]          Specify local branch that should be monitored.
-                                 For remote branches add "remote_name/branch_name".
+                                 For remote branches add 
+                                 "remote_name/branch_name".
                                  (only works for Git right now)
       --low-memory               Changes cvsanaly to store certain caches on
                                  the hard drive. This is not well-supported,
@@ -418,6 +419,7 @@ def main(argv):
     # Run extensions
     printout("Executing extensions")
     emg.run_extensions(repo, path or uri, db)
+
     
 def parse_log(uri, repo, parser, reader, config, db):
     # Start the parsing process

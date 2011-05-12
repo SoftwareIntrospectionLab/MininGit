@@ -106,10 +106,11 @@ class Action:
             self.rev != other.rev
 
     def __repr__(self):
-      return str(self.__dict__)
+        return str(self.__dict__)
 
     def __str__(self):
-      return str(self.__repr__())
+        return str(self.__repr__())
+
 
 class Person:
     def __init__(self):

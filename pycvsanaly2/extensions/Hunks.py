@@ -67,7 +67,7 @@ class CommitData:
 # This class holds a single repository retrieve task,
 # and keeps the source code until the object is garbage-collected
 class Hunks(Extension):
-#    deps = ['Patches']
+    deps = ['Patches']
     INTERVAL_SIZE = 100
 
     def __prepare_table(self, connection, drop_table=False):
@@ -145,6 +145,7 @@ class Hunks(Extension):
         cursor.close()
 
     def get_commit_data(self, patch_content):
+        profiler_start("get_commit_data")
         lines = [l + "\n" for l in patch_content.splitlines() if l]
         hunks = []
 
@@ -228,7 +229,7 @@ class Hunks(Extension):
                         cd.new_end_line = new_end_line
 
                     hunks.append(cd)
-
+        profiler_stop("get_commit_data")
         return hunks
 
     def run(self, repo, uri, db):
@@ -284,12 +285,13 @@ class Hunks(Extension):
                     # with the same name at the same time, eg. __init.py__ in
                     # different paths. 
                     # Might get fixed when messing with file paths
-                    file_id_query = """select f.id, f.file_name 
-                    from files f, actions a
+                    file_id_query = """
+                    select f.id, f.file_name, a.new_file_name 
+                    from files f, actions_file_names a
                     where a.commit_id = ?
                     and a.file_id = f.id
                     """
-    
+                    printdbg("file name in hunk: " + hunk.file_name)
                     hunk_file_name = re.sub(r'^[ab]\/', '', 
                                             hunk.file_name.strip())
                     read_cursor_1 = connection.cursor()
@@ -301,25 +303,31 @@ class Hunks(Extension):
                     file_id = None
     
                     if len(possible_files) == 1:
+                        printdbg("len(possible_files) == 1")
                         file_id = possible_files[0][0]
                     else:
+                        printdbg("number of possible files: %d", 
+                                 (len(possible_files),))
                         for possible_file in possible_files:
-                            # Get the paths of the possible matches
-                            path = fp.get_path(possible_file[0], 
-                                               commit_id, repo_id)
-    
-                            if path is not None:
-                                if path.strip() == ("/" + hunk_file_name):
-                                    file_id = possible_file[0]
-                                    break
-                                    break
-                           
-                            if possible_file[1] == hunk_file_name:
-                                file_id = possible_file[0]
-                                break
-                                break
+                            file_name = possible_file[1]
+                            if possible_file[2] is not None:
+                                file_name = possible_file[2]
+                            printdbg("file name in commit: " + file_name)
+                            if hunk_file_name.split("/").pop() == file_name:
+                                profiler_start("getting file path")
+                                path = fp.get_path(possible_file[0], 
+                                                   commit_id, repo_id)
+                                profiler_stop("getting file path")
+        
+                                if path is not None:
+                                    printdbg(path)
+                                    if path.strip() == ("/" + hunk_file_name):
+                                        printdbg("find file from path")
+                                        file_id = possible_file[0]
+                                        break
     
                     if file_id == None:
+                        printdbg("file not found")
                         if repo.type == "git":
                             # The liklihood is that this is a merge, not a
                             # missing ID from some data screwup.
