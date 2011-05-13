@@ -39,10 +39,6 @@ class HunkBlameJob(Job):
             self.bug_revs = {}
 
         def line(self, blame_line):
-            if not self.profiled:
-                profiler_start("Processing blame output for %s",
-                               (self.filename))
-                self.profiled = True 
             for hunk_id, start_line, end_line in self.hunks:
                 if blame_line.line >= start_line and \
                 blame_line.line <= end_line:
@@ -53,10 +49,10 @@ class HunkBlameJob(Job):
 
         def start_file(self, filename):
             self.filename = filename
-            self.profiled = False
-            
+            profiler_start("Processing blame output for %s",
+                           (self.filename))
         def end_file(self):
-            profiler_stop("Processing blame output for %s", (self.filename))
+            profiler_stop("Processing blame output for %s", (self.filename), delete=True)
             if len(self.bug_revs) == 0:
                 printdbg("No bug revision found in this file")
 
