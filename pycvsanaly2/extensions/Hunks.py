@@ -197,8 +197,11 @@ class Hunks(Extension):
                     elif isinstance(line, ContextLine):
                         if in_change:
                             in_change = False
-
-                            cd = CommitData(re.split('\s+', patch.newname)[0])
+                            printdbg("Patch new name: " + patch.newname)
+                            file_name = re.split('\s+', patch.newname)[0]
+                            if file_name == "/dev/null":
+                                file_name = re.split('\s+', patch.oldname)[0]
+                            cd = CommitData(file_name)
 
                             if deleted:
                                 cd.old_start_line = old_start_line
@@ -281,13 +284,9 @@ class Hunks(Extension):
             for commit_id, patch_content, rev in rs:  
                 for hunk in self.get_commit_data(patch_content):
                     # Get the file ID from the database for linking
-                    # TODO: This isn't going to work if two files are committed
-                    # with the same name at the same time, eg. __init.py__ in
-                    # different paths. 
-                    # Might get fixed when messing with file paths
                     file_id_query = """
-                    select f.id, f.file_name, a.new_file_name 
-                    from files f, actions_file_names a
+                    select f.id, f.file_name
+                    from files f, actions a
                     where a.commit_id = ?
                     and a.file_id = f.id
                     """
@@ -298,33 +297,23 @@ class Hunks(Extension):
                     read_cursor_1.execute(statement(file_id_query,
                         db.place_holder), (commit_id,))
                     possible_files = read_cursor_1.fetchall()
-                    read_cursor_1.close()
                 
                     file_id = None
     
-                    if len(possible_files) == 1:
-                        printdbg("len(possible_files) == 1")
-                        file_id = possible_files[0][0]
-                    else:
-                        printdbg("number of possible files: %d", 
-                                 (len(possible_files),))
-                        for possible_file in possible_files:
-                            file_name = possible_file[1]
-                            if possible_file[2] is not None:
-                                file_name = possible_file[2]
-                            printdbg("file name in commit: " + file_name)
-                            if hunk_file_name.split("/").pop() == file_name:
-                                profiler_start("getting file path")
-                                path = fp.get_path(possible_file[0], 
-                                                   commit_id, repo_id)
-                                profiler_stop("getting file path")
-        
-                                if path is not None:
-                                    printdbg(path)
-                                    if path.strip() == ("/" + hunk_file_name):
-                                        printdbg("find file from path")
-                                        file_id = possible_file[0]
-                                        break
+                    printdbg("number of possible files: %d", 
+                             (len(possible_files),))
+                    for possible_file in possible_files:
+                        profiler_start("getting file path")
+                        path = fp.get_path(possible_file[0], 
+                                           commit_id, repo_id)
+                        profiler_stop("getting file path")
+
+                        if path is not None:
+                            printdbg(path)
+                            if path.strip() == ("/" + hunk_file_name):
+                                printdbg("find file from path")
+                                file_id = possible_file[0]
+                                break
     
                     if file_id == None:
                         printdbg("file not found")
