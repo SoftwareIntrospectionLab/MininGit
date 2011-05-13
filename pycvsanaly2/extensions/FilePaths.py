@@ -32,6 +32,8 @@ import os
 from time import time
 
 
+config = Config()
+
 class Adj:
     def __init__(self):
         self.files = {}
@@ -57,8 +59,7 @@ class FilePaths:
         prev_commit_id = self.__dict__['rev']
         self.__dict__['rev'] = commit_id
 
-        # profiler_start("Updating adjacency matrix for commit %d", 
-        # (commit_id,))
+        profiler_start("Updating adjacency matrix for commit %d", (commit_id,))
         if self.__dict__['adj'] is None:
             adj = Adj()
             self.__dict__['adj'] = adj
@@ -127,14 +128,13 @@ class FilePaths:
                 adj.adj[f2] = f1
             rs = cursor.fetchmany()
 
-        # profiler_stop("Updating adjacency matrix for commit %d", 
-        # (commit_id,), True)
+        profiler_stop("Updating adjacency matrix for commit %d", (commit_id,), True)
 
     def __build_path(self, file_id, adj):
         if file_id not in adj.adj:
             return None
 
-        # profiler_start("Building path for file %d", (file_id,))
+        profiler_start("Building path for file %d", (file_id,))
         
         tokens = []
         id = file_id
@@ -144,9 +144,35 @@ class FilePaths:
             #use get instead of index to avoid key error
             id = adj.adj.get(id) 
 
-            # profiler_stop("Building path for file %d", (file_id,), True)
+        profiler_stop("Building path for file %d", (file_id,), True)
 
         return "/" + "/".join(tokens)
+
+    def get_path2(self, file_id, commit_id, repo_id):
+        if config.debug:
+            profiler_start("Getting full file path for file_id %d and commit_id %d", (file_id, commit_id))
+
+        db = self.__dict__['db']
+        cnn = db.connect()
+
+        cursor = cnn.cursor()
+        query = "SELECT file_path from file_paths " + \
+                "WHERE file_id=? AND commit_id <= ? " + \
+                "ORDER BY commit_id DESC LIMIT 1"
+        cursor.execute(statement(query, db.place_holder), (file_id, commit_id))
+        all_file_paths = [i[0] for i in cursor.fetchall()]
+
+        cursor.close()
+        cnn.close()
+
+        if config.debug:
+            profiler_stop("Getting full file path for file_id %d and commit_id %d", (file_id, commit_id), True)
+            printdbg("get_path2: Path for file_id %d at commit_id %d: %s", (file_id, commit_id, file_path))
+
+        for file_path in all_file_paths:
+            return file_path
+
+        return None
 
     def get_path(self, file_id, commit_id, repo_id):
         """
@@ -179,6 +205,32 @@ class FilePaths:
             return adj.files[file_id]
         except KeyError:
             return None
+
+    def get_file_id(self, file_path, commit_id):
+        if config.debug:
+            profiler_start("Getting file id for file_path %s and commit_id %d",
+                            (file_path, commit_id))
+        
+        db = self.__dict__['db']
+        cnn = db.connect()
+        cursor = cnn.cursor()
+        query = """SELECT file_id from file_paths
+                   WHERE file_path = ? AND commit_id <= ?
+                   ORDER BY commit_id DESC LIMIT 1"""
+        cursor.execute(statement(query, db.place_holder), (file_path, commit_id))
+        try:
+            file_id = cursor.fetchone()[0]
+        except:
+            file_id = None
+        
+        cursor.close()
+        cnn.close()
+        
+        if config.debug:
+            profiler_stop("Getting file id for file_path %s and commit_id %d",
+                           (file_path, commit_id), True)
+        
+        return file_id
 
     def get_commit_id(self):
         return self.__dict__['rev']
