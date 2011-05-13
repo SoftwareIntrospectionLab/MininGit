@@ -262,6 +262,7 @@ class Hunks(Extension):
                     "Error creating repository %s. Exception: %s" % \
                     (repo.get_uri(), str(e)))
         
+        profiler_start("Hunks: fetch all patches")
         icursor = ICursor(read_cursor, self.INTERVAL_SIZE)
         # Get the patches from this repository
         query = """select p.commit_id, p.patch, s.rev 
@@ -270,55 +271,20 @@ class Hunks(Extension):
                     s.repository_id = ? and 
                     p.patch is not NULL"""
         icursor.execute(statement(query, db.place_holder), (repo_id,))
+        profiler_stop("Hunks: fetch all patches", delete=True)
 
         self.__prepare_table(connection)
         fp = FilePaths(db)
-        fp.update_all(repo_id)
         rs = icursor.fetchmany()
 
         while rs:
             for commit_id, patch_content, rev in rs:  
                 for hunk in self.get_commit_data(patch_content):
                     # Get the file ID from the database for linking
-                    # TODO: This isn't going to work if two files are committed
-                    # with the same name at the same time, eg. __init.py__ in
-                    # different paths. 
-                    # Might get fixed when messing with file paths
-                    file_id_query = """select f.id, f.file_name 
-                    from files f, actions a
-                    where a.commit_id = ?
-                    and a.file_id = f.id
-                    """
-    
                     hunk_file_name = re.sub(r'^[ab]\/', '', 
                                             hunk.file_name.strip())
-                    read_cursor_1 = connection.cursor()
-                    read_cursor_1.execute(statement(file_id_query,
-                        db.place_holder), (commit_id,))
-                    possible_files = read_cursor_1.fetchall()
-                    read_cursor_1.close()
-                
-                    file_id = None
-    
-                    if len(possible_files) == 1:
-                        file_id = possible_files[0][0]
-                    else:
-                        for possible_file in possible_files:
-                            # Get the paths of the possible matches
-                            path = fp.get_path(possible_file[0], 
-                                               commit_id, repo_id)
-    
-                            if path is not None:
-                                if path.strip() == ("/" + hunk_file_name):
-                                    file_id = possible_file[0]
-                                    break
-                                    break
-                           
-                            if possible_file[1] == hunk_file_name:
-                                file_id = possible_file[0]
-                                break
-                                break
-    
+                    file_id = fp.get_file_id(hunk_file_name, commit_id)
+                    
                     if file_id == None:
                         if repo.type == "git":
                             # The liklihood is that this is a merge, not a

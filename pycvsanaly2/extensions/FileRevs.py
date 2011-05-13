@@ -47,7 +47,6 @@ class FileRevs:
         self.current = None
 
         self.fp = FilePaths(db)
-        self.fp.update_all(repoid)
 
     def __iter__(self):
         return self
@@ -105,7 +104,7 @@ class FileRevs:
             rev = revision
 
         try:
-            relative_path = self.fp.get_path(file_id, commit_id, 
+            relative_path = self.fp.get_path2(file_id, commit_id,
                                              self.repoid).strip("/")
         except AttributeError, e:
             if self.fp.get_commit_id() != commit_id:
@@ -115,7 +114,7 @@ class FileRevs:
                 #                    commit_id, self.repoid)
                 #                 aux_cursor.close()
 
-                relative_path = self.fp.get_path(file_id, commit_id, 
+                relative_path = self.fp.get_path2(file_id, commit_id,
                                                  self.repoid).strip("/")
             else:
                 raise e
