@@ -236,7 +236,7 @@ The `file_copies` table is used to store additional information about actions th
 
 #### file_paths table
 
-The `file_paths` table is used to eighter look up the `file_id` for a given `file_path` and `commit_id` or to look up the current `file_path` for a given `file_id` and `commit_id`. This is an alternative table to files, `file_links` and `actions`.
+The `file_paths` table is used to either look up the `file_id` for a given `file_path` and `commit_id` or to look up the current `file_path` for a given `file_id` and `commit_id`. This is an alternative table to files, `file_links` and `actions`.
 
 * `id`: Database identifier.
 * `commit_id`: The identifier of the commit where the file was introduced or renamed. This is a foreign key that references the `id` field of the `scmlog` table.

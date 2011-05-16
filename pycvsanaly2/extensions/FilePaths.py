@@ -148,31 +148,35 @@ class FilePaths:
 
         return "/" + "/".join(tokens)
 
-    def get_path2(self, file_id, commit_id, repo_id):
+    def get_path_from_database(self, file_id, commit_id):
+        """Returns the last valid path for a given file_id at commit_id
+           (May have been removed afterwords!)"""
+        
         if config.debug:
-            profiler_start("Getting full file path for file_id %d and commit_id %d", (file_id, commit_id))
-
+            profiler_start("Getting full file path for file_id %d and \
+                            commit_id %d", (file_id, commit_id))
+        
         db = self.__dict__['db']
         cnn = db.connect()
-
+        
         cursor = cnn.cursor()
-        query = "SELECT file_path from file_paths " + \
-                "WHERE file_id=? AND commit_id <= ? " + \
-                "ORDER BY commit_id DESC LIMIT 1"
+        query = """SELECT file_path from file_paths
+                   WHERE file_id=? AND commit_id <= ?
+                   ORDER BY commit_id DESC LIMIT 1"""
         cursor.execute(statement(query, db.place_holder), (file_id, commit_id))
-        all_file_paths = [i[0] for i in cursor.fetchall()]
-
+        try:
+            file_path = cursor.fetchone()[0]
+        except:
+            file_path = None
+        
         cursor.close()
         cnn.close()
-
+        
+        printdbg("get_path_from_database: Path for file_id %d at commit_id %d: %s", (file_id, commit_id, file_path))
         if config.debug:
             profiler_stop("Getting full file path for file_id %d and commit_id %d", (file_id, commit_id), True)
-            printdbg("get_path2: Path for file_id %d at commit_id %d: %s", (file_id, commit_id, file_path))
-
-        for file_path in all_file_paths:
-            return file_path
-
-        return None
+        
+        return file_path
 
     def get_path(self, file_id, commit_id, repo_id):
         """
@@ -207,6 +211,8 @@ class FilePaths:
             return None
 
     def get_file_id(self, file_path, commit_id):
+        """Ask for the file_id for a given file_path and commit_id"""
+        
         if config.debug:
             profiler_start("Getting file id for file_path %s and commit_id %d",
                             (file_path, commit_id))

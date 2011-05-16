@@ -215,18 +215,20 @@ class DBContentHandler(ContentHandler):
                               dbfilecopy.action_id))
 
     def __add_file_path(self, commit_id, file_id, path):
+        """Add the latest full path of a given file_id and commit_id
+           to the table file_paths."""
         try:
             file_path = path.split("://", 1)[1]
         except IndexError:
             file_path = path
 
-        dbfilepath = DBFilePath(None, commit_id, file_id, file_path)
+        db_file_path = DBFilePath(None, commit_id, file_id, file_path)
         self.cursor.execute(statement(DBFilePath.__insert__,
                                       self.db.place_holder),
-                            (dbfilepath.id,
-                             dbfilepath.commit_id,
-                             dbfilepath.file_id,
-                             dbfilepath.file_path))
+                            (db_file_path.id,
+                             db_file_path.commit_id,
+                             db_file_path.file_id,
+                             db_file_path.file_path))
 
     def __get_person(self, person):
         """Get the person_id given a person struct

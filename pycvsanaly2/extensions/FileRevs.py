@@ -104,8 +104,8 @@ class FileRevs:
             rev = revision
 
         try:
-            relative_path = self.fp.get_path2(file_id, commit_id,
-                                             self.repoid).strip("/")
+            relative_path = self.fp.get_path_from_database(file_id, commit_id
+                                                          ).strip("/")
         except AttributeError, e:
             if self.fp.get_commit_id() != commit_id:
                 # Commented out as update_for_all exists, delete if OK
@@ -114,8 +114,8 @@ class FileRevs:
                 #                    commit_id, self.repoid)
                 #                 aux_cursor.close()
 
-                relative_path = self.fp.get_path2(file_id, commit_id,
-                                                 self.repoid).strip("/")
+                relative_path = self.fp.get_path_from_database(file_id, commit_id,
+                                                              ).strip("/")
             else:
                 raise e
 

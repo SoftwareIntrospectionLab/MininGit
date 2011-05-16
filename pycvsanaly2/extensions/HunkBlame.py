@@ -257,7 +257,7 @@ class HunkBlame(Blame):
         except:
             commit_rev = None
         
-        file_name = self.fp.get_path2(file_id, commit_id, repoid)
+        file_name = self.fp.get_path_from_database(file_id, commit_id)
         
         # calculate rev and commit_id of previous commit
         try:
@@ -371,7 +371,7 @@ class HunkBlame(Blame):
                                                                      commit_id,
                                                                      repoid)
                 printdbg("HunkBlame: With file_id %d and commit_id %d: pre_commit_id=%d pre_rev=%s", (file_id, commit_id, pre_commit_id, pre_rev))
-                relative_path = self.fp.get_path2(file_id, pre_commit_id, repoid)
+                relative_path = self.fp.get_path_from_database(file_id, pre_commit_id)
                 if relative_path is None:
                     raise NotValidHunkWarning("Couldn't find path for " + \
                                               "file ID %d" % file_id)
