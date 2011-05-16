@@ -234,6 +234,15 @@ The `file_copies` table is used to store additional information about actions th
 * `new_file_name`: contains the new name of the file for rename actions or `NULL` for other actions. 
 * `action_id`: the identifier of the action. This is a foreign key that references the `id` field of the `actions` table.
 
+#### file_paths table
+
+The `file_paths` table is used to either look up the `file_id` for a given `file_path` and `commit_id` or to look up the current `file_path` for a given `file_id` and `commit_id`. This is an alternative table to files, `file_links` and `actions`.
+
+* `id`: Database identifier.
+* `commit_id`: The identifier of the commit where the file was introduced or renamed. This is a foreign key that references the `id` field of the `scmlog` table.
+* `file_id`: The identifier of the file. This is a foreign key that references the `id` field of the `files` table.
+* `file_path`: The full path for the `file_id` at the given `commit_id`
+
 #### branches table
 
 This table contains the list of branches found in the repository.

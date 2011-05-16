@@ -19,7 +19,6 @@
 
 from pycvsanaly2.extensions import Extension, register_extension, \
         ExtensionRunError
-from pycvsanaly2.extensions.FilePaths import FilePaths
 from pycvsanaly2.Database import SqliteDatabase, MysqlDatabase, \
         TableAlreadyExists, statement, execute_statement
 from pycvsanaly2.utils import printdbg, printerr, printout, \

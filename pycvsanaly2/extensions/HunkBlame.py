@@ -39,10 +39,6 @@ class HunkBlameJob(Job):
             self.bug_revs = {}
 
         def line(self, blame_line):
-            if not self.profiled:
-                profiler_start("Processing blame output for %s",
-                               (self.filename))
-                self.profiled = True 
             for hunk_id, start_line, end_line in self.hunks:
                 if blame_line.line >= start_line and \
                 blame_line.line <= end_line:
@@ -53,10 +49,12 @@ class HunkBlameJob(Job):
 
         def start_file(self, filename):
             self.filename = filename
-            self.profiled = False
+            profiler_start("Processing blame output for %s",
+                           (self.filename))
             
         def end_file(self):
-            profiler_stop("Processing blame output for %s", (self.filename))
+            profiler_stop("Processing blame output for %s",
+                           (self.filename), delete=True)
             if len(self.bug_revs) == 0:
                 printdbg("No bug revision found in this file")
 
@@ -248,39 +246,46 @@ class HunkBlame(Blame):
     
     # It is also possible to get previous commit by modifying
     # PatchParser.iter_file_patch
-    def __find_previous_commit(self, file_id, commit_id):
-        query = """select a.commit_id, a.action_type, c.rev 
-            from _action_files_cache a, scmlog c
-            where a.commit_id=c.id and a.file_id=?
-            order by c.date
-        """
+    def __find_previous_commit(self, repo, file_id, commit_id, repoid):
         cnn = self.db.connect()
-        aux_cursor = cnn.cursor()
-        aux_cursor.execute(statement(query, self.db.place_holder), (file_id,))
-        all_commits = aux_cursor.fetchall()
-        aux_cursor.close()
-        cnn.close()
-        pre_commit_id = None
-        pre_rev = None
+        cursor = cnn.cursor()
         
-        for cur_commit_id, type, cur_rev in all_commits:
-            if cur_commit_id == commit_id:
-                #Nothing to blame for other types
-                if type != 'M' and type != 'R':
-                    raise NotValidHunkWarning("Wrong commit to blame: " + \
-                                              "commit type: %s" % type)
-                else:
-                    break
-            else:
-                pre_commit_id = cur_commit_id
-                pre_rev = cur_rev
-        else:
-            raise NotValidHunkWarning("No previous commit found for " + \
-                    "file %d at commit %d" % (file_id, commit_id))
+        # calculate commit_rev and file_path of current commit
+        rev_query = """SELECT rev FROM scmlog WHERE id = ?"""
+        try:
+            cursor.execute(statement(rev_query, self.db.place_holder),
+                           (commit_id,))
+            commit_rev = cursor.fetchone()[0]
+        except:
+            commit_rev = None
+        
+        file_name = self.fp.get_path_from_database(file_id, commit_id)
+        
+        # calculate rev and commit_id of previous commit
+        try:
+            pre_rev = repo.get_previous_commit(self.uri, commit_rev, file_name)
+        except NotImplementedError:
+            raise NotValidHunkWarning("Repository type not supported!")
+            return None, None
+        except:
+            pre_rev = None
+        
+        pre_commit_query = """SELECT id FROM scmlog WHERE rev = ?"""
+        try:
+            cursor.execute(statement(pre_commit_query, self.db.place_holder),
+                           (pre_rev,))
+            pre_commit_id = cursor.fetchone()[0]
+        except:
+            pre_commit_id = None
+        
+        cursor.close()
+        cnn.close()
+        
+        # Make sure pre_rev and pre_commit_id are not None
         if pre_commit_id is None or pre_rev is None:
             raise NotValidHunkWarning("No previous commit found for " + \
                     "file %d at commit %d" % (file_id, commit_id))
-        return pre_commit_id, pre_rev    
+        return pre_commit_id, pre_rev
 
     def populate_insert_args(self, job):
         bug_revs = job.get_bug_revs()
@@ -307,6 +312,8 @@ class HunkBlame(Blame):
         profiler_start("Running HunkBlame extension")
         
         self.db = db
+        self.uri = uri
+        self.fp = FilePaths(self.db)
 
         cnn = self.db.connect()
         read_cursor = cnn.cursor()
@@ -358,14 +365,18 @@ class HunkBlame(Blame):
         read_cursor.execute(statement(outer_query, db.place_holder), (repoid,))
         file_rev = read_cursor.fetchone()
         n_blames = 0
-        fp = FilePaths(db)
-        fp.update_all(repoid)
         while file_rev is not None:
             try:
                 file_id, commit_id = file_rev
-                pre_commit_id, pre_rev = self.__find_previous_commit(file_id, 
-                                                                     commit_id)
-                relative_path = fp.get_path(file_id, pre_commit_id, repoid)
+                pre_commit_id, pre_rev = self.__find_previous_commit(repo,
+                                                                     file_id,
+                                                                     commit_id,
+                                                                     repoid)
+                printdbg("HunkBlame: With file_id %d and commit_id %d:\
+                 pre_commit_id=%d pre_rev=%s", 
+                 (file_id, commit_id, pre_commit_id, pre_rev))
+                relative_path = self.fp.get_path_from_database(file_id,
+                                                        pre_commit_id)
                 if relative_path is None:
                     raise NotValidHunkWarning("Couldn't find path for " + \
                                               "file ID %d" % file_id)
@@ -422,7 +433,7 @@ class HunkBlame(Blame):
         except:
             printdbg("Couldn't drop cache because of " + str(e))
 
-        fp.close()
+        self.fp.close()
         read_cursor.close()
         write_cursor.close()
         cnn.close()
