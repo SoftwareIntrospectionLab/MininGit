@@ -131,7 +131,7 @@ def hunk_from_header(line):
     return Hunk(orig_pos, orig_range, mod_pos, mod_range, tail)
 
 
-class HunkLine:
+class HunkLine(object):
     def __init__(self, contents):
         self.contents = contents
 
@@ -184,7 +184,7 @@ def parse_line(line):
         raise MalformedLine("Unknown line type", line)
 
 
-class Hunk:
+class Hunk(object):
     def __init__(self, orig_pos, orig_range, mod_pos, mod_range, tail=None):
         self.orig_pos = orig_pos
         self.orig_range = orig_range

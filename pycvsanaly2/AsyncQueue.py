@@ -25,7 +25,7 @@ class TimeOut(Exception):
     pass
 
 
-class AsyncQueue:
+class AsyncQueue(object):
 
     def __init__(self, maxsize=0):
         self._init(maxsize)

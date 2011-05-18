@@ -26,7 +26,7 @@ import repositoryhandler.backends as rh
 import threading
 
 
-class JobPool:
+class JobPool(object):
 
     POOL_SIZE = 5
 
@@ -82,7 +82,7 @@ class JobPool:
         self.queue.join()
 
 
-class Job:
+class Job(object):
     def __init__(self):
         self.failed = False
 

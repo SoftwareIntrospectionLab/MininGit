@@ -48,7 +48,7 @@ class GitParser(Parser):
     >>> re.match(p.patterns['commit'], commit) #doctest: +ELLIPSIS
     """
 
-    class GitCommit:
+    class GitCommit(object):
 
         def __init__(self, commit, parents):
             self.commit = commit
@@ -59,7 +59,7 @@ class GitParser(Parser):
             return git_commit.parents and self.commit.revision \
                     in git_commit.parents
 
-    class GitBranch:
+    class GitBranch(object):
 
         (REMOTE, LOCAL, STASH) = range(3)
 

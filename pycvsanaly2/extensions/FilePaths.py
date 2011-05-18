@@ -35,13 +35,13 @@ from time import time
 config = Config()
 
 
-class Adj:
+class Adj(object):
     def __init__(self):
         self.files = {}
         self.adj = {}
 
 
-class FilePaths:
+class FilePaths(object):
     __shared_state = {'rev': None,
                       'adj': None,
                       'files': None,

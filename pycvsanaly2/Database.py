@@ -20,7 +20,7 @@
 from utils import to_utf8, printdbg, printerr
 
 
-class DBRepository:
+class DBRepository(object):
 
     id_counter = 1
 
@@ -41,7 +41,7 @@ class DBRepository:
         self.type = to_utf8(type)
 
 
-class DBLog:
+class DBLog(object):
 
     id_counter = 1
 
@@ -66,7 +66,7 @@ class DBLog:
         self.composed_rev = commit.composed_rev
 
 
-class DBFile:
+class DBFile(object):
 
     id_counter = 1
 
@@ -86,7 +86,7 @@ class DBFile:
         self.repository_id = None
 
 
-class DBFileLink:
+class DBFileLink(object):
     
     id_counter = 1
 
@@ -107,7 +107,7 @@ class DBFileLink:
         self.commit_id = None
 
 
-class DBFilePath:
+class DBFilePath(object):
 
     id_counter = 1
 
@@ -128,7 +128,7 @@ class DBFilePath:
         self.file_path = to_utf8(file_path)
 
 
-class DBPerson:
+class DBPerson(object):
 
     id_counter = 1
 
@@ -148,7 +148,7 @@ class DBPerson:
         self.email = person.email or None
 
 
-class DBBranch:
+class DBBranch(object):
 
     id_counter = 1
 
@@ -166,7 +166,7 @@ class DBBranch:
         self.name = to_utf8(name)
 
        
-class DBAction:
+class DBAction(object):
 
     id_counter = 1
 
@@ -189,7 +189,7 @@ class DBAction:
         self.branch_id = None
 
 
-class DBFileCopy:
+class DBFileCopy(object):
 
     id_counter = 1
 
@@ -214,7 +214,7 @@ class DBFileCopy:
         self.action_id = None
 
 
-class DBTag:
+class DBTag(object):
 
     id_counter = 1
 
@@ -232,7 +232,7 @@ class DBTag:
         self.name = to_utf8(name)
 
 
-class DBTagRev:
+class DBTagRev(object):
 
     id_counter = 1
 
@@ -370,7 +370,7 @@ def statement(str, ph_mark):
     return retval
 
 
-class ICursor:
+class ICursor(object):
 
     def __init__(self, cursor, size=100):
         self.cursor = cursor
@@ -413,7 +413,7 @@ class ICursor:
         self.cursor.close()
 
 
-class Database:
+class Database(object):
     '''CVSAnaly Database'''
 
     place_holder = "?"

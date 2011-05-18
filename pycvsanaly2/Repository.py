@@ -16,7 +16,7 @@
 #
 
 
-class Commit:
+class Commit(object):
     def __init__(self):
         self.__dict__ = {'revision': None,
                          'committer': None,
@@ -63,7 +63,7 @@ class Commit:
 # V moVed (Renamed)
 # C Copied
 # R Replaced
-class Action:
+class Action(object):
     def __init__(self):
         self.__dict__ = {'type': None,
                          'branch_f1': None,
@@ -112,7 +112,7 @@ class Action:
         return str(self.__repr__())
 
 
-class Person:
+class Person(object):
     def __init__(self):
         self.__dict__ = {'name': None,
                          'email': None}

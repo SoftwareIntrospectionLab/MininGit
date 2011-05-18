@@ -40,7 +40,7 @@ class ExtensionBackoutError(Exception):
     '''Error backing out data created by extension'''
 
 
-class Extension:
+class Extension(object):
 
     deps = []
     
