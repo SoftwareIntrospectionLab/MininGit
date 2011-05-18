@@ -20,7 +20,7 @@
 if __name__ == '__main__':
     import sys
     sys.path.insert(0, "../")
-    
+
 from pycvsanaly2.AsyncQueue import AsyncQueue, TimeOut
 import repositoryhandler.backends as rh
 import threading
@@ -30,17 +30,17 @@ class JobPool(object):
 
     POOL_SIZE = 5
 
-    def __init__(self, repo, repo_uri, jobs_done=True, poolsize=POOL_SIZE, 
+    def __init__(self, repo, repo_uri, jobs_done=True, poolsize=POOL_SIZE,
                  queuesize=None):
         self.jobs_done = jobs_done
 
         self.queue = AsyncQueue(queuesize or 0)
         if self.jobs_done:
             self.done = AsyncQueue()
-            
+
         for i in range(poolsize):
-            rep = rh.create_repository(repo.get_type(), repo.get_uri())
-            thread = threading.Thread(target=self._job_thread, 
+            rep = repo.copy()
+            thread = threading.Thread(target=self._job_thread,
                                       args=(rep, repo_uri))
             thread.setDaemon(True)
             thread.start()
@@ -61,7 +61,7 @@ class JobPool(object):
     def get_next_done(self, timeout=(5 * 60)):
         if not self.jobs_done:
             return None
-        
+
         try:
             job = self.done.get(timeout)
             self.done.done()
@@ -75,37 +75,37 @@ class JobPool(object):
 
         if self.done.empty_unlocked():
             return None
-        
+
         return self.done.get_unlocked()
 
     def join(self):
         self.queue.join()
 
 
-class Job(object):
+class Job:
     def __init__(self):
         self.failed = False
 
     def run(self, repo, repo_uri):
         raise NotImplementedError
-        
+
 
 if __name__ == '__main__':
     class JobLastRev(Job):
         def __init__(self, module):
             self.module = module
-            
+
         def run(self, repo, repo_uri):
             uri = repo_uri + self.module
             print "%s -> %s" % (uri, repo.get_last_revision(uri))
 
     repo_uri = 'https://svn.forge.morfeo-project.org/svn/libresoft-tools/'
 
-    modules = ['cvsanaly', 'octopus', 'cmetrics', 'repositoryhandler', 
+    modules = ['cvsanaly', 'octopus', 'cmetrics', 'repositoryhandler',
                'retrieval_system', 'bicho', 'pandaRest']
     repo = rh.create_repository('svn', repo_uri)
     repo_uri = 'https://svn.forge.morfeo-project.org/svn/libresoft-tools/'
-    
+
     pool = JobPool(repo, repo_uri, False)
     for module in modules:
         job = JobLastRev(module)
