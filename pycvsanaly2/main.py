@@ -113,6 +113,16 @@ File Count options:
 """
 
 def _parse_log(uri, repo, parser, reader, config, db):
+    """Parse the log with the given parser, outputting to a database.
+
+    Args:
+      uri: The URI of the log to parse (this is already set in the parser)
+      repo: The repositoryhandler repository object to query
+      parser: The parser object that should be started
+      reader: The log reader
+      config: The Config object that specifies the current config
+      db: The database to add the data to
+    """
     # Start the parsing process
     printout("Parsing log for %s (%s)", (uri, repo.get_type()))
 
@@ -136,6 +146,9 @@ def _get_uri_and_repo(path):
 
     This function returns a URI as a string, and the repositoryhandler
     object that represents that URI. They are returned together as a tuple.
+
+    Args:
+      path: The path to the repository
     """
     # Create repository
     if path is not None:
