@@ -82,7 +82,7 @@ class JobPool(object):
         self.queue.join()
 
 
-class Job:
+class Job(object):
     def __init__(self):
         self.failed = False
 
