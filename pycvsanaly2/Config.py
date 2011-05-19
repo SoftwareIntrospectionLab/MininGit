@@ -25,7 +25,7 @@ class ErrorLoadingConfig(Exception):
         self.message = message
 
 
-class Config:
+class Config(object):
 
     __shared_state = {'debug': False,
                       'quiet': False,
@@ -70,7 +70,7 @@ class Config:
         return self.__dict__[attr]
 
     def __setattr__(self, attr, value):
-        self.__dict__[attr] = value
+        object.__setattr__(self, attr, value)
 
     def __load_from_file(self, config_file):
         try:

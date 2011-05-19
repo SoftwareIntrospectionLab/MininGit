@@ -41,7 +41,7 @@ class Commit(object):
         return self.__dict__[name]
 
     def __setattr__(self, name, value):
-        self.__dict__[name] = value
+        object.__setattr__(self, name, value)
 
     def __eq__(self, other):
         return isinstance(other, Commit) and self.revision == other.revision
@@ -85,7 +85,7 @@ class Action(object):
         return self.__dict__[name]
 
     def __setattr__(self, name, value):
-        self.__dict__[name] = value
+        object.__setattr__(self, name, value)
 
     def __eq__(self, other):
         return isinstance(other, Action) and \
@@ -130,7 +130,7 @@ class Person(object):
         return self.__dict__[name]
 
     def __setattr__(self, name, value):
-        self.__dict__[name] = value
+        object.__setattr__(self, name, value)
 
     def __eq__(self, other):
         return isinstance(other, Person) and self.name == other.name
