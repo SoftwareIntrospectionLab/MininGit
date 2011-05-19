@@ -21,7 +21,7 @@ import os
 from setuptools import setup
 
 # Utility function to read the README file.
-# Used for the long_description. 
+# Used for the long_description.
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
@@ -37,8 +37,8 @@ setup(
     packages=['pycvsanaly2', 'pycvsanaly2.extensions'],
     long_description=read('README.mdown'),
     scripts = ["cvsanaly2"],
-    install_requires=['repositoryhandler>=0.3.3', 'guilty>=2.0'],
-    dependency_links = ['https://github.com/SoftwareIntrospectionLab/repositoryhandler/tarball/master#egg=repositoryhandler-0.3.2', 
+    install_requires=['repositoryhandler>=0.3.4', 'guilty>=2.0'],
+    dependency_links = ['https://github.com/SoftwareIntrospectionLab/repositoryhandler/tarball/master#egg=repositoryhandler-0.3.4',
     'https://github.com/SoftwareIntrospectionLab/guilty/tarball/master#egg=guilty-2.0'],
     classifiers = [
         "Development Status :: 4 - Beta",

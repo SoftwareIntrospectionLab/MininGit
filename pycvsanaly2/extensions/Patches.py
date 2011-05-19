@@ -73,7 +73,7 @@ class PatchJob(Job):
         self.get_patch_for_commit()
 
 
-class DBPatch:
+class DBPatch(object):
 
     id_counter = 1
 

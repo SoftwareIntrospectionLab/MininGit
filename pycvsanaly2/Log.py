@@ -27,7 +27,7 @@ class RepoOrLogfileRequired(Exception):
     '''Repository or Logfile is required to read a log'''
 
 
-class LogReader:
+class LogReader(object):
 
     def __init__(self):
         self.logfile = None
@@ -101,7 +101,7 @@ class LogReader:
                     "a repository or a logfile has to be provided")
 
 
-class LogWriter:
+class LogWriter(object):
 
     CHUNK_SIZE = 1024
         

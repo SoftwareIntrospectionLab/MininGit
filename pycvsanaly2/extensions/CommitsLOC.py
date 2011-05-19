@@ -32,7 +32,7 @@ from pycvsanaly2.FindProgram import find_program
 from pycvsanaly2.Command import Command, CommandError
 
 
-class DBCommitLines:
+class DBCommitLines(object):
 
     id_counter = 1
 
@@ -51,7 +51,7 @@ class DBCommitLines:
         self.removed = removed
 
 
-class LineCounter:
+class LineCounter(object):
 
     def __init__(self, repo, uri):
         self.repo = repo

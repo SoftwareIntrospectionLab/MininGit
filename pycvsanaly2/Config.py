@@ -25,7 +25,7 @@ class ErrorLoadingConfig(Exception):
         self.message = message
 
 
-class Config:
+class Config(object):
 
     __shared_state = {'debug': False,
                       'quiet': False,

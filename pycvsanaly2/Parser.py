@@ -23,7 +23,7 @@ from ContentHandler import ContentHandler
 from utils import printerr, printout
 
 
-class Parser:
+class Parser(object):
 
     CONTENT_ORDER = ContentHandler.ORDER_REVISION
 

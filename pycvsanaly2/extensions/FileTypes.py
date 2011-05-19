@@ -25,7 +25,7 @@ from pycvsanaly2.extensions.file_types import guess_file_type
 from pycvsanaly2.utils import to_utf8, uri_to_filename
 
 
-class DBFileType:
+class DBFileType(object):
 
     id_counter = 1
 
