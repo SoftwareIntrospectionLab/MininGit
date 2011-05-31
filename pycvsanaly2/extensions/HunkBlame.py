@@ -127,7 +127,7 @@ class NotValidHunkWarning(Exception):
 
 class HunkBlame(Blame):
 
-#    deps = ['BugFixMessage']
+    deps = ['BugFixMessage']
 
     MAX_BLAMES = 2
 
