@@ -51,7 +51,7 @@ class ProgramNotFound(Extension):
         self.program = program
 
 
-class Measures:
+class Measures(object):
 
     def __init__(self):
         self.__dict__ = {'lang': 'unknown',
@@ -75,7 +75,7 @@ class Measures:
         return self.__dict__[name]
 
     def __setattr__(self, name, value):
-        self.__dict__[name] = value
+        object.__setattr__(self, name, value)
 
     def getattrs(self):
         return self.__dict__.keys()
@@ -87,7 +87,7 @@ class Measures:
             self.__dict__[key] = -1
 
 
-class FileMetrics:
+class FileMetrics(object):
 
     def __init__(self, path, lang='unknown', sloc=0):
         self.path = path

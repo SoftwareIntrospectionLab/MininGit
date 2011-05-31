@@ -37,7 +37,7 @@ class InvalidDependency(ExtensionException):
         self.name2 = name2
  
        
-class ExtensionsManager:
+class ExtensionsManager(object):
 
     def __init__(self, exts, hard_order=False):
         self.exts = {}

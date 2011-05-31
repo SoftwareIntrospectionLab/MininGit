@@ -16,7 +16,7 @@
 #
 
 
-class Commit:
+class Commit(object):
     def __init__(self):
         self.__dict__ = {'revision': None,
                          'committer': None,
@@ -41,7 +41,7 @@ class Commit:
         return self.__dict__[name]
 
     def __setattr__(self, name, value):
-        self.__dict__[name] = value
+        object.__setattr__(self, name, value)
 
     def __eq__(self, other):
         return isinstance(other, Commit) and self.revision == other.revision
@@ -63,7 +63,7 @@ class Commit:
 # V moVed (Renamed)
 # C Copied
 # R Replaced
-class Action:
+class Action(object):
     def __init__(self):
         self.__dict__ = {'type': None,
                          'branch_f1': None,
@@ -85,7 +85,7 @@ class Action:
         return self.__dict__[name]
 
     def __setattr__(self, name, value):
-        self.__dict__[name] = value
+        object.__setattr__(self, name, value)
 
     def __eq__(self, other):
         return isinstance(other, Action) and \
@@ -112,7 +112,7 @@ class Action:
         return str(self.__repr__())
 
 
-class Person:
+class Person(object):
     def __init__(self):
         self.__dict__ = {'name': None,
                          'email': None}
@@ -130,7 +130,7 @@ class Person:
         return self.__dict__[name]
 
     def __setattr__(self, name, value):
-        self.__dict__[name] = value
+        object.__setattr__(self, name, value)
 
     def __eq__(self, other):
         return isinstance(other, Person) and self.name == other.name

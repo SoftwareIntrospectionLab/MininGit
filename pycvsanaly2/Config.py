@@ -21,11 +21,11 @@ class ErrorLoadingConfig(Exception):
 
     def __init__(self, message=None):
         Exception.__init__(self)
-        
+
         self.message = message
 
 
-class Config:
+class Config(object):
 
     __shared_state = {'debug': False,
                       'quiet': False,
@@ -35,7 +35,7 @@ class Config:
                       'no_parse': False,
                       'db_driver': 'mysql',
                       'db_user': 'operator',
-                      'db_password': None, 
+                      'db_password': None,
                       'db_database': 'cvsanaly',
                       'db_hostname': 'localhost',
                       'extensions': [],
@@ -51,26 +51,26 @@ class Config:
                       # Content options
                       'no_content': False,
                       # File count extension options
-                      'count_types': [], 
+                      'count_types': [],
                       # Regex for matching bug fixes in BugFixMessage
-                      'bug_fix_regexes': ["defect(s)?", "patch(ing|es|ed)?", 
-                                          "bug(s|fix(es)?)?", 
-                                          "(re)?fix(es|ed|ing|age|\s?up(s)?)?", 
-                                          "debug(ged)?", 
-                                          "\#\d+", "back\s?out", 
+                      'bug_fix_regexes': ["defect(s)?", "patch(ing|es|ed)?",
+                                          "bug(s|fix(es)?)?",
+                                          "(re)?fix(es|ed|ing|age|\s?up(s)?)?",
+                                          "debug(ged)?",
+                                          "\#\d+", "back\s?out",
                                           "revert(ing|ed)?"],
-                      'bug_fix_regexes_case_sensitive': ["[A-Z]+(-|#)\d+", 
+                      'bug_fix_regexes_case_sensitive': ["[A-Z]+(-|#)\d+",
                                                          "CVE-\d+-\d+"],
                        }
-    
+
     def __init__(self):
         self.__dict__ = self.__shared_state
-        
+
     def __getattr__(self, attr):
         return self.__dict__[attr]
 
     def __setattr__(self, attr, value):
-        self.__dict__[attr] = value
+        object.__setattr__(self, attr, value)
 
     def __load_from_file(self, config_file):
         try:
@@ -90,7 +90,7 @@ class Config:
         try:
             self.quiet = config.quiet
         except:
-            pass        
+            pass
         try:
             self.profile = config.profile
         except:
@@ -174,7 +174,7 @@ class Config:
             self.no_content = config.no_content
         except:
             pass
-        
+
         try:
             self.backout = config.backout
         except:
@@ -198,10 +198,10 @@ class Config:
             # If there's an old file, migrate it
             old_config = os.path.join(os.environ.get('HOME'), '.cvsanaly')
             if os.path.isfile(old_config):
-                printout("Old config file found in %s, moving to %s", 
+                printout("Old config file found in %s, moving to %s",
                          (old_config, config_file))
                 os.rename(old_config, config_file)
                 self.__load_from_file(config_file)
-            
+
     def load_from_file(self, path):
         self.__load_from_file(path)

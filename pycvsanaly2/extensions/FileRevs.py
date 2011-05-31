@@ -25,7 +25,7 @@ if __name__ == '__main__':
     sys.path.insert(0, "../../")
 
 
-class FileRevs:
+class FileRevs(object):
 
     INTERVAL_SIZE = 1000
     __query__ = """select s.rev rev, s.id commit_id, af.file_id, 

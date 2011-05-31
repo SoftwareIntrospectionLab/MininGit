@@ -28,7 +28,7 @@ from io import BytesIO
 from cPickle import dump, load
 
 
-class DBTempLog:
+class DBTempLog(object):
 
     INTERVAL_SIZE = 100
     

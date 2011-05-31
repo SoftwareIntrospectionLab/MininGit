@@ -29,7 +29,7 @@ from pycvsanaly2.PatchParser import parse_patches, RemoveLine, InsertLine, \
 import re
 
 
-class CommitData:
+class CommitData(object):
     def __init__(self, file_name, 
                     old_start_line=None, old_end_line=None, \
                     new_start_line=None, new_end_line=None):

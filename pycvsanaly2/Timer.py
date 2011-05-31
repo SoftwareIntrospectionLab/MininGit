@@ -19,7 +19,7 @@
 import time
 
 
-class Timer:
+class Timer(object):
 
     def __init__(self):
         self.start()

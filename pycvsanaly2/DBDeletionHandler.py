@@ -21,7 +21,7 @@ from Database import (execute_statement, get_repo_id, statement, RepoNotFound)
 from utils import printdbg, printout, printerr
 
 
-class DBDeletionHandler:
+class DBDeletionHandler(object):
     """A class for deleting a repository's information from a repository.
     
     FAQ: 
