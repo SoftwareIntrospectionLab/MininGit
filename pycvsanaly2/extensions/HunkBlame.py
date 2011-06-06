@@ -21,11 +21,11 @@ from Blame import BlameJob, Blame
 from pycvsanaly2.extensions import register_extension, ExtensionRunError
 from pycvsanaly2.profile import profiler_start, profiler_stop
 from pycvsanaly2.utils import printdbg, printerr, uri_to_filename
-from pycvsanaly2.Database import (SqliteDatabase, MysqlDatabase, 
+from pycvsanaly2.Database import (SqliteDatabase, MysqlDatabase,
     TableAlreadyExists, statement)
 from repositoryhandler.backends import RepositoryCommandError
 from repositoryhandler.backends.watchers import BLAME
-from guilty.parser import create_parser
+from guilty.parser import create_parser, ParserUnknownError
 from Jobs import JobPool, Job
 from FilePaths import FilePaths
 import os
@@ -51,7 +51,7 @@ class HunkBlameJob(Job):
             self.filename = filename
             profiler_start("Processing blame output for %s",
                            (self.filename))
-            
+
         def end_file(self):
             profiler_stop("Processing blame output for %s",
                            (self.filename), delete=True)
@@ -64,22 +64,22 @@ class HunkBlameJob(Job):
         self.path = path
         self.rev = rev
         self.bug_revs = {}
-        
+
     def run(self, repo, repo_uri):
         profiler_start("Running HunkBlameJob for %s@%s", (self.path, self.rev))
-        
+
         def blame_line(line, p):
             p.feed(line)
 
         start = sys.maxint
         end = 0
-        
+
         for hunk in self.hunks:
             if hunk[1] < start:
                 start = hunk[1]
             if hunk[2] > end:
                 end = hunk[2]
-                
+
         repo_type = repo.get_type()
         if repo_type == 'cvs':
             # CVS paths contain the module stuff
@@ -93,33 +93,42 @@ class HunkBlameJob(Job):
         else:
             path = self.path.strip('/')
 
-        p = create_parser(repo.get_type(), self.path)
+        try:
+            printdbg("Creating parser")
+            p = create_parser(repo.get_type(), self.path)
+        except ParserUnknownError:
+            printdbg("Parser not found, getting one from the repo.")
+            # The parser isn't part of guilty.
+            # This method lets a repo that isn't part of the
+            # ecosystem to specifiy it's own blame parser
+            p = repo.get_blame_parser(self.path)
+
         out = self.get_content_handler()
         p.set_output_device(out)
         wid = repo.add_watch(BLAME, blame_line, p)
         try:
-            repo.blame(os.path.join(repo_uri, path), self.rev, 
+            repo.blame(os.path.join(repo_uri, path), self.rev,
                        start=start, end=end)
             self.collect_results(out)
         except RepositoryCommandError, e:
             self.failed = True
-            printerr("Command %s returned %d (%s)", (e.cmd, e.returncode, 
+            printerr("Command %s returned %d (%s)", (e.cmd, e.returncode,
                                                      e.error))
         p.end()
         repo.remove_watch(BLAME, wid)
-        profiler_stop("Running HunkBlameJob for %s@%s", (self.path, self.rev), 
+        profiler_stop("Running HunkBlameJob for %s@%s", (self.path, self.rev),
                       delete=True)
 
     def get_content_handler(self):
         return self.BlameContentHandler(self.hunks)
-    
+
     def collect_results(self, content_handler):
         self.bug_revs = content_handler.bug_revs
-        
+
     def get_bug_revs(self):
         return self.bug_revs
-        
-        
+
+
 class NotValidHunkWarning(Exception):
     def __init__(self, msg):
         Exception.__init__(self, msg)
@@ -134,11 +143,11 @@ class HunkBlame(Blame):
     # Insert query
     __insert__ = 'INSERT INTO hunk_blames (hunk_id, bug_commit_id) ' + \
                  'VALUES (?,?)'
-                 
+
     def __init__(self):
         #Only to conform the interface of superclass
-        self.id_counter = 1 
-        
+        self.id_counter = 1
+
     def __create_table(self, cnn):
         cursor = cnn.cursor()
 
@@ -174,10 +183,10 @@ class HunkBlame(Blame):
 
         cnn.commit()
         cursor.close()
-        
+
     def __drop_cache(self, cnn):
         cursor = cnn.cursor()
-        
+
         if isinstance(self.db, SqliteDatabase):
             import sqlite3.dbapi2
             try:
@@ -199,7 +208,7 @@ class HunkBlame(Blame):
                 raise
             except:
                 raise
-    
+
     def __create_cache(self, cnn):
         cursor = cnn.cursor()
 
@@ -236,20 +245,20 @@ class HunkBlame(Blame):
         cursor.close()
 
     def __get_hunk_blames(self, cursor, repoid):
-        query = """select distinct b.hunk_id 
-            from hunk_blames b 
+        query = """select distinct b.hunk_id
+            from hunk_blames b
             join hunks h on b.hunk_id=h.id
             join files f on h.file_id=f.id
             where f.repository_id=?"""
         cursor.execute(statement(query, self.db.place_holder), (repoid,))
         return [h[0] for h in cursor.fetchall()]
-    
+
     # It is also possible to get previous commit by modifying
     # PatchParser.iter_file_patch
     def __find_previous_commit(self, repo, file_id, commit_id, repoid):
         cnn = self.db.connect()
         cursor = cnn.cursor()
-        
+
         # calculate commit_rev and file_path of current commit
         rev_query = """SELECT rev FROM scmlog WHERE id = ?"""
         try:
@@ -258,18 +267,18 @@ class HunkBlame(Blame):
             commit_rev = cursor.fetchone()[0]
         except:
             commit_rev = None
-        
+
         file_name = self.fp.get_path_from_database(file_id, commit_id)
-        
+
         # calculate rev and commit_id of previous commit
         try:
             pre_rev = repo.get_previous_commit(self.uri, commit_rev, file_name)
         except NotImplementedError:
             raise NotValidHunkWarning("Repository type not supported!")
             return None, None
-        except:
+        except Exception as e:
             pre_rev = None
-        
+
         pre_commit_query = """SELECT id FROM scmlog WHERE rev = ?"""
         try:
             cursor.execute(statement(pre_commit_query, self.db.place_holder),
@@ -277,10 +286,10 @@ class HunkBlame(Blame):
             pre_commit_id = cursor.fetchone()[0]
         except:
             pre_commit_id = None
-        
+
         cursor.close()
         cnn.close()
-        
+
         # Make sure pre_rev and pre_commit_id are not None
         if pre_commit_id is None or pre_rev is None:
             raise NotValidHunkWarning("No previous commit found for " + \
@@ -298,19 +307,19 @@ class HunkBlame(Blame):
                 query = "select id from scmlog where rev = ?"
                 cursor.execute(statement(query, self.db.place_holder),
                                (rev,))
-                
+
                 fetched_row = cursor.fetchone()
-                
+
                 if fetched_row is not None:
                     args.append((hunk_id, fetched_row[0]))
-                    
+
         cursor.close()
         cnn.close()
         return args
-        
+
     def run(self, repo, uri, db):
         profiler_start("Running HunkBlame extension")
-        
+
         self.db = db
         self.uri = uri
         self.fp = FilePaths(self.db)
@@ -341,23 +350,23 @@ class HunkBlame(Blame):
             pass
         except Exception, e:
             raise ExtensionRunError(str(e))
-            
+
         try:
             self.__create_cache(cnn)
         except TableAlreadyExists:
             pass
         except Exception, e:
             raise ExtensionRunError(str(e))
-        
+
         blames = self.__get_hunk_blames(read_cursor, repoid)
 
         job_pool = JobPool(repo, path or repo.get_uri(), queuesize=100)
-        
+
         outer_query = """select distinct h.file_id, h.commit_id
             from hunks h, scmlog s
             where h.commit_id=s.id and s.repository_id=?
                 and s.is_bug_fix=1
-                and h.old_start_line is not null 
+                and h.old_start_line is not null
                 and h.old_end_line is not null
                 and h.file_id is not null
                 and h.commit_id is not null
@@ -373,29 +382,29 @@ class HunkBlame(Blame):
                                                                      commit_id,
                                                                      repoid)
                 printdbg("HunkBlame: With file_id %d and commit_id %d:\
-                 pre_commit_id=%d pre_rev=%s", 
+                 pre_commit_id=%d pre_rev=%s",
                  (file_id, commit_id, pre_commit_id, pre_rev))
                 relative_path = self.fp.get_path_from_database(file_id,
                                                         pre_commit_id)
                 if relative_path is None:
                     raise NotValidHunkWarning("Couldn't find path for " + \
                                               "file ID %d" % file_id)
-                printdbg("Path for %d at %s -> %s", (file_id, pre_rev, 
+                printdbg("Path for %d at %s -> %s", (file_id, pre_rev,
                                                      relative_path))
-                
+
                 try:
                     inner_cursor = cnn.cursor()
-                
-                    inner_query = """select h.id, h.old_start_line, 
+
+                    inner_query = """select h.id, h.old_start_line,
                             h.old_end_line from hunks h
                             where h.file_id = ? and h.commit_id = ?
-                            and h.old_start_line is not null 
+                            and h.old_start_line is not null
                             and h.old_end_line is not null
                             and h.file_id is not null
                             and h.commit_id is not null
                     """
-                    inner_cursor.execute(statement(inner_query, 
-                                                   db.place_holder), 
+                    inner_cursor.execute(statement(inner_query,
+                                                   db.place_holder),
                                                    (file_id, commit_id))
                     hunks = inner_cursor.fetchall()
                 #FIXME
@@ -403,23 +412,23 @@ class HunkBlame(Blame):
                     pass
                 finally:
                     inner_cursor.close()
-                    
+
                 hunks = [h for h in hunks if h[0] not in blames]
                 job = HunkBlameJob(hunks, relative_path, pre_rev)
-                
+
                 job_pool.push(job)
                 n_blames += 1
-        
+
                 if n_blames >= self.MAX_BLAMES:
-                    processed_jobs = self.process_finished_jobs(job_pool, 
+                    processed_jobs = self.process_finished_jobs(job_pool,
                                                                  write_cursor)
                     n_blames -= processed_jobs
-                    
+
                     if processed_jobs <= (self.MAX_BLAMES / 5):
                         profiler_start("Joining unprocessed jobs")
                         job_pool.join()
                         profiler_stop("Joining unprocessed jobs", delete=True)
-                        
+
             except NotValidHunkWarning as e:
                 printerr("Not a valid hunk: " + str(e))
             finally:
@@ -439,7 +448,7 @@ class HunkBlame(Blame):
         cnn.close()
 
         profiler_stop("Running HunkBlame extension", delete=True)
-        
+
     def backout(self, repo, uri, db):
         update_statement = """delete from hunk_blames where
                               hunk_id in (select h.id from hunks h, scmlog s
