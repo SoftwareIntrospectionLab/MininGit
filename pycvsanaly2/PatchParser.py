@@ -278,12 +278,15 @@ def iter_hunks(iter_lines, allow_dirty=False):
         orig_size = 0
         mod_size = 0
         while orig_size < hunk.orig_range or mod_size < hunk.mod_range:
-            hunk_line = parse_line(iter_lines.next())
-            hunk.lines.append(hunk_line)
-            if isinstance(hunk_line, (RemoveLine, ContextLine)):
-                orig_size += 1
-            if isinstance(hunk_line, (InsertLine, ContextLine)):
-                mod_size += 1
+            try:
+                hunk_line = parse_line(iter_lines.next())
+                hunk.lines.append(hunk_line)
+                if isinstance(hunk_line, (RemoveLine, ContextLine)):
+                    orig_size += 1
+                if isinstance(hunk_line, (InsertLine, ContextLine)):
+                    mod_size += 1
+            except StopIteration:
+              break
     if hunk is not None:
         yield hunk
 
@@ -505,7 +508,7 @@ def iter_patched_from_hunks(orig_lines, hunks):
             elif isinstance(hunk_line, (ContextLine, RemoveLine)):
                 orig_line = orig_lines.next()
                 if orig_line != hunk_line.contents:
-                    raise PatchConflict(line_no, orig_line, 
+                    raise PatchConflict(line_no, orig_line,
                                         "".join(seen_patch))
                 if isinstance(hunk_line, ContextLine):
                     yield orig_line
