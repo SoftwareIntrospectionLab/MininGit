@@ -237,7 +237,7 @@ class Content(Extension):
                 cursor.close()
 
         elif isinstance(self.db, MysqlDatabase):
-            import _mysql_exceptions
+            import MySQLdb
 
             cursor = connection.cursor()
             
@@ -259,7 +259,7 @@ class Content(Extension):
                     index(file_id)
                     ) ENGINE=InnoDB CHARACTER SET=utf8""")
 
-            except _mysql_exceptions.OperationalError, e:
+            except MySQLdb.OperationalError, e:
                 if e.args[0] == 1050:
                     # It's OK if the table already exists
                     pass
