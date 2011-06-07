@@ -562,7 +562,6 @@ class MysqlDatabase(Database):
 
     def connect(self):
         import MySQLdb
-        import _mysql_exceptions
 
         try:
             if self.password is not None:
@@ -572,7 +571,7 @@ class MysqlDatabase(Database):
             else:
                 return MySQLdb.connect(self.hostname, self.username, 
                                        db=self.database, charset='utf8')
-        except _mysql_exceptions.OperationalError, e:
+        except MySQLdb.OperationalError, e:
             if e.args[0] == 1049:
                 raise DatabaseNotFound
             elif e.args[0] == 1045:
@@ -592,7 +591,7 @@ class MysqlDatabase(Database):
         cursor.execute(view)
         
     def create_tables(self, cursor):
-        import _mysql_exceptions
+        import MySQLdb
 
         try:
             cursor.execute("""CREATE TABLE repositories (
@@ -689,7 +688,7 @@ class MysqlDatabase(Database):
                             -- FOREIGN KEY (commit_id) REFERENCES scmlog(id)
                             ) CHARACTER SET=utf8 ENGINE=MyISAM""")
             self._create_views(cursor)
-        except _mysql_exceptions.OperationalError, e:
+        except MySQLdb.OperationalError, e:
             if e.args[0] == 1050:
                 raise TableAlreadyExists
             else:
@@ -754,12 +753,10 @@ def execute_statement(statement, parameters, cursor, db, error_message,
         except Exception as e:
             raise exception(e)
 
-    elif isinstance(db, MysqlDatabase):
-        import _mysql_exceptions
-    
+    elif isinstance(db, MysqlDatabase):    
         try:
             return cursor.execute(statement, parameters)
-        except _mysql_exceptions.OperationalError as e:
+        except MySQLdb.OperationalError as e:
             printerr(error_message + ": %s", (e,))
         except Exception as e:
             raise exception(e)

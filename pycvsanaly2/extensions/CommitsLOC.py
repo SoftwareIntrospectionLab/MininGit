@@ -231,7 +231,7 @@ class CommitsLOC(Extension):
             except:
                 raise
         elif isinstance(self.db, MysqlDatabase):
-            import _mysql_exceptions
+            import MySQLdb
 
             try:
                 cursor.execute("""CREATE TABLE commits_lines (
@@ -242,7 +242,7 @@ class CommitsLOC(Extension):
                                 -- FOREIGN KEY (commit_id) 
                                 --    REFERENCES scmlog(id)
                                 ) CHARACTER SET=utf8""")
-            except _mysql_exceptions.OperationalError, e:
+            except MySQLdb.OperationalError, e:
                 if e.args[0] == 1050:
                     cursor.close()
                     raise TableAlreadyExists

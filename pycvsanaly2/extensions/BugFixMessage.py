@@ -47,8 +47,8 @@ class BugFixMessage(Extension):
                 cursor.close()
 
         elif isinstance(self.db, MysqlDatabase):
-            import _mysql_exceptions
-
+            import MySQLdb
+            
             # I commented out foreign key constraints because
             # cvsanaly uses MyISAM, which doesn't enforce them.
             # MySQL was giving errno:150 when trying to create with
@@ -56,7 +56,7 @@ class BugFixMessage(Extension):
             try:
                 cursor.execute("""ALTER TABLE scmlog
                     ADD is_bug_fix bool default false""")
-            except _mysql_exceptions.OperationalError, e:
+            except MySQLdb.OperationalError, e:
                 if e.args[0] == 1060:
                     # It's OK if the column already exists
                     pass

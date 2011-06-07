@@ -128,7 +128,7 @@ class FileCount(Extension):
                 cursor.close()
 
         elif isinstance(self.db, MysqlDatabase):
-            import _mysql_exceptions
+            import MySQLdb
 
             # I commented out foreign key constraints because
             # cvsanaly uses MyISAM, which doesn't enforce them.
@@ -137,7 +137,7 @@ class FileCount(Extension):
             try:
                 cursor.execute("""ALTER TABLE scmlog
                     ADD file_count int(11)""")
-            except _mysql_exceptions.OperationalError, e:
+            except MySQLdb.OperationalError, e:
                 if e.args[0] == 1060:
                     # It's OK if the column already exists
                     pass

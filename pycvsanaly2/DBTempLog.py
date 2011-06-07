@@ -71,7 +71,7 @@ class DBTempLog(object):
             except:
                 raise
         elif isinstance(self.db, MysqlDatabase):
-            import _mysql_exceptions
+            import MySQLdb
 
             try:
                 cursor.execute("CREATE TABLE _temp_log (" +
@@ -80,7 +80,7 @@ class DBTempLog(object):
                                 "date datetime," +
                                 "object LONGBLOB" +
                                 ") CHARACTER SET=utf8")
-            except _mysql_exceptions.OperationalError, e:
+            except MySQLdb.OperationalError, e:
                 if e.args[0] == 1050:
                     cursor.close()
                     raise TableAlreadyExists

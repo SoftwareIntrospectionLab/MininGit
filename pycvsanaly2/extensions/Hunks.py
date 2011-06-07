@@ -109,7 +109,7 @@ class Hunks(Extension):
                 cursor.close()
 
         elif isinstance(self.db, MysqlDatabase):
-            import _mysql_exceptions
+            import MySQLdb
 
             # I commented out foreign key constraints because
             # cvsanaly uses MyISAM, which doesn't enforce them.
@@ -129,7 +129,7 @@ class Hunks(Extension):
                     UNIQUE (file_id, commit_id, old_start_line, old_end_line, 
                             new_start_line, new_end_line)
                     ) ENGINE=InnoDB CHARACTER SET=utf8""")
-            except _mysql_exceptions.OperationalError, e:
+            except MySQLdb.OperationalError, e:
                 if e.args[0] == 1050:
                     # It's OK if the table already exists
                     pass
