@@ -37,7 +37,7 @@ setup(
     packages=['pycvsanaly2', 'pycvsanaly2.extensions'],
     long_description=read('README.mdown'),
     scripts = ["cvsanaly2"],
-    install_requires=['repositoryhandler>=0.3.4', 'guilty>=2.0'],
+    install_requires=['repositoryhandler>=0.3.5', 'guilty>=2.0'],
     dependency_links = ['https://github.com/SoftwareIntrospectionLab/repositoryhandler/tarball/master#egg=repositoryhandler-0.3.4',
     'https://github.com/SoftwareIntrospectionLab/guilty/tarball/master#egg=guilty-2.0'],
     classifiers = [
