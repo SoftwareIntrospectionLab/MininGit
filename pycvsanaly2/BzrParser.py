@@ -55,7 +55,7 @@ class BzrParser(Parser):
     patterns['commit'] = re.compile("^revno:[ \t]+(.*)$")
     patterns['committer'] = re.compile("^committer:[ \t]+(.*)[ \t]+<(.*)>$")
     patterns['author'] = re.compile("^author:[ \t]+(.*)[ \t]+<(.*)>$")
-    patterns['date'] = re.compile("^timestamp:.* " + \
+    patterns['commit-date'] = re.compile("^timestamp:.* " + \
                             "(\d{4}-\d{2}-\d{2} \d+:\d+:\d+) ([+-]\d{4})$")
     patterns['message'] = re.compile("^message:$")
     patterns['added'] = re.compile("^added:$")
@@ -130,13 +130,13 @@ class BzrParser(Parser):
             return        
 
         # Date
-        match = self.patterns['date'].match(line)
+        match = self.patterns['commit-date'].match(line)
         if match:
-            self.commit.date = datetime.datetime(*(time.strptime
+            self.commit.commit_date = datetime.datetime(*(time.strptime
                                                    (match.group(1).strip(" "), 
                                                     "%Y-%m-%d %H:%M:%S")[0:6]))
             # datetime.datetime.strptime not supported by Python2.4
-            #self.commit.date = datetime.datetime.strptime(\
+            #self.commit.commit_date = datetime.datetime.strptime(\
             #    match.group(1).strip(" "), "%a %b %d %H:%M:%S %Y")
             
             return

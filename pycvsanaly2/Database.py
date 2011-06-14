@@ -46,8 +46,8 @@ class DBLog(object):
     id_counter = 1
 
     __insert__ = """INSERT INTO scmlog (id, rev, committer_id, author_id, 
-                    date, message, composed_rev, repository_id) 
-                    values (?, ?, ?, ?, ?, ?, ?, ?)"""
+                    commit_date, author_date, message, composed_rev, repository_id)
+                    values (?, ?, ?, ?, ?, ?, ?, ?, ?)"""
                     
     __delete__ = """DELETE FROM scmlog where repository_id = ?"""
     
@@ -61,7 +61,8 @@ class DBLog(object):
         self.rev = to_utf8(commit.revision)
         self.committer = None
         self.author = None
-        self.date = commit.date
+        self.commit_date = commit.commit_date
+        self.author_date = commit.author_date
         self.message = to_utf8(commit.message)
         self.composed_rev = commit.composed_rev
 
@@ -481,7 +482,8 @@ class SqliteDatabase(Database):
                             rev varchar,
                             committer_id integer,
                             author_id integer,
-                            date datetime,
+                            commit_date datetime,
+                            author_date datetime,
                             message varchar,
                             composed_rev bool, 
                             repository_id integer
@@ -532,7 +534,8 @@ class SqliteDatabase(Database):
                             commit_id integer
                             )""")
             cursor.execute("CREATE index files_file_name on files(file_name)")
-            cursor.execute("CREATE index scmlog_date on scmlog(date)")
+            cursor.execute("CREATE index scmlog_commit_date on scmlog(commit_date)")
+            cursor.execute("CREATE index scmlog_author_date on scmlog(author_date)")
             cursor.execute("CREATE index scmlog_repo on scmlog(repository_id)")
             self._create_views(cursor)
         except sqlite3.dbapi2.OperationalError as e:
@@ -610,7 +613,8 @@ class MysqlDatabase(Database):
                             rev mediumtext,
                             committer_id INT,
                             author_id INT,
-                            date datetime,
+                            commit_date datetime,
+                            author_date datetime,
                             message longtext,
                             composed_rev bool,
                             repository_id INT,
@@ -621,7 +625,8 @@ class MysqlDatabase(Database):
                             -- FOREIGN KEY (repository_id) 
                             --    REFERENCES repositories(id),
                             index(repository_id),
-                            index(date)
+                            index(author_date),
+                            index(commit_date)
                             ) CHARACTER SET=utf8 ENGINE=MyISAM""")
             cursor.execute("""CREATE TABLE files (
                             id INT primary key,

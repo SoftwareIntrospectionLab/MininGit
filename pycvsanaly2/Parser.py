@@ -74,7 +74,7 @@ if __name__ == '__main__':
             print "Commit"
             print "rev: %s, committer: %s <%s>, date: %s" % \
                 (commit.revision, commit.committer.name, 
-                 commit.committer.email, commit.date)
+                 commit.committer.email, commit.commit_date)
             if commit.author is not None:
                 print "Author: %s <%s>" % (commit.author.name, 
                                            commit.author.email)

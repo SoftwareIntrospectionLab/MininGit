@@ -89,16 +89,17 @@ class GitParser(Parser):
                                     "( ([^\(]+))?( \((.*)\))?$")
     patterns['author'] = re.compile("^Author:[ \t]+(.*)[ \t]+<(.*)>$")
     patterns['committer'] = re.compile("^Commit:[ \t]+(.*)[ \t]+<(.*)>$")
-    patterns['date'] = re.compile("^AuthorDate: (.* \d+ \d+:\d+:\d+ \d{4})" + \
-                                  " ([+-]\d{4})$")
+    patterns['commit-date'] = re.compile("^CommitDate: (.* \d+ \d+:\d+:\d+" + \
+                                  " \d{4}) ([+-]\d{4})$")
+    patterns['author-date'] = re.compile("^AuthorDate: (.* \d+ \d+:\d+:\d+" + \
+                                  " \d{4}) ([+-]\d{4})$")
     patterns['file'] = re.compile("^([MAD])[ \t]+(.*)$")
     patterns['file-moved'] = re.compile("^([RC])[0-9]+[ \t]+(.*)[ \t]+(.*)$")
     patterns['branch'] = re.compile("refs/remotes/origin/([^,]*)")
     patterns['local-branch'] = re.compile("refs/heads/([^,]*)")
     patterns['tag'] = re.compile("tag: refs/tags/([^,]*)")
     patterns['stash'] = re.compile("refs/stash")
-    patterns['ignore'] = [re.compile("^CommitDate: .*$"),
-                          re.compile("^Merge: .*$")]
+    patterns['ignore'] = [re.compile("^Merge: .*$")]
     patterns['svn-tag'] = re.compile("^svn path=/tags/(.*)/?; " +
                                      "revision=([0-9]+)$")
 
@@ -273,15 +274,20 @@ class GitParser(Parser):
 
             return
 
-        # Date
-        match = self.patterns['date'].match(line)
+        # Commit Date
+        match = self.patterns['commit-date'].match(line)
         if match:
-            self.commit.date = datetime.datetime(*(time.strptime(\
+            self.commit.commit_date = datetime.datetime(*(time.strptime(\
                 match.group(1).strip(" "), "%a %b %d %H:%M:%S %Y")[0:6]))
-            # datetime.datetime.strptime not supported by Python2.4
-            #self.commit.date = datetime.datetime.strptime(\
-            #    match.group(1).strip(" "), "%a %b %d %H:%M:%S %Y")
-            
+
+            return
+
+        # Author Date
+        match = self.patterns['author-date'].match(line)
+        if match:
+            self.commit.author_date = datetime.datetime(*(time.strptime(\
+                match.group(1).strip(" "), "%a %b %d %H:%M:%S %Y")[0:6]))
+
             return
 
         # File

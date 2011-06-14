@@ -127,7 +127,7 @@ class DBTempLog(object):
             obj = io.getvalue()
             io.close()
 
-            commits.append((commit.revision, commit.date, 
+            commits.append((commit.revision, commit.commit_date,
                             self.db.to_binary(obj)))
             n_commits += 1
             del commit
