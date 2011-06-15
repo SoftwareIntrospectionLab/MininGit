@@ -277,7 +277,7 @@ class FilePaths(object):
         cursor = cnn.cursor()
         query = """select distinct(s.id) from scmlog s, actions a
                     where s.id = a.commit_id and repository_id=?
-                    order by s.date"""
+                    order by s.commit_date"""
         cursor.execute(statement(query, db.place_holder), (repo_id,))
         
         old_id = -1

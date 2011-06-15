@@ -171,9 +171,9 @@ class DBContentHandler(ContentHandler):
             profiler_stop("Inserting actions for repository %d",
                           (self.repo_id,))
         if self.commits:
-            commits = [(c.id, c.rev, c.committer, c.author, c.date, \
-                        to_utf8(c.message).decode("utf-8"), c.composed_rev, \
-                        c.repository_id) for c in self.commits]
+            commits = [(c.id, c.rev, c.committer, c.author, c.commit_date, \
+                        c.author_date, to_utf8(c.message).decode("utf-8"), \
+                        c.composed_rev, c.repository_id) for c in self.commits]
             profiler_start("Inserting commits for repository %d",
                            (self.repo_id,))
             cursor.executemany(statement(DBLog.__insert__,

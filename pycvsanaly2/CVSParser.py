@@ -210,12 +210,12 @@ class CVSParser(Parser):
             commit.committer.name = match.group(8)
             self.handler.committer(commit.committer)
             
-            commit.date = datetime.datetime(int(match.group(1)), 
-                                            int(match.group(2)), 
-                                            int(match.group(3)),
-                                            int(match.group(4)), 
-                                            int(match.group(5)), 
-                                            int(match.group(6)))
+            commit.commit_date = datetime.datetime(int(match.group(1)),
+                                                   int(match.group(2)),
+                                                   int(match.group(3)),
+                                                   int(match.group(4)),
+                                                   int(match.group(5)),
+                                                   int(match.group(6)))
 
             if match.group(10) is not None:
                 self.lines[commit.revision] = (int(match.group(11)), 

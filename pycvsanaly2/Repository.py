@@ -21,7 +21,8 @@ class Commit(object):
         self.__dict__ = {'revision': None,
                          'committer': None,
                          'author': None,
-                         'date': None,
+                         'commit_date': None,
+                         'author_date': None,
                          'actions': [],
                          'branch': None,
                          'tags': None,
@@ -151,7 +152,8 @@ if __name__ == '__main__':
     c = Commit()
     c.revision = '25'
     c.committer = 'carlosgc'
-    c.date = datetime.datetime.now()
+    c.commit_date = datetime.datetime.now()
+    c.author_date = datetime.datetime.now()
     c.message = "Modified foo files"
 
     for i in range(5):
@@ -173,7 +175,7 @@ if __name__ == '__main__':
 
     print "Commit"
     print "rev: %s, committer: %s, date: %s" % (commit.revision,
-                                                commit.committer, commit.date)
+                                                commit.committer, commit.commit_date)
     if commit.author is not None:
         print "Author: %s" % (commit.author)
     print "files: "

@@ -21,6 +21,7 @@ from repositoryhandler.backends.watchers import DIFF
 from repositoryhandler.Command import CommandError, CommandRunningError
 from pycvsanaly2.Database import (SqliteDatabase, MysqlDatabase, 
         TableAlreadyExists, statement, ICursor, execute_statement)
+from pycvsanaly2.profile import profiler_start, profiler_stop
 from pycvsanaly2.Config import Config
 from pycvsanaly2.extensions import (Extension, register_extension, 
     ExtensionRunError)
@@ -68,9 +69,11 @@ class PatchJob(Job):
         return self.data
 
     def run(self, repo, repo_uri):
+        profiler_start("Processing patch for revision %s", (self.rev))
         self.repo = repo
         self.repo_uri = repo_uri
         self.get_patch_for_commit()
+        profiler_stop("Processing patch for revision %s", (self.rev))
 
 
 class DBPatch(object):
@@ -170,6 +173,7 @@ class Patches(Extension):
             finished_job = job_pool.get_next_done(0)
 
     def run(self, repo, uri, db):
+        profiler_start("Running Patches extension")
         self.db = db
         self.repo = repo
 
@@ -249,6 +253,7 @@ class Patches(Extension):
         write_cursor.close()
         cursor.close()
         cnn.close()
+        profiler_stop("Running Patches extension", delete=True)
         
     def backout(self, repo, uri, db):
         update_statement = """delete from patches

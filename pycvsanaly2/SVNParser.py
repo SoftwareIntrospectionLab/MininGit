@@ -235,12 +235,12 @@ class SVNParser(Parser):
             commit.committer = Person()
             commit.committer.name = match.group(2)
             
-            commit.date = datetime.datetime(int(match.group(3)), 
-                                            int(match.group(4)), 
-                                            int(match.group(5)),
-                                            int(match.group(6)), 
-                                            int(match.group(7)), 
-                                            int(match.group(8)))
+            commit.commit_date = datetime.datetime(int(match.group(3)),
+                                                   int(match.group(4)),
+                                                   int(match.group(5)),
+                                                   int(match.group(6)),
+                                                   int(match.group(7)),
+                                                   int(match.group(8)))
             self.msg_lines = int(match.group(10))
             self.commit = commit
             self.handler.committer(commit.committer)

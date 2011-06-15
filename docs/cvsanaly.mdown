@@ -180,7 +180,8 @@ The main table is `scmlog`. Every commit in the repository is represented by a r
 * `rev`: The revision identifier in the repository. It's always unique in every repository. 
 * `committer_id`: The identifier in the database of the person who performed the commit.
 * `author_id`: Author identifier. Some source control management systems (only Git at this time), differentiate the person who performed the commit from the person who actually made the changes. When not supported by the repository, this field will be `NULL`.
-* `date`: The date when the commit was performed. 
+* `commit_date`: The date when the commit was performed.
+* `author_date`: The date when the commit was originaly written (only Git at this time). When not supported by the repository, this field will be `NULL`. See author_id.
 * `message`: The commit message. 
 * `composed_rev`: A boolean to indicate whether the rev field is composed or not. This is needed because the rev field must be unique in every repository which is not possible in CVS since it uses revision numbers per file. The combination of a file path and its revision is what make a commit unique in a system like CVS. For this particular case the rev field is represented by the concatenation of the revision number, the pipe character ('|') and the file path. Here is an example for a CVS repository: `1.1.2.1|/poppler/glib/demo/render.c`
 
