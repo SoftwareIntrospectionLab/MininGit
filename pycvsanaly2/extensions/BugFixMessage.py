@@ -58,6 +58,10 @@ class BugFixMessage(Extension):
                     ADD is_bug_fix bool default false""")
                 cursor.execute("""ALTER TABLE scmlog
                     ADD INDEX is_bug_fix""")
+                cursor.execute("""ALTER TABLE scmlog
+                    ADD INDEX USING BTREE(is_bug_fix,
+                                          repository_id,
+                                          date)""")
             except MySQLdb.OperationalError, e:
                 if e.args[0] == 1060:
                     # It's OK if the column already exists
