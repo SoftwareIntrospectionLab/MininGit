@@ -533,6 +533,8 @@ class SqliteDatabase(Database):
                             tag_id integer,
                             commit_id integer
                             )""")
+            cursor.execute("CREATE index actions_file_id on actions(file_id)")
+            cursor.execute("CREATE index actions_commit_id on actions(commit_id)")
             cursor.execute("CREATE index files_file_name on files(file_name)")
             cursor.execute("CREATE index file_paths_file_path on file_paths(file_path)")
             cursor.execute("CREATE index scmlog_commit_date on scmlog(commit_date)")
@@ -617,7 +619,7 @@ class MysqlDatabase(Database):
                             commit_date datetime,
                             author_date datetime,
                             message longtext,
-                            composed_rev bool,
+                            composed_rev bool,")
                             repository_id INT,
                             -- FOREIGN KEY (committer_id)
                             --    REFERENCES people(id),
@@ -669,6 +671,8 @@ class MysqlDatabase(Database):
                             -- FOREIGN KEY (file_id) REFERENCES files(id),
                             -- FOREIGN KEY (commit_id) REFERENCES scmlog(id),
                             -- FOREIGN KEY (branch_id) REFERENCES branches(id),
+                            INDEX (file_id),
+                            INDEX (commit_id),
                             PRIMARY KEY (id)
                             ) CHARACTER SET=utf8 ENGINE=MyISAM""")
             cursor.execute("""CREATE TABLE file_copies (
