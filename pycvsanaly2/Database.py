@@ -761,6 +761,8 @@ def execute_statement(statement, parameters, cursor, db, error_message,
             raise exception(e)
 
     elif isinstance(db, MysqlDatabase):
+        import MySQLdb
+
         try:
             return cursor.execute(statement, parameters)
         except MySQLdb.OperationalError as e:
