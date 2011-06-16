@@ -653,7 +653,8 @@ class MysqlDatabase(Database):
                             file_path varchar(255),
                             INDEX (commit_id),
                             INDEX (file_id),
-                            INDEX (file_paths)
+                            INDEX (file_paths),
+                            INDEX (file_path, id, commit_id)
                             ) CHARACTER SET=utf8 ENGINE=MyISAM""")
             cursor.execute("""CREATE TABLE branches (
                             id INT primary key,
