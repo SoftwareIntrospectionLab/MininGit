@@ -26,7 +26,7 @@ class DBRepository(object):
 
     __insert__ = "INSERT INTO repositories (id, uri, name, type) " + \
         "values (?, ?, ?, ?)"
-        
+
     __delete__ = "DELETE FROM repositories where uri = ?"
 
     def __init__(self, id, uri, name, type):
@@ -45,19 +45,19 @@ class DBLog(object):
 
     id_counter = 1
 
-    __insert__ = """INSERT INTO scmlog (id, rev, committer_id, author_id, 
+    __insert__ = """INSERT INTO scmlog (id, rev, committer_id, author_id,
                     commit_date, author_date, message, composed_rev, repository_id)
                     values (?, ?, ?, ?, ?, ?, ?, ?, ?)"""
-                    
+
     __delete__ = """DELETE FROM scmlog where repository_id = ?"""
-    
+
     def __init__(self, id, commit):
         if id is None:
             self.id = DBLog.id_counter
             DBLog.id_counter += 1
         else:
             self.id = id
-            
+
         self.rev = to_utf8(commit.revision)
         self.committer = None
         self.author = None
@@ -71,29 +71,29 @@ class DBFile(object):
 
     id_counter = 1
 
-    __insert__ = """INSERT INTO files (id, file_name, repository_id) 
+    __insert__ = """INSERT INTO files (id, file_name, repository_id)
                     values (?, ?, ?)"""
-                    
+
     __delete__ = """DELETE FROM files where repository_id = ?"""
-    
+
     def __init__(self, id, file_name):
         if id is None:
             self.id = DBFile.id_counter
             DBFile.id_counter += 1
         else:
             self.id = id
-            
+
         self.file_name = to_utf8(file_name)
         self.repository_id = None
 
 
 class DBFileLink(object):
-    
+
     id_counter = 1
 
-    __insert__ = """INSERT INTO file_links (id, parent_id, file_id, commit_id) 
+    __insert__ = """INSERT INTO file_links (id, parent_id, file_id, commit_id)
                     values (?, ?, ?, ?)"""
-                    
+
     __delete__ = """DELETE FROM file_links where commit_id = ?"""
 
     def __init__(self, id, parent, child):
@@ -102,7 +102,7 @@ class DBFileLink(object):
             DBFileLink.id_counter += 1
         else:
             self.id = id
-            
+
         self.parent = parent
         self.child = child
         self.commit_id = None
@@ -112,7 +112,7 @@ class DBFilePath(object):
 
     id_counter = 1
 
-    __insert__ = """INSERT INTO file_paths (id, commit_id, file_id, file_path) 
+    __insert__ = """INSERT INTO file_paths (id, commit_id, file_id, file_path)
                     values (?, ?, ?, ?)"""
 
     __delete__ = """DELETE FROM file_paths where commit_id = ?"""
@@ -133,9 +133,9 @@ class DBPerson(object):
 
     id_counter = 1
 
-    __insert__ = """INSERT INTO people (id, name, email) 
+    __insert__ = """INSERT INTO people (id, name, email)
                     values (?, ?, ?)"""
-                    
+
     __delete__ = """DELETE FROM people where id = ?"""
 
     def __init__(self, id, person):
@@ -144,7 +144,7 @@ class DBPerson(object):
             DBPerson.id_counter += 1
         else:
             self.id = id
-            
+
         self.name = to_utf8(person.name)
         self.email = person.email or None
 
@@ -154,7 +154,7 @@ class DBBranch(object):
     id_counter = 1
 
     __insert__ = "INSERT INTO branches (id, name) values (?, ?)"
-    
+
     __delete__ = "DELETE FROM branches where id = ?"
 
     def __init__(self, id, name):
@@ -163,27 +163,27 @@ class DBBranch(object):
             DBBranch.id_counter += 1
         else:
             self.id = id
-            
+
         self.name = to_utf8(name)
 
-       
+
 class DBAction(object):
 
     id_counter = 1
 
-    __insert__ = """INSERT INTO actions (id, type, file_id, commit_id, 
-                    branch_id) 
+    __insert__ = """INSERT INTO actions (id, type, file_id, commit_id,
+                    branch_id)
                     values (?, ?, ?, ?, ?)"""
-                    
+
     __delete__ = """DELETE FROM actions where commit_id = ?"""
-    
+
     def __init__(self, id, type):
         if id is None:
             self.id = DBAction.id_counter
             DBAction.id_counter += 1
         else:
             self.id = id
-            
+
         self.type = type
         self.file_id = None
         self.commit_id = None
@@ -194,10 +194,10 @@ class DBFileCopy(object):
 
     id_counter = 1
 
-    __insert__ = """INSERT INTO file_copies (id, to_id, from_id, 
-                    from_commit_id, new_file_name, action_id) 
+    __insert__ = """INSERT INTO file_copies (id, to_id, from_id,
+                    from_commit_id, new_file_name, action_id)
                     values (?, ?, ?, ?, ?, ?)"""
-                    
+
     __delete__ = """DELETE FROM file_copies where action_id = ?"""
 
     def __init__(self, id, file_id):
@@ -220,7 +220,7 @@ class DBTag(object):
     id_counter = 1
 
     __insert__ = "INSERT INTO tags (id, name) values (?, ?)"
-    
+
     __delete__ = "DELETE FROM tags where id = ?"
 
     def __init__(self, id, name):
@@ -237,11 +237,11 @@ class DBTagRev(object):
 
     id_counter = 1
 
-    __insert__ = """INSERT INTO tag_revisions (id, tag_id, commit_id) 
+    __insert__ = """INSERT INTO tag_revisions (id, tag_id, commit_id)
                     values (?, ?, ?)"""
-                    
+
     __delete__ = """DELETE FROM tag_revisions where commit_id = ?"""
-    
+
     def __init__(self, id):
         if id is None:
             self.id = DBTagRev.id_counter
@@ -252,109 +252,109 @@ class DBTagRev(object):
         self.tag_id = None
         self.commit_id = None
 
- 
+
 def initialize_ids(db, cursor):
     # Repositories
-    cursor.execute(statement("SELECT max(id) from repositories", 
+    cursor.execute(statement("SELECT max(id) from repositories",
                              db.place_holder))
     id = cursor.fetchone()[0]
     if id is not None:
         DBRepository.id_counter = id + 1
 
     # Log
-    cursor.execute(statement("SELECT max(id) from scmlog", 
+    cursor.execute(statement("SELECT max(id) from scmlog",
                              db.place_holder))
     id = cursor.fetchone()[0]
     if id is not None:
         DBLog.id_counter = id + 1
 
     # Actions
-    cursor.execute(statement("SELECT max(id) from actions", 
+    cursor.execute(statement("SELECT max(id) from actions",
                              db.place_holder))
     id = cursor.fetchone()[0]
     if id is not None:
         DBAction.id_counter = id + 1
 
     # Copies
-    cursor.execute(statement("SELECT max(id) from file_copies", 
+    cursor.execute(statement("SELECT max(id) from file_copies",
                              db.place_holder))
     id = cursor.fetchone()[0]
     if id is not None:
         DBFileCopy.id_counter = id + 1
 
     # Files
-    cursor.execute(statement("SELECT max(id) from files", 
+    cursor.execute(statement("SELECT max(id) from files",
                              db.place_holder))
     id = cursor.fetchone()[0]
     if id is not None:
         DBFile.id_counter = id + 1
 
     # File Links
-    cursor.execute(statement("SELECT max(id) from file_links", 
+    cursor.execute(statement("SELECT max(id) from file_links",
                              db.place_holder))
     id = cursor.fetchone()[0]
     if id is not None:
         DBFileLink.id_counter = id + 1
 
     # File Paths
-    cursor.execute(statement("SELECT max(id) from file_paths", 
+    cursor.execute(statement("SELECT max(id) from file_paths",
                              db.place_holder))
     id = cursor.fetchone()[0]
     if id is not None:
         DBFilePath.id_counter = id + 1
 
     # Branches
-    cursor.execute(statement("SELECT max(id) from branches", 
+    cursor.execute(statement("SELECT max(id) from branches",
                              db.place_holder))
     id = cursor.fetchone()[0]
     if id is not None:
         DBBranch.id_counter = id + 1
 
     # People
-    cursor.execute(statement("SELECT max(id) from people", 
+    cursor.execute(statement("SELECT max(id) from people",
                              db.place_holder))
     id = cursor.fetchone()[0]
     if id is not None:
         DBPerson.id_counter = id + 1
 
     # Tags
-    cursor.execute(statement("SELECT max(id) from tags", 
+    cursor.execute(statement("SELECT max(id) from tags",
                              db.place_holder))
     id = cursor.fetchone()[0]
     if id is not None:
         DBTag.id_counter = id + 1
 
     # Tag revisions
-    cursor.execute(statement("SELECT max(id) from tag_revisions", 
+    cursor.execute(statement("SELECT max(id) from tag_revisions",
                              db.place_holder))
     id = cursor.fetchone()[0]
     if id is not None:
         DBTagRev.id_counter = id + 1
-        
-        
+
+
 class DatabaseException(Exception):
     '''Generic Database Exception'''
-    
-    
+
+
 class DatabaseDriverNotSupported(DatabaseException):
     '''Database driver is not supported'''
-    
-    
+
+
 class DatabaseNotFound(DatabaseException):
     '''Selected database doesn't exist'''
-    
-    
+
+
 class AccessDenied(DatabaseException):
     '''Access denied to database'''
-    
-    
+
+
 class TableAlreadyExists(DatabaseException):
     '''Table already exists in database'''
 
-  
+
 class RepoNotFound(DatabaseException):
     '''Repository couldn't be found'''
-    
+
 
 def statement(str, ph_mark):
     if "?" == ph_mark or "?" not in str:
@@ -367,7 +367,7 @@ def statement(str, ph_mark):
 
     retval = "'".join(tokens)
     printdbg(retval)
-    
+
     return retval
 
 
@@ -386,7 +386,7 @@ class ICursor(object):
         self.i += self.interval_size
 
         printdbg(q)
-        
+
         if self.args:
             self.cursor.execute(q, self.args)
         else:
@@ -421,7 +421,7 @@ class Database(object):
 
     def __init__(self, database):
         self.database = database
-        
+
     def connect(self):
         raise NotImplementedError
 
@@ -461,7 +461,7 @@ class SqliteDatabase(Database):
                   LEFT JOIN file_copies fc ON a.id = fc.action_id
                   where s.id = a.commit_id"""
         cursor.execute(view)
-    
+
     def create_tables(self, cursor):
         import sqlite3.dbapi2
 
@@ -470,7 +470,7 @@ class SqliteDatabase(Database):
                             id integer primary key,
                             uri varchar,
                             name varchar,
-                            type varchar 
+                            type varchar
                             )""")
             cursor.execute("""CREATE TABLE people (
                             id integer primary key,
@@ -485,7 +485,7 @@ class SqliteDatabase(Database):
                             commit_date datetime,
                             author_date datetime,
                             message varchar,
-                            composed_rev bool, 
+                            composed_rev bool,
                             repository_id integer
                             )""")
             cursor.execute("""CREATE TABLE actions (
@@ -534,6 +534,7 @@ class SqliteDatabase(Database):
                             commit_id integer
                             )""")
             cursor.execute("CREATE index files_file_name on files(file_name)")
+            cursor.execute("CREATE index file_paths_file_path on file_paths(file_path)")
             cursor.execute("CREATE index scmlog_commit_date on scmlog(commit_date)")
             cursor.execute("CREATE index scmlog_author_date on scmlog(author_date)")
             cursor.execute("CREATE index scmlog_repo on scmlog(repository_id)")
@@ -548,19 +549,19 @@ class SqliteDatabase(Database):
         import sqlite3.dbapi2
 
         return sqlite3.dbapi2.Binary(data)
-    
-       
+
+
 class MysqlDatabase(Database):
 
     place_holder = "%s"
-    
+
     def __init__(self, database, username, password, hostname):
         Database.__init__(self, database)
 
         self.username = username
         self.password = password
         self.hostname = hostname
-        
+
         self.db = None
 
     def connect(self):
@@ -568,11 +569,11 @@ class MysqlDatabase(Database):
 
         try:
             if self.password is not None:
-                return MySQLdb.connect(self.hostname, self.username, 
-                                       self.password, self.database, 
+                return MySQLdb.connect(self.hostname, self.username,
+                                       self.password, self.database,
                                        charset='utf8')
             else:
-                return MySQLdb.connect(self.hostname, self.username, 
+                return MySQLdb.connect(self.hostname, self.username,
                                        db=self.database, charset='utf8')
         except MySQLdb.OperationalError, e:
             if e.args[0] == 1049:
@@ -592,7 +593,7 @@ class MysqlDatabase(Database):
                   LEFT JOIN file_copies fc ON a.id = fc.action_id
                   where s.id = a.commit_id"""
         cursor.execute(view)
-        
+
     def create_tables(self, cursor):
         import MySQLdb
 
@@ -601,7 +602,7 @@ class MysqlDatabase(Database):
                             id INT primary key,
                             uri varchar(255),
                             name varchar(255),
-                            type varchar(30) 
+                            type varchar(30)
                             ) CHARACTER SET=utf8 ENGINE=MyISAM""")
             cursor.execute("""CREATE TABLE people (
                             id INT primary key,
@@ -618,11 +619,11 @@ class MysqlDatabase(Database):
                             message longtext,
                             composed_rev bool,
                             repository_id INT,
-                            -- FOREIGN KEY (committer_id) 
+                            -- FOREIGN KEY (committer_id)
                             --    REFERENCES people(id),
-                            -- FOREIGN KEY (author_id) 
+                            -- FOREIGN KEY (author_id)
                             --    REFERENCES people(id),
-                            -- FOREIGN KEY (repository_id) 
+                            -- FOREIGN KEY (repository_id)
                             --    REFERENCES repositories(id),
                             index(repository_id),
                             index(author_date),
@@ -633,7 +634,7 @@ class MysqlDatabase(Database):
                             file_name varchar(255),
                             repository_id INT,
                             INDEX (file_name)
-                            -- FOREIGN KEY (repository_id) 
+                            -- FOREIGN KEY (repository_id)
                             --    REFERENCES repositories(id)
                             ) CHARACTER SET=utf8 ENGINE=MyISAM""")
             cursor.execute("""CREATE TABLE file_links (
@@ -651,7 +652,8 @@ class MysqlDatabase(Database):
                             file_id INT,
                             file_path varchar(255),
                             INDEX (commit_id),
-                            INDEX (file_id)
+                            INDEX (file_id),
+                            INDEX (file_paths)
                             ) CHARACTER SET=utf8 ENGINE=MyISAM""")
             cursor.execute("""CREATE TABLE branches (
                             id INT primary key,
@@ -666,7 +668,7 @@ class MysqlDatabase(Database):
                             -- FOREIGN KEY (file_id) REFERENCES files(id),
                             -- FOREIGN KEY (commit_id) REFERENCES scmlog(id),
                             -- FOREIGN KEY (branch_id) REFERENCES branches(id),
-                            PRIMARY KEY (id) 
+                            PRIMARY KEY (id)
                             ) CHARACTER SET=utf8 ENGINE=MyISAM""")
             cursor.execute("""CREATE TABLE file_copies (
                             id INT primary key,
@@ -677,7 +679,7 @@ class MysqlDatabase(Database):
                             action_id integer
                             -- FOREIGN KEY (from_id) REFERENCES files(id),
                             -- FOREIGN KEY (to_id) REFERENCES files(id),
-                            -- FOREIGN KEY (from_commit_id) 
+                            -- FOREIGN KEY (from_commit_id)
                             --    REFERENCES scmlog(id),
                             -- FOREIGN KEY (action_id) REFERENCES actions(id)
                             ) CHARACTER SET=utf8 ENGINE=MyISAM""")
@@ -704,7 +706,7 @@ class MysqlDatabase(Database):
 
 # TODO
 # class CAPostgresDatabase (CADatabase):
-def create_database(driver, database, username=None, password=None, 
+def create_database(driver, database, username=None, password=None,
                     hostname=None):
     if driver == 'sqlite':
         db = SqliteDatabase(database)
@@ -716,7 +718,7 @@ def create_database(driver, database, username=None, password=None,
         raise DatabaseDriverNotSupported
     else:
         raise DatabaseDriverNotSupported
-                
+
     # Try to connect to database
     try:
         db.connect().close()
@@ -733,24 +735,24 @@ def create_database(driver, database, username=None, password=None,
             sys.stdin = sys.stdout = open('/dev/tty', 'r+')
             password = getpass.getpass()
             sys.stdout, sys.stdin = oldout, oldin
-            
-            return create_database(driver, database, username, password, 
+
+            return create_database(driver, database, username, password,
                                    hostname)
         raise e
-    
+
     return db
 
 
 # Useful DB utility functions
-def execute_statement(statement, parameters, cursor, db, error_message, 
+def execute_statement(statement, parameters, cursor, db, error_message,
                       exception=Exception):
     """Run a statement. Note that the cursor is *mutable*, and will contain
         the results after running.
     """
-        
+
     if isinstance(db, SqliteDatabase):
         import sqlite3.dbapi2
-        
+
         try:
             return cursor.execute(statement, parameters)
         except sqlite3.dbapi2.OperationalError as e:
@@ -758,7 +760,7 @@ def execute_statement(statement, parameters, cursor, db, error_message,
         except Exception as e:
             raise exception(e)
 
-    elif isinstance(db, MysqlDatabase):    
+    elif isinstance(db, MysqlDatabase):
         try:
             return cursor.execute(statement, parameters)
         except MySQLdb.OperationalError as e:
@@ -771,24 +773,24 @@ def get_repo_id(uri, cursor, db):
     execute_statement(statement("SELECT id from repositories where uri = ?",
                                 db.place_holder),
                                 (uri,), cursor, db, "Couldn't get repo ID")
-    
+
     result = cursor.fetchone()
-    
+
     if result:
         return result[0]
     else:
         raise RepoNotFound
-    
+
     return cursor.fetchone()[0]
 
 if __name__ == '__main__':
     db = create_database('sqlite', '/tmp/foo.db')
 
     cnn = db.connect()
-    
+
     cursor = cnn.cursor()
     db.create_tables(cursor)
     cursor.close()
-    
+
     cnn.commit()
     cnn.close()

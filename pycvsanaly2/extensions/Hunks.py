@@ -30,7 +30,7 @@ import re
 
 
 class CommitData(object):
-    def __init__(self, file_name, 
+    def __init__(self, file_name,
                     old_start_line=None, old_end_line=None, \
                     new_start_line=None, new_end_line=None):
         self.file_name = file_name
@@ -40,7 +40,7 @@ class CommitData(object):
             (new_start_line != old_end_line and \
                 (new_start_line is None or new_end_line is None)):
             raise ValueError("If either start or end is None, both must be")
-        
+
         self.old_start_line = old_start_line
         self.old_end_line = old_end_line
         self.new_start_line = new_start_line
@@ -82,7 +82,7 @@ class Hunks(Extension):
 
         if isinstance(self.db, SqliteDatabase):
             import sqlite3.dbapi2
-            
+
             # Note that we can't guarentee sqlite is going
             # to provide foreign key support (it was only
             # introduced in 3.6.19), so no constraints are set
@@ -97,7 +97,7 @@ class Hunks(Extension):
                     new_end_line INTEGER,
                     bug_introducing INTEGER NOT NULL default 0,
                     bug_introducing_hunk INTEGER,
-                    UNIQUE (file_id, commit_id, old_start_line, old_end_line, 
+                    UNIQUE (file_id, commit_id, old_start_line, old_end_line,
                             new_start_line, new_end_line))""")
             except sqlite3.dbapi2.OperationalError:
                 # It's OK if the table already exists
@@ -126,7 +126,7 @@ class Hunks(Extension):
                     new_end_line int(11),
                     bug_introducing bool NOT NULL default false,
                     PRIMARY KEY(id),
-                    UNIQUE (file_id, commit_id, old_start_line, old_end_line, 
+                    UNIQUE (file_id, commit_id, old_start_line, old_end_line,
                             new_start_line, new_end_line)
                     ) ENGINE=InnoDB CHARACTER SET=utf8""")
             except MySQLdb.OperationalError, e:
@@ -140,7 +140,7 @@ class Hunks(Extension):
                 raise
             finally:
                 cursor.close()
-            
+
         connection.commit()
         cursor.close()
 
@@ -165,7 +165,7 @@ class Hunks(Extension):
             for hunk in patch.hunks:
                 old_start_line = hunk.orig_pos - 1
                 new_start_line = hunk.mod_pos - 1
-                
+
                 old_end_line = 0
                 new_end_line = 0
 
@@ -181,7 +181,7 @@ class Hunks(Extension):
                             old_end_line = old_start_line
                         else:
                             old_end_line += 1
-                        
+
                         deleted = True
 
                     elif isinstance(line, InsertLine):
@@ -207,15 +207,15 @@ class Hunks(Extension):
                                 cd.old_start_line = old_start_line
                                 cd.old_end_line = old_end_line
                                 old_start_line = old_end_line
-                            
+
                             if added:
                                 cd.new_start_line = new_start_line
                                 cd.new_end_line = new_end_line
                                 new_start_line = new_end_line
-                            
+
                             hunks.append(cd)
                             added = deleted = False
-                        
+
                         old_start_line += 1
                         new_start_line += 1
 
@@ -226,7 +226,7 @@ class Hunks(Extension):
                     if deleted:
                         cd.old_start_line = old_start_line
                         cd.old_end_line = old_end_line
-                    
+
                     if added:
                         cd.new_start_line = new_start_line
                         cd.new_end_line = new_end_line
@@ -244,7 +244,7 @@ class Hunks(Extension):
         connection = self.db.connect()
         read_cursor = connection.cursor()
         write_cursor = connection.cursor()
-        
+
         # Try to get the repository and get its ID from the database
         try:
             path = uri_to_filename(uri)
@@ -265,14 +265,14 @@ class Hunks(Extension):
             raise ExtensionRunError( \
                     "Error creating repository %s. Exception: %s" % \
                     (repo.get_uri(), str(e)))
-        
+
         profiler_start("Hunks: fetch all patches")
         icursor = ICursor(read_cursor, self.INTERVAL_SIZE)
         # Get the patches from this repository
-        query = """select p.commit_id, p.patch, s.rev 
-                    from patches p, scmlog s 
+        query = """select p.commit_id, p.patch, s.rev
+                    from patches p, scmlog s
                     where p.commit_id = s.id and
-                    s.repository_id = ? and 
+                    s.repository_id = ? and
                     p.patch is not NULL"""
         icursor.execute(statement(query, db.place_holder), (repo_id,))
         profiler_stop("Hunks: fetch all patches", delete=True)
@@ -282,13 +282,13 @@ class Hunks(Extension):
         rs = icursor.fetchmany()
 
         while rs:
-            for commit_id, patch_content, rev in rs:  
+            for commit_id, patch_content, rev in rs:
                 for hunk in self.get_commit_data(patch_content):
                     # Get the file ID from the database for linking
-                    hunk_file_name = re.sub(r'^[ab]\/', '', 
+                    hunk_file_name = re.sub(r'^[ab]\/', '',
                                             hunk.file_name.strip())
                     file_id = fp.get_file_id(hunk_file_name, commit_id)
-                    
+
                     if file_id == None:
                         printdbg("file not found")
                         if repo.type == "git":
@@ -299,24 +299,24 @@ class Hunks(Extension):
                         else:
                             printerr("No file ID found for hunk " + \
                                      hunk_file_name + \
-                                     " at commit " + commit_id)
+                                     " at commit " + str(commit_id))
 
                     insert = """insert into hunks(file_id, commit_id,
-                                old_start_line, old_end_line, new_start_line, 
+                                old_start_line, old_end_line, new_start_line,
                                 new_end_line)
                                 values(?,?,?,?,?,?)"""
 
                     execute_statement(statement(insert, db.place_holder),
-                                      (file_id, commit_id, 
+                                      (file_id, commit_id,
                                        hunk.old_start_line,
-                                       hunk.old_end_line, 
+                                       hunk.old_end_line,
                                        hunk.new_start_line,
                                        hunk.new_end_line),
                                        write_cursor,
                                        db,
                                        "Couldn't insert hunk, dup record?",
                                        exception=ExtensionRunError)
-            
+
             connection.commit()
             rs = icursor.fetchmany()
 
@@ -326,7 +326,7 @@ class Hunks(Extension):
 
         # This turns off the profiler and deletes its timings
         profiler_stop("Running hunks extension", delete=True)
-        
+
     def backout(self, repo, uri, db):
         update_statement = """delete from hunks
                               where commit_id in (select s.id from scmlog s
