@@ -248,12 +248,14 @@ class GitParser(Parser):
             else:
                 self.branch.set_tail(git_commit)
             
-            if parents and len(parents) > 1:
+            if parents and len(parents) > 1 and not Config().analyze_merges:
                 #Skip merge commits
                 self.commit = None
+            
             return
         elif self.commit is None:
             return
+        
         # Committer
         match = self.patterns['committer'].match(line)
         if match:
