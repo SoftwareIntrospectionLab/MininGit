@@ -48,7 +48,7 @@ class BugFixMessage(Extension):
 
         elif isinstance(self.db, MysqlDatabase):
             import MySQLdb
-            
+
             # I commented out foreign key constraints because
             # cvsanaly uses MyISAM, which doesn't enforce them.
             # MySQL was giving errno:150 when trying to create with
@@ -56,6 +56,8 @@ class BugFixMessage(Extension):
             try:
                 cursor.execute("""ALTER TABLE scmlog
                     ADD is_bug_fix bool default false""")
+                cursor.execute("""ALTER TABLE scmlog
+                    ADD INDEX is_bug_fix""")
             except MySQLdb.OperationalError, e:
                 if e.args[0] == 1060:
                     # It's OK if the column already exists
@@ -260,5 +262,5 @@ class BugFixMessage(Extension):
                        where repository_id = ?"""
 
         self._do_backout(repo, uri, db, backout_statement)
-          
+
 register_extension("BugFixMessage", BugFixMessage)
