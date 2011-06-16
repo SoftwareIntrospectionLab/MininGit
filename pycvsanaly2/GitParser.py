@@ -247,7 +247,7 @@ class GitParser(Parser):
             else:
                 self.branch.set_tail(git_commit)
             
-            if parents and len(parents) > 1 and not Config().analyse_merges:
+            if parents and len(parents) > 1 and not Config().analyze_merges:
                 #Skip merge commits
                 self.commit = None
             

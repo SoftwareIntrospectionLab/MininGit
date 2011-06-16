@@ -86,7 +86,7 @@ Options:
                                  slower, as it is not caching in memory, and
                                  is somewhat paranoid about the integrity of
                                  the on-disk cache, so will often empty it.
-      --analyse-merges           Tells cvsanaly to also parse merge commits.
+      --analyze-merges           Tells cvsanaly to also parse merge commits.
                                  The default is to skip them.
 
 Database:
@@ -209,7 +209,7 @@ def main(argv):
                  "no-parse", "db-user=", "db-password=", "db-hostname=",
                  "db-database=", "db-driver=", "extensions=", "hard-order",
                  "metrics-all", "metrics-noerr", "no-content", "branch=",
-                 "backout", "low-memory", "count-types=", "analyse-merges"]
+                 "backout", "low-memory", "count-types=", "analyze-merges"]
 
     # Default options
     debug = None
@@ -233,7 +233,7 @@ def main(argv):
     branch = None
     backout = None
     count_types = None
-    analyse_merges = None
+    analyze_merges = None
 
     try:
         opts, args = getopt.getopt(argv, short_opts, long_opts)
@@ -290,8 +290,8 @@ def main(argv):
             no_content = True
         elif opt in ("-b", "--backout"):
             backout = True
-        elif opt in ("--analyse-merges"):
-            analyse_merges = True
+        elif opt in ("--analyze-merges"):
+            analyze_merges = True
 
     if len(args) <= 0:
         uri = os.getcwd()
@@ -350,8 +350,8 @@ def main(argv):
         config.no_content = no_content
     if backout is not None:
         config.extensions = get_all_extensions()
-    if analyse_merges is not None:
-        config.analyse_merges = analyse_merges
+    if analyze_merges is not None:
+        config.analyze_merges = analyze_merges
 
     if not config.extensions and config.no_parse:
         # Do nothing!!!

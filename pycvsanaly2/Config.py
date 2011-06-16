@@ -61,8 +61,8 @@ class Config(object):
                                           "revert(ing|ed)?"],
                       'bug_fix_regexes_case_sensitive': ["[A-Z]+(-|#)\d+",
                                                          "CVE-\d+-\d+"],
-                      # Should merge commits be analysed.
-                      'analyse_merges': False,
+                      # Should merge commits be analyzed.
+                      'analyze_merges': False,
                      }
 
     def __init__(self):
@@ -182,7 +182,7 @@ class Config(object):
         except:
             pass
         try:
-            self.analyse_merges = config.analyse_merges
+            self.analyze_merges = config.analyze_merges
         except:
             pass
 
