@@ -619,7 +619,7 @@ class MysqlDatabase(Database):
                             commit_date datetime,
                             author_date datetime,
                             message longtext,
-                            composed_rev bool,")
+                            composed_rev bool,
                             repository_id INT,
                             -- FOREIGN KEY (committer_id)
                             --    REFERENCES people(id),
