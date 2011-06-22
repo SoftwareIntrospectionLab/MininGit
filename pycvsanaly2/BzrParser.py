@@ -29,16 +29,16 @@ from Repository import Commit, Action, Person
 #       Branches stuff
 class BzrParser(Parser):
     """A parser for Bazaar.
-    
+
     # These are a couple of tests for the longer regexes that had
     # to be split up when trying to get PEP-8 line length compliance
     >>> p = BzrParser()
     >>> ts = "timestamp: Mon 2010-12-27 02:39:12 +0000"
-    >>> re.match(p.patterns['date'], ts) #doctest: +ELLIPSIS
+    >>> re.match(p.patterns['commit-date'], ts) #doctest: +ELLIPSIS
     <_sre.SRE_Match object...>
     >>> ts = "timestamp: Mon 2010-12-27 02:39:12+0000"
-    >>> re.match(p.patterns['date'], ts) #doctest: +ELLIPSIS
-    
+    >>> re.match(p.patterns['commit-date'], ts) #doctest: +ELLIPSIS
+
     """
 
     (
@@ -50,7 +50,7 @@ class BzrParser(Parser):
         REMOVED,
         RENAMED
     ) = range(7)
-    
+
     patterns = {}
     patterns['commit'] = re.compile("^revno:[ \t]+(.*)$")
     patterns['committer'] = re.compile("^committer:[ \t]+(.*)[ \t]+<(.*)>$")
@@ -79,7 +79,7 @@ class BzrParser(Parser):
         self.handler.commit(self.commit)
         self.commit = None
         self.state = BzrParser.COMMIT
-        
+
     def _parse_line(self, line):
         if line is None or line == '':
             return
@@ -97,14 +97,14 @@ class BzrParser(Parser):
             self.state = BzrParser.UNKNOWN
 
             return
-        
+
         # Commit
         match = self.patterns['commit'].match(line)
         if match:
             self.flush()
             self.commit = Commit()
             self.commit.revision = match.group(1)
-            
+
             self.state = BzrParser.COMMIT
 
             return
@@ -127,18 +127,18 @@ class BzrParser(Parser):
             self.commit.author.email = match.group(2)
             self.handler.author(self.commit.author)
 
-            return        
+            return
 
         # Date
         match = self.patterns['commit-date'].match(line)
         if match:
             self.commit.commit_date = datetime.datetime(*(time.strptime
-                                                   (match.group(1).strip(" "), 
+                                                   (match.group(1).strip(" "),
                                                     "%Y-%m-%d %H:%M:%S")[0:6]))
             # datetime.datetime.strptime not supported by Python2.4
             #self.commit.commit_date = datetime.datetime.strptime(\
             #    match.group(1).strip(" "), "%a %b %d %H:%M:%S %Y")
-            
+
             return
 
         # Message
@@ -147,7 +147,7 @@ class BzrParser(Parser):
             self.state = BzrParser.MESSAGE
 
             return
-        
+
         # Added files
         match = self.patterns['added'].match(line)
         if match:
@@ -201,7 +201,7 @@ class BzrParser(Parser):
             action.type = 'V'
             action.f1 = m.group(2)
             action.f2 = m.group(1)
-            
+
             self.commit.actions.append(action)
             self.handler.file(action.f1)
         else:
