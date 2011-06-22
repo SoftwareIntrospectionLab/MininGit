@@ -29,16 +29,16 @@ from Config import Config
 
 class GitParser(Parser):
     """A parser for Git.
-    
+
     # These are a couple of tests for the longer regexes that had
     # to be split up when trying to get PEP-8 line length compliance
     >>> p = GitParser()
     >>> date = "AuthorDate: Wed Jan 12 17:17:30 2011 -0800"
-    >>> re.match(p.patterns['date'], date) #doctest: +ELLIPSIS
+    >>> re.match(p.patterns['commit-date'], date) #doctest: +ELLIPSIS
     <_sre.SRE_Match object...>
     >>> date = "AuthorDate: Wed Jan 12 17:17:30 2011-0800"
-    >>> re.match(p.patterns['date'], date) #doctest: +ELLIPSIS
-    
+    >>> re.match(p.patterns['commit-date'], date) #doctest: +ELLIPSIS
+
     >>> commit = "".join(["commit d254e04dd51c3cac8cdc3355b4514a40c7a0baed ", \
         "ffb98f1c47114c33e8c77c107fbd2e15848b2537 ", \
         "(refs/remotes/origin/li-r1104)"])
@@ -115,7 +115,7 @@ class GitParser(Parser):
 
     def set_repository(self, repo, uri):
         Parser.set_repository(self, repo, uri)
-        self.is_gnome = re.search("^[a-z]+://(.*@)?git\.gnome\.org/.*$", 
+        self.is_gnome = re.search("^[a-z]+://(.*@)?git\.gnome\.org/.*$",
                                   repo.get_uri()) is not None
 
     def flush(self):
@@ -132,7 +132,7 @@ class GitParser(Parser):
         for patt in self.patterns['ignore']:
             if patt.match(line):
                 return
-        
+
         # Commit
         match = self.patterns['commit'].match(line)
         if match:
@@ -153,8 +153,8 @@ class GitParser(Parser):
             # won't be any decoration, so a branch needs to be
             # created
             if Config().branch is not None:
-                self.branch = self.GitBranch(self.GitBranch.LOCAL, 
-                                             Config().branch, 
+                self.branch = self.GitBranch(self.GitBranch.LOCAL,
+                                             Config().branch,
                                              git_commit)
 
             decorate = match.group(5)
@@ -163,38 +163,38 @@ class GitParser(Parser):
                 # Remote branch
                 m = re.search(self.patterns['branch'], decorate)
                 if m:
-                    branch = self.GitBranch(self.GitBranch.REMOTE, m.group(1), 
+                    branch = self.GitBranch(self.GitBranch.REMOTE, m.group(1),
                                             git_commit)
-                    printdbg("Branch '%s' head at acommit %s", 
+                    printdbg("Branch '%s' head at acommit %s",
                              (branch.name, self.commit.revision))
                 else:
                     # Local Branch
                     m = re.search(self.patterns['local-branch'], decorate)
                     if m:
-                        branch = self.GitBranch(self.GitBranch.LOCAL, 
+                        branch = self.GitBranch(self.GitBranch.LOCAL,
                                                 m.group(1), git_commit)
-                        printdbg("Commit %s on local branch '%s'", 
+                        printdbg("Commit %s on local branch '%s'",
                                  (self.commit.revision, branch.name))
-                        # If local branch was merged we just ignore this 
+                        # If local branch was merged we just ignore this
                         # decoration
                         if self.branch and \
                         self.branch.is_my_parent(git_commit):
-                            printdbg("Local branch '%s' was merged", 
+                            printdbg("Local branch '%s' was merged",
                                      (branch.name,))
                             branch = None
                     else:
                         # Stash
                         m = re.search(self.patterns['stash'], decorate)
                         if m:
-                            branch = self.GitBranch(self.GitBranch.STASH, 
+                            branch = self.GitBranch(self.GitBranch.STASH,
                                                     "stash", git_commit)
-                            printdbg("Commit %s on stash", 
+                            printdbg("Commit %s on stash",
                                      (self.commit.revision,))
                 # Tag
                 m = re.search(self.patterns['tag'], decorate)
                 if m:
                     self.commit.tags = [m.group(1)]
-                    printdbg("Commit %s tagged as '%s'", 
+                    printdbg("Commit %s tagged as '%s'",
                              (self.commit.revision, self.commit.tags[0]))
 
             if branch is not None and self.branch is not None:
@@ -218,7 +218,7 @@ class GitParser(Parser):
                     if b.is_my_parent(git_commit):
                         # We assume current branch is always the last one
                         # AFAIK there's no way to make sure this is right
-                        printdbg("Start point of branch '%s' at commit %s", 
+                        printdbg("Start point of branch '%s' at commit %s",
                                  (self.branches[0].name, self.commit.revision))
                         self.branches.pop(0)
                         self.branch = b
@@ -228,7 +228,7 @@ class GitParser(Parser):
                 # There's a pending tag in previous commit
                 pending_tag = self.branch.tail.svn_tag
                 printdbg("Move pending tag '%s' from previous commit %s " + \
-                         "to current %s", (pending_tag, 
+                         "to current %s", (pending_tag,
                                            self.branch.tail.commit.revision,
                                            self.commit.revision))
                 if self.commit.tags and pending_tag not in self.commit.tags:
@@ -247,15 +247,15 @@ class GitParser(Parser):
                     self.branches.insert(0, self.branch)
             else:
                 self.branch.set_tail(git_commit)
-            
+
             if parents and len(parents) > 1 and not Config().analyze_merges:
                 #Skip merge commits
                 self.commit = None
-            
+
             return
         elif self.commit is None:
             return
-        
+
         # Committer
         match = self.patterns['committer'].match(line)
         if match:
@@ -301,7 +301,7 @@ class GitParser(Parser):
 
             self.commit.actions.append(action)
             self.handler.file(action.f1)
-        
+
             return
 
         # File moved/copied
