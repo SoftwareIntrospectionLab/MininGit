@@ -235,6 +235,26 @@ class Hunks(Extension):
         profiler_stop("get_commit_data")
         return hunks
 
+    def get_patches(self, repo, repo_uri, repo_id, db, cursor):
+        profiler_start("Hunks: fetch all patches")
+        icursor = ICursor(cursor, self.INTERVAL_SIZE)
+        # Get the patches from this repository
+        query = """select p.commit_id, p.patch, s.rev
+                    from patches p, scmlog s
+                    where p.commit_id = s.id and
+                    s.repository_id = ? and
+                    p.patch is not NULL"""
+        icursor.execute(statement(query, db.place_holder), (repo_id,))
+        profiler_stop("Hunks: fetch all patches", delete=True)
+
+        rs = icursor.fetchmany()
+
+        while rs:
+          for commit_id, patch_content, rev in rs:
+            yield (commit_id, patch_content, rev)
+
+          rs = icursor.fetchmany()
+
     def run(self, repo, uri, db):
         # Start the profiler, per every other extension
         profiler_start("Running hunks extension")
@@ -266,59 +286,48 @@ class Hunks(Extension):
                     "Error creating repository %s. Exception: %s" % \
                     (repo.get_uri(), str(e)))
 
-        profiler_start("Hunks: fetch all patches")
-        icursor = ICursor(read_cursor, self.INTERVAL_SIZE)
-        # Get the patches from this repository
-        query = """select p.commit_id, p.patch, s.rev
-                    from patches p, scmlog s
-                    where p.commit_id = s.id and
-                    s.repository_id = ? and
-                    p.patch is not NULL"""
-        icursor.execute(statement(query, db.place_holder), (repo_id,))
-        profiler_stop("Hunks: fetch all patches", delete=True)
-
         self.__prepare_table(connection)
         fp = FilePaths(db)
-        rs = icursor.fetchmany()
 
-        while rs:
-            for commit_id, patch_content, rev in rs:
-                for hunk in self.get_commit_data(patch_content):
-                    # Get the file ID from the database for linking
-                    hunk_file_name = re.sub(r'^[ab]\/', '',
-                                            hunk.file_name.strip())
-                    file_id = fp.get_file_id(hunk_file_name, commit_id)
+        patches = self.get_patches(repo, path or repo.get_uri(), repo_id, db,
+                                   read_cursor)
 
-                    if file_id == None:
-                        printdbg("file not found")
-                        if repo.type == "git":
-                            # The liklihood is that this is a merge, not a
-                            # missing ID from some data screwup.
-                            # We'll just continue and throw this away
-                            continue
-                        else:
-                            printerr("No file ID found for hunk " + \
-                                     hunk_file_name + \
-                                     " at commit " + str(commit_id))
+        for commit_id, patch_content, rev in patches:
+            for hunk in self.get_commit_data(patch_content):
+                # Get the file ID from the database for linking
+                hunk_file_name = re.sub(r'^[ab]\/', '',
+                                        hunk.file_name.strip())
+                file_id = fp.get_file_id(hunk_file_name, commit_id)
 
-                    insert = """insert into hunks(file_id, commit_id,
-                                old_start_line, old_end_line, new_start_line,
-                                new_end_line)
-                                values(?,?,?,?,?,?)"""
+                if file_id == None:
+                    printdbg("file not found")
+                    if repo.type == "git":
+                        # The liklihood is that this is a merge, not a
+                        # missing ID from some data screwup.
+                        # We'll just continue and throw this away
+                        continue
+                    else:
+                        printerr("No file ID found for hunk " + \
+                                 hunk_file_name + \
+                                 " at commit " + str(commit_id))
 
-                    execute_statement(statement(insert, db.place_holder),
-                                      (file_id, commit_id,
-                                       hunk.old_start_line,
-                                       hunk.old_end_line,
-                                       hunk.new_start_line,
-                                       hunk.new_end_line),
-                                       write_cursor,
-                                       db,
-                                       "Couldn't insert hunk, dup record?",
-                                       exception=ExtensionRunError)
+                insert = """insert into hunks(file_id, commit_id,
+                            old_start_line, old_end_line, new_start_line,
+                            new_end_line)
+                            values(?,?,?,?,?,?)"""
+
+                execute_statement(statement(insert, db.place_holder),
+                                  (file_id, commit_id,
+                                   hunk.old_start_line,
+                                   hunk.old_end_line,
+                                   hunk.new_start_line,
+                                   hunk.new_end_line),
+                                   write_cursor,
+                                   db,
+                                   "Couldn't insert hunk, dup record?",
+                                   exception=ExtensionRunError)
 
             connection.commit()
-            rs = icursor.fetchmany()
 
         read_cursor.close()
         connection.commit()
