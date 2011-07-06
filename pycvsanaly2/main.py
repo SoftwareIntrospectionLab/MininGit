@@ -112,6 +112,15 @@ File Count options:
       --count-types=type1,type2  When running the File Count extension, only
                                  count the types (based on regex in
                                  extensions/file_types.py)
+
+Bug Fix Message options:
+NOTE: Due to the difficulty of getting separators right in a shell, it
+is highly recommended that these are only specified in a config file.
+
+      --bugfixregex=re1,re2      A comma-separated list of regexes to be
+                                 matched case-insensitively.
+      --bugfixregexcase=re1,re2  A comma-separated list of regexes to be
+                                 matched case-sensitively.
 """
 
 def _parse_log(uri, repo, parser, reader, config, db):
@@ -209,7 +218,8 @@ def main(argv):
                  "no-parse", "db-user=", "db-password=", "db-hostname=",
                  "db-database=", "db-driver=", "extensions=", "hard-order",
                  "metrics-all", "metrics-noerr", "no-content", "branch=",
-                 "backout", "low-memory", "count-types=", "analyze-merges"]
+                 "backout", "low-memory", "count-types=", "analyze-merges",
+                 "bugfixregexes=", "bugfixregexes-case="]
 
     # Default options
     debug = None
@@ -234,6 +244,8 @@ def main(argv):
     backout = None
     count_types = None
     analyze_merges = None
+    bug_fix_regexes = None
+    bug_fix_regexes_case_sensitive = None
 
     try:
         opts, args = getopt.getopt(argv, short_opts, long_opts)
@@ -292,6 +304,10 @@ def main(argv):
             backout = True
         elif opt in ("--analyze-merges"):
             analyze_merges = True
+        elif opt in("--bugfixregexes", ):
+            bug_fix_regexes = value.split(',')
+        elif opt in("--bugfixregexes-case", ):
+            bug_fix_regexes_case_sensitive = value.split(',')
 
     if len(args) <= 0:
         uri = os.getcwd()
@@ -352,6 +368,11 @@ def main(argv):
         config.extensions = get_all_extensions()
     if analyze_merges is not None:
         config.analyze_merges = analyze_merges
+    if bug_fix_regexes is not None:
+        config.bug_fix_regexes = bug_fix_regexes
+    if bug_fix_regexes_case_sensitive is not None:
+        config.bug_fix_regexes_case_sensitive = \
+            bug_fix_regexes_case_sensitive
 
     if not config.extensions and config.no_parse:
         # Do nothing!!!
