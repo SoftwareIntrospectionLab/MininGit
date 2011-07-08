@@ -369,8 +369,16 @@ def main(argv):
     if analyze_merges is not None:
         config.analyze_merges = analyze_merges
     if bug_fix_regexes is not None:
-        config.bug_fix_regexes = bug_fix_regexes
+        if bug_fix_regexes == ['']:
+          # This is empty, it means the user didn't want to match
+          bug_fix_regexes = []
+
+          config.bug_fix_regexes = bug_fix_regexes
     if bug_fix_regexes_case_sensitive is not None:
+        if bug_fix_regexes == ['']:
+            # This is empty, it means the user didn't want to match
+            bug_fix_regexes_case_sensitive = []
+
         config.bug_fix_regexes_case_sensitive = \
             bug_fix_regexes_case_sensitive
 
