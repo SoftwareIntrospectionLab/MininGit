@@ -95,7 +95,7 @@ class GitParser(Parser):
                                   " \d{4}) ([+-]\d{4})$")
     patterns['file'] = re.compile("^([MAD])[ \t]+(.*)$")
     patterns['file-moved'] = re.compile("^([RC])[0-9]+[ \t]+(.*)[ \t]+(.*)$")
-    patterns['branch'] = re.compile("refs/remotes/origin/([^,]*)")
+    patterns['branch'] = re.compile("refs/remotes/([^,]*)/([^,]*)")
     patterns['local-branch'] = re.compile("refs/heads/([^,]*)")
     patterns['tag'] = re.compile("tag: refs/tags/([^,]*)")
     patterns['stash'] = re.compile("refs/stash")
@@ -163,7 +163,7 @@ class GitParser(Parser):
                 # Remote branch
                 m = re.search(self.patterns['branch'], decorate)
                 if m:
-                    branch = self.GitBranch(self.GitBranch.REMOTE, m.group(1),
+                    branch = self.GitBranch(self.GitBranch.REMOTE, m.group(2),
                                             git_commit)
                     printdbg("Branch '%s' head at acommit %s",
                              (branch.name, self.commit.revision))
