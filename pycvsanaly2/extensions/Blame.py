@@ -22,7 +22,7 @@ from pycvsanaly2.Database import (SqliteDatabase, MysqlDatabase,
 from pycvsanaly2.extensions import (Extension, register_extension, 
     ExtensionRunError)
 from pycvsanaly2.profile import profiler_start, profiler_stop
-from pycvsanaly2.utils import printdbg, printerr, uri_to_filename
+from pycvsanaly2.utils import printdbg, printerr, uri_to_filename, to_utf8
 from FileRevs import FileRevs
 from Jobs import JobPool, Job
 from repositoryhandler.backends import RepositoryCommandError
@@ -42,8 +42,9 @@ class BlameJob(Job):
             pass
 
         def line(self, line):
-            self.authors.setdefault(line.author, 0)
-            self.authors[line.author] += 1
+            lauthor = to_utf8(line.author).decode("utf-8")
+            self.authors.setdefault(lauthor, 0)
+            self.authors[lauthor] += 1
 
         def end_file(self):
             pass
@@ -118,7 +119,7 @@ class Blame(Extension):
     # Insert query
     __insert__ = """INSERT INTO blame (id, file_id, commit_id, author_id, 
                                        n_lines)
-                 'VALUES (?,?,?,?,?)"""
+                         VALUES (?,?,?,?,?)"""
     MAX_BLAMES = 10
 
     def __init__(self):
@@ -150,7 +151,7 @@ class Blame(Extension):
             import MySQLdb
             
             try:
-                cursor.execute("""CREATE TABLE blame ("
+                cursor.execute("""CREATE TABLE blame (
                                 id integer primary key not null,
                                 file_id integer,
                                 commit_id integer,
