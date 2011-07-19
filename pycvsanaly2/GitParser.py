@@ -97,6 +97,7 @@ class GitParser(Parser):
     patterns['file-moved'] = re.compile("^[ACDMRTUXB]{0,1}([RC])[0-9]+[ \t]+(.*)[ \t]+(.*)$")
     patterns['branch'] = re.compile("refs/remotes/([^,]*)/([^,]*)")
     patterns['local-branch'] = re.compile("refs/heads/([^,]*)")
+    patterns['replace-commit'] = re.compile("refs/replace/([a-f|0-9]{40})")
     patterns['tag'] = re.compile("tag: refs/tags/([^,]*)")
     patterns['stash'] = re.compile("refs/stash")
     patterns['ignore'] = [re.compile("^Merge: .*$")]
@@ -140,6 +141,12 @@ class GitParser(Parser):
                 # Skip commits on svn tags
                 if self.branch.tail.svn_tag is None:
                     self.handler.commit(self.branch.tail.commit)
+
+            if self.patterns['replace-commit'].search(line):
+                printdbg("Skipping commit, because it's a replacement")
+                self.commit = None
+
+                return
 
             self.commit = Commit()
             self.commit.revision = match.group(1)
