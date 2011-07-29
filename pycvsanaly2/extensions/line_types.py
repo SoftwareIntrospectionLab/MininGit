@@ -25,59 +25,20 @@ from pycvsanaly2.utils import to_utf8, printerr, printdbg
 from io import BytesIO
 
 def _convert_linebreaks(input):
+    """Converts all linebreaks (e.g. from windows) to one format"""
+
     # source: http://code.activestate.com/recipes/435882-normalizing-newlines-between-windowsunixmacs/
     return input.replace('\r\n', '\n').replace('\r', '\n')
 
 def _strip_lines(text):
+    """Strip every line of a strip of whitespaces."""
+
     text_array = map(lambda s: s.strip(), text.split("\n"))
     return "\n".join(text_array)
 
-def _iterate_lexer_output(iterator):
-    output_lines = []
-    output_line = []
-    for ttype, value in iterator:
-        input_lines = value.split("\n")
-        for i in range(len(input_lines)):
-            item = {}
-            item["token"] = str(ttype)
-            item["value"] = to_utf8(input_lines[i]).decode("utf-8")
-            if (item["value"] != '') | (i == 0):
-                output_line.append(item)
-            if (len(input_lines) > 1) & (i < len(input_lines)-1):
-                output_lines.append(output_line)
-                output_line = []
-    return output_lines
-
-def _comment_empty_or_code(lines_array):
-    output = ""
-    for line in lines_array:
-        if (len(line) < 1):
-            output += "empty\n"
-            continue
-        first_token = line[0]["token"]
-        first_value = line[0]["value"]
-        if (len(line) == 1) & (first_token == "Token.Text") & (first_value == ""):
-            output += "empty\n"
-        elif (len(line) == 1) & ((first_token == "Token.Comment.Single") | (first_token == "Token.Comment.Multiline")):
-            output += "comment\n"
-        else:
-            output += "code\n"
-
-    return output
-
-def process_file_content(lexer, file_content):
-    if (lexer is None) | (file_content is None):
-        return None
-    # Strip Spaces and Tabs from begining and end
-    # Not shure if this should be skipped, when the language uses off-side rules (e.g. python, 
-    # see http://en.wikipedia.org/wiki/Off-side_rule for list)
-    stripped_code = _strip_lines(file_content)
-
-    lexer_output = _iterate_lexer_output(lexer.get_tokens(stripped_code))
-    return _comment_empty_or_code(lexer_output)
-
-
 def _get_file_content(repo, uri, rev):
+    """Reads the content of a file and revision from a given repository"""
+
     def write_line(data, io):
         io.write(data)
 
@@ -94,18 +55,67 @@ def _get_file_content(repo, uri, rev):
     repo.remove_watch(CAT, wid)
     return file_content
 
+def _iterate_lexer_output(iterator):
+    """Iterate Lexer Output and build an array from it.
+       Each item in Array is another Array which represents a line"""
+
+    output_lines = []
+    output_line = []
+    for ttype, value in iterator:
+        input_lines = value.split("\n")
+        for i in range(len(input_lines)):
+            item = {}
+            item["token"] = str(ttype)
+            item["value"] = to_utf8(input_lines[i]).decode("utf-8")
+            if (item["value"] != '') | (i == 0):
+                output_line.append(item)
+            if (len(input_lines) > 1) & (i < len(input_lines)-1):
+                output_lines.append(output_line)
+                output_line = []
+    return output_lines
+
+def _comment_empty_or_code(lines_array):
+    """Decides what type a line is.
+       Possible values:
+       * code - if excecutable code
+       * comment - a nonexecutable comment
+       * empty - an empty line (or only containing whitespaces)"""
+
+    output = ""
+    for line in lines_array:
+        if (len(line) < 1):
+            output += "empty\n"
+            continue
+        first_token = line[0]["token"]
+        first_value = line[0]["value"]
+        if (len(line) == 1) & (first_token == "Token.Text") & (first_value == ""):
+            output += "empty\n"
+        elif (len(line) == 1) & ((first_token == "Token.Comment.Single") | (first_token == "Token.Comment.Multiline")):
+            output += "comment\n"
+        else:
+            output += "code\n"
+
+    return output
+
 def get_line_types(repo, repo_uri, rev, path):
+    """Returns an array, where each item means a line of code.
+       Each item is labled 'code', 'comment' or 'empty'"""
+
     #profiler_start("Processing LineTypes for revision %s:%s", (self.rev, self.file_path))
     uri = repo_uri + "/" + path   # concat repo_uri and file_path for full path
     try:
         lexer = get_lexer_for_filename(path)
     except(ClassNotFound) as e:
-        printerr("[process_file_content] No lexer found for " + str(path))
+        printerr("[get_line_types] No lexer found for " + str(path))
         return None
 
     file_content = _get_file_content(repo, uri, rev)  # get file_content
     if file_content is not None:
-        line_types = process_file_content(lexer, file_content)
+        # Not shure if this should be skipped, when the language uses off-side rules (e.g. python,
+        # see http://en.wikipedia.org/wiki/Off-side_rule for list)
+        stripped_code = _strip_lines(file_content)
+        lexer_output = _iterate_lexer_output(lexer.get_tokens(stripped_code))
+        line_types = _comment_empty_or_code(lexer_output)
         line_types = line_types.split("\n")
     else:
         printerr("Error: No file content for " + str(rev) + ":" + str(path) + "! Skipping.")
@@ -115,6 +125,8 @@ def get_line_types(repo, repo_uri, rev, path):
     #profiler_stop("Processing LineTypes for revision %s:%s", (self.rev, self.file_path))
 
 def line_is_code(line_types_array, line_nr):
+    """Decides if a given line nr is executable code"""
+
     try:
         line_type = line_types_array[line_nr-1]
     except IndexError as e:
