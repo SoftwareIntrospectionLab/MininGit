@@ -250,10 +250,10 @@ class Hunks(Extension):
         rs = icursor.fetchmany()
 
         while rs:
-          for commit_id, patch_content, rev in rs:
-            yield (commit_id, patch_content, rev)
-
-          rs = icursor.fetchmany()
+            for commit_id, patch_content, rev in rs:
+                yield (commit_id, patch_content, rev)
+            
+            rs = icursor.fetchmany()
 
     def run(self, repo, uri, db):
         # Start the profiler, per every other extension

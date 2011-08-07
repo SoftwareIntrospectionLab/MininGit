@@ -136,7 +136,7 @@ class NotValidHunkWarning(Exception):
 
 class HunkBlame(Blame):
 
-    deps = ['BugFixMessage']
+    deps = ['Hunks']
 
     MAX_BLAMES = 2
 
@@ -365,7 +365,6 @@ class HunkBlame(Blame):
         outer_query = """select distinct h.file_id, h.commit_id
             from hunks h, scmlog s
             where h.commit_id=s.id and s.repository_id=?
-                and s.is_bug_fix=1
                 and h.old_start_line is not null
                 and h.old_end_line is not null
                 and h.file_id is not null
