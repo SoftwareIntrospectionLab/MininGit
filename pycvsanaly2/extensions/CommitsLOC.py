@@ -164,7 +164,7 @@ class GitLineCounter(LineCounter):
         self.lines = {}
         
         cmd = [self.git, 'log', '--all', '--topo-order', '--shortstat', 
-               '--pretty=oneline', 'origin']
+               '--pretty=oneline']
         c = Command(cmd, uri)
         try:
             c.run(parser_out_func=self.__parse_line)
@@ -189,6 +189,7 @@ class GitLineCounter(LineCounter):
             # we only have two kind of lines,
             # if it's not a diffstat, it's a rev line
             self.rev = line.split(None, 1)[0]
+            self.lines[self.rev] = (0, 0)
     
     def get_lines_for_revision(self, revision):
         return self.lines.get(revision, (0, 0))
