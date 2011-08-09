@@ -773,7 +773,7 @@ def execute_statement(statement, parameters, cursor, db, error_message,
 
         try:
             return cursor.execute(statement, parameters)
-        except MySQLdb.OperationalError as e:
+        except (MySQLdb.OperationalError, MySQLdb.IntegrityError) as e:
             printerr(error_message + ": %s", (e,))
         except Exception as e:
             raise exception(e)
