@@ -37,7 +37,7 @@ class CommitData(object):
 
         if (old_start_line != old_end_line and \
                 (old_start_line is None or old_end_line is None)) or \
-            (new_start_line != old_end_line and \
+            (new_start_line != new_end_line and \
                 (new_start_line is None or new_end_line is None)):
             raise ValueError("If either start or end is None, both must be")
 
