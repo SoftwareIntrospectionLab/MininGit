@@ -419,10 +419,6 @@ class DBContentHandler(ContentHandler):
                 parent_id = parent
                 parent = node_id
 
-                # Also add to file_paths
-                self.__add_file_path(commit_id, node_id,
-                    re.sub('^\d+://', '', rpath))
-
                 self.file_cache[rpath] = (node_id, parent_id)
 
             assert node_id is not None
@@ -475,9 +471,6 @@ class DBContentHandler(ContentHandler):
 
         file_id = self.__add_new_file_and_link(file_name, parent_id, log.id)
         self.file_cache[path] = (file_id, parent_id)
-
-        # Save also file_path
-        self.__add_file_path(log.id, file_id, path)
 
         return file_id
 
@@ -538,9 +531,6 @@ class DBContentHandler(ContentHandler):
         dbfilecopy.new_file_name = new_file_name
         self.__add_new_copy(dbfilecopy)
 
-        # Save also file_path
-        self.__add_file_path(log.id, file_id, path)
-
         return file_id
 
     def __action_copy(self, path, prefix, log, action, dbaction):
@@ -585,9 +575,6 @@ class DBContentHandler(ContentHandler):
         dbfilecopy.action_id = dbaction.id
         dbfilecopy.from_commit = from_commit_id
         self.__add_new_copy(dbfilecopy)
-
-        # Save also file_path
-        self.__add_file_path(log.id, file_id, path)
 
         return file_id
 
@@ -647,9 +634,6 @@ class DBContentHandler(ContentHandler):
         dbfilecopy.action_id = dbaction.id
         dbfilecopy.from_commit = from_commit_id
         self.__add_new_copy(dbfilecopy)
-
-        # Save also file_path
-        self.__add_file_path(log.id, file_id, path)
 
         return file_id
 
@@ -713,6 +697,10 @@ class DBContentHandler(ContentHandler):
                     continue
             else:
                 assert "Unknown action type %s" % (action.type)
+
+            # For every action the full file_path should be saved (except when file delete).
+            if action.type != 'D':
+                self.__add_file_path(log.id, file_id, path)
 
             dbaction.file_id = file_id
             self.actions.append(dbaction)
