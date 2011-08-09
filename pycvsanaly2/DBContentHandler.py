@@ -21,7 +21,7 @@ import os
 import re
 
 from ContentHandler import ContentHandler
-from Database import (DBRepository, DBLog, DBFile, DBFileLink, DBFilePath,
+from Database import (DBRepository, DBLog, DBFile, DBFileLink,
                       DBAction, DBFileCopy, DBBranch, DBPerson, DBTag,
                       DBTagRev, statement)
 from profile import profiler_start, profiler_stop
@@ -161,7 +161,7 @@ class DBContentHandler(ContentHandler):
         cursor = self.cursor
 
         if self.actions:
-            actions = [(a.id, a.type, a.file_id, a.commit_id, a.branch_id) \
+            actions = [(a.id, a.type, a.file_id, a.commit_id, a.branch_id, a.current_file_path) \
                        for a in self.actions]
             profiler_start("Inserting actions for repository %d",
                            (self.repo_id,))
@@ -214,22 +214,6 @@ class DBContentHandler(ContentHandler):
                               dbfilecopy.from_commit,
                               dbfilecopy.new_file_name,
                               dbfilecopy.action_id))
-
-    def __add_file_path(self, commit_id, file_id, path):
-        """Add the latest full path of a given file_id and commit_id
-           to the table file_paths."""
-        try:
-            file_path = path.split("://", 1)[1]
-        except IndexError:
-            file_path = path
-
-        db_file_path = DBFilePath(None, commit_id, file_id, file_path)
-        self.cursor.execute(statement(DBFilePath.__insert__,
-                                      self.db.place_holder),
-                            (db_file_path.id,
-                             db_file_path.commit_id,
-                             db_file_path.file_id,
-                             db_file_path.file_path))
 
     def __get_person(self, person):
         """Get the person_id given a person struct
@@ -671,6 +655,10 @@ class DBContentHandler(ContentHandler):
 
             prefix = "%d://" % (branch_id)
             path = prefix + action.f1
+            try:
+                dbaction.current_file_path = path.split("://", 1)[1]
+            except IndexError:
+                dbaction.current_file_path = path
 
             if action.type == 'A':
                 # A file has been added
@@ -697,10 +685,6 @@ class DBContentHandler(ContentHandler):
                     continue
             else:
                 assert "Unknown action type %s" % (action.type)
-
-            # For every action the full file_path should be saved (except when file delete).
-            if action.type != 'D':
-                self.__add_file_path(log.id, file_id, path)
 
             dbaction.file_id = file_id
             self.actions.append(dbaction)
