@@ -162,7 +162,7 @@ class FilePaths(object):
         cnn = db.connect()
         
         cursor = cnn.cursor()
-        query = """SELECT file_path from file_paths
+        query = """SELECT current_file_path from actions
                    WHERE file_id=? AND commit_id <= ?
                    ORDER BY commit_id DESC LIMIT 1"""
         cursor.execute(statement(query, db.place_holder), (file_id, commit_id))
@@ -224,8 +224,8 @@ class FilePaths(object):
         db = self.__dict__['db']
         cnn = db.connect()
         cursor = cnn.cursor()
-        query = """SELECT file_id from file_paths
-                   WHERE file_path = ? AND commit_id <= ?
+        query = """SELECT file_id from actions
+                   WHERE current_file_path = ? AND commit_id <= ?
                    ORDER BY commit_id DESC LIMIT 1"""
         cursor.execute(statement(query, db.place_holder),
                         (file_path, commit_id))

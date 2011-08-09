@@ -108,27 +108,6 @@ class DBFileLink(object):
         self.commit_id = None
 
 
-class DBFilePath(object):
-
-    id_counter = 1
-
-    __insert__ = """INSERT INTO file_paths (id, commit_id, file_id, file_path)
-                    values (?, ?, ?, ?)"""
-
-    __delete__ = """DELETE FROM file_paths where commit_id = ?"""
-
-    def __init__(self, id, commit_id, file_id, file_path):
-        if id is None:
-            self.id = DBFilePath.id_counter
-            DBFilePath.id_counter += 1
-        else:
-            self.id = id
-
-        self.commit_id = commit_id
-        self.file_id = file_id
-        self.file_path = to_utf8(file_path)
-
-
 class DBPerson(object):
 
     id_counter = 1
@@ -172,8 +151,8 @@ class DBAction(object):
     id_counter = 1
 
     __insert__ = """INSERT INTO actions (id, type, file_id, commit_id,
-                    branch_id)
-                    values (?, ?, ?, ?, ?)"""
+                    branch_id, current_file_path)
+                    values (?, ?, ?, ?, ?, ?)"""
 
     __delete__ = """DELETE FROM actions where commit_id = ?"""
 
@@ -188,6 +167,7 @@ class DBAction(object):
         self.file_id = None
         self.commit_id = None
         self.branch_id = None
+        self.current_file_path = None
 
 
 class DBFileCopy(object):
@@ -295,13 +275,6 @@ def initialize_ids(db, cursor):
     id = cursor.fetchone()[0]
     if id is not None:
         DBFileLink.id_counter = id + 1
-
-    # File Paths
-    cursor.execute(statement("SELECT max(id) from file_paths",
-                             db.place_holder))
-    id = cursor.fetchone()[0]
-    if id is not None:
-        DBFilePath.id_counter = id + 1
 
     # Branches
     cursor.execute(statement("SELECT max(id) from branches",
@@ -493,7 +466,8 @@ class SqliteDatabase(Database):
                             type varchar(1),
                             file_id integer,
                             commit_id integer,
-                            branch_id integer
+                            branch_id integer,
+                            current_file_path varchar(255)
                             )""")
             cursor.execute("""CREATE TABLE file_copies (
                             id integer primary key,
@@ -518,12 +492,6 @@ class SqliteDatabase(Database):
                             file_id integer,
                             commit_id integer
                             )""")
-            cursor.execute("""CREATE TABLE file_paths (
-                            id integer primary key,
-                            commit_id integer,
-                            file_id integer,
-                            file_path varchar(255)
-                            )""")
             cursor.execute("""CREATE TABLE tags (
                             id integer primary key,
                             name varchar
@@ -536,10 +504,10 @@ class SqliteDatabase(Database):
             cursor.execute("CREATE index actions_file_id on actions(file_id)")
             cursor.execute("CREATE index actions_commit_id on actions(commit_id)")
             cursor.execute("CREATE index actions_type on actions(type)")
+            cursor.execute("CREATE index actions_file_path on actions(current_file_path)")
             cursor.execute("CREATE index file_copies_action_id on file_copies(action_id)")            
             cursor.execute("CREATE index file_links_parent_id on file_links(parent_id)")            
             cursor.execute("CREATE index files_file_name on files(file_name)")
-            cursor.execute("CREATE index file_paths_file_path on file_paths(file_path)")
             cursor.execute("CREATE index scmlog_commit_date on scmlog(commit_date)")
             cursor.execute("CREATE index scmlog_author_date on scmlog(author_date)")
             cursor.execute("CREATE index scmlog_repo on scmlog(repository_id)")
@@ -651,16 +619,6 @@ class MysqlDatabase(Database):
                             -- FOREIGN KEY (file_id) REFERENCES files(id),
                             -- FOREIGN KEY (commit_id) REFERENCES scmlog(id)
                             ) CHARACTER SET=utf8 ENGINE=MyISAM""")
-            cursor.execute("""CREATE TABLE file_paths (
-                            id INT primary key,
-                            commit_id INT,
-                            file_id INT,
-                            file_path varchar(255),
-                            INDEX (commit_id),
-                            INDEX (file_id),
-                            INDEX (file_path),
-                            INDEX (file_path, id, commit_id)
-                            ) CHARACTER SET=utf8 ENGINE=MyISAM""")
             cursor.execute("""CREATE TABLE branches (
                             id INT primary key,
                             name varchar(255)
@@ -671,11 +629,13 @@ class MysqlDatabase(Database):
                             file_id integer,
                             commit_id integer,
                             branch_id integer,
+                            current_file_path varchar(255),
                             -- FOREIGN KEY (file_id) REFERENCES files(id),
                             -- FOREIGN KEY (commit_id) REFERENCES scmlog(id),
                             -- FOREIGN KEY (branch_id) REFERENCES branches(id),
                             INDEX (file_id),
                             INDEX (commit_id),
+                            INDEX (current_file_path),
                             PRIMARY KEY (id)
                             ) CHARACTER SET=utf8 ENGINE=MyISAM""")
             cursor.execute("""CREATE TABLE file_copies (
