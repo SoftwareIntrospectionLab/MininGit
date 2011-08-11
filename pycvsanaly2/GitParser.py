@@ -93,7 +93,7 @@ class GitParser(Parser):
                                   " \d{4}) ([+-]\d{4})$")
     patterns['author-date'] = re.compile("^AuthorDate: (.* \d+ \d+:\d+:\d+" + \
                                   " \d{4}) ([+-]\d{4})$")
-    patterns['file'] = re.compile("^[ACDMRTUXB]{0,1}([MAD])[ \t]+(.*)$")
+    patterns['file'] = re.compile("^[ACDMRTUXB]{0,1}([MADT])[ \t]+(.*)$")
     patterns['file-moved'] = re.compile("^[ACDMRTUXB]{0,1}([RC])[0-9]+[ \t]+(.*)[ \t]+(.*)$")
     patterns['branch'] = re.compile("refs/remotes/([^,]*)/([^,]*)")
     patterns['local-branch'] = re.compile("refs/heads/([^,]*)")
