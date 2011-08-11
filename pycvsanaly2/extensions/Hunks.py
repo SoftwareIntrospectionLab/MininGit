@@ -22,7 +22,8 @@ from pycvsanaly2.extensions import Extension, register_extension, \
 from pycvsanaly2.extensions.FilePaths import FilePaths
 from pycvsanaly2.Database import SqliteDatabase, MysqlDatabase, statement, \
     ICursor, execute_statement
-from pycvsanaly2.utils import printdbg, printerr, printout, uri_to_filename
+from pycvsanaly2.utils import printdbg, printerr, printout, uri_to_filename, \
+    to_utf8
 from pycvsanaly2.profile import profiler_start, profiler_stop
 from pycvsanaly2.PatchParser import parse_patches, RemoveLine, InsertLine, \
         ContextLine, Patch
@@ -251,7 +252,7 @@ class Hunks(Extension):
 
         while rs:
             for commit_id, patch_content, rev in rs:
-                yield (commit_id, patch_content, rev)
+                yield (commit_id, to_utf8(patch_content), rev)
             
             rs = icursor.fetchmany()
 
