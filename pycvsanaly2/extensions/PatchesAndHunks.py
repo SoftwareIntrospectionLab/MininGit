@@ -56,7 +56,7 @@ class PatchesAndHunks(Extension):
                     pj.run(repo, path or repo.get_uri())
 
                     # Yield the patch to hunks
-                    yield (pj.commit_id, pj.data, pj.rev)
+                    yield (pj.commit_id, to_utf8(pj.data), pj.rev)
 
                 rs = icursor.fetchmany()
 
