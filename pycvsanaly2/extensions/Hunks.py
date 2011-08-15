@@ -199,9 +199,9 @@ class Hunks(Extension):
                         if in_change:
                             in_change = False
                             printdbg("Patch new name: " + patch.newname)
-                            file_name = re.split('\s+', patch.newname)[0]
+                            file_name = patch.newname.strip()
                             if file_name == "/dev/null":
-                                file_name = re.split('\s+', patch.oldname)[0]
+                                file_name = patch.oldname.strip()
                             cd = CommitData(file_name)
 
                             if deleted:
