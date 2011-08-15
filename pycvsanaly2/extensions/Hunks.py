@@ -221,9 +221,9 @@ class Hunks(Extension):
 
                 # The diff ended without a new context line
                 if in_change:
-                    file_name = re.split('\s+', patch.newname)[0]
+                    file_name = patch.newname.strip()
                     if file_name == "/dev/null":
-                        file_name = re.split('\s+', patch.oldname)[0]
+                        file_name = patch.oldname.strip()
                     cd = CommitData(file_name)
 
                     if deleted:
