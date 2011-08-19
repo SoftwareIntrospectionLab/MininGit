@@ -15,6 +15,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 import re
+from pycvsanaly2.utils import printerr
 
 
 binary_files_re = 'Binary files (.*) and (.*) differ\n'
@@ -410,7 +411,13 @@ def iter_file_patch(iter_lines, allow_dirty=False):
                 yield saved_lines
             saved_lines = []
         elif line.startswith('@@'):
-            hunk = hunk_from_header(line)
+            try:
+                hunk = hunk_from_header(line)
+            except MalformedHunkHeader, e:
+                if allow_dirty:
+                    printerr("Error: MalformedHunkHeader; Probably merge commit. Skipping.")
+                    continue
+                raise e
             orig_range = hunk.orig_range
         saved_lines.append(line)
     if len(saved_lines) > 0:

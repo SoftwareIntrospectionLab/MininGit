@@ -663,7 +663,7 @@ class DBContentHandler(ContentHandler):
             if action.type == 'A':
                 # A file has been added
                 file_id = self.__action_add(path, prefix, log)
-            elif action.type == 'M':
+            elif action.type == 'M' or action.type == 'T':
                 # A file has been modified
                 file_id = self.__get_file_for_path(path, log.id)[0]
             elif action.type == 'D':
