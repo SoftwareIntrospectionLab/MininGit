@@ -230,7 +230,6 @@ class Patches(Extension):
         job_pool = JobPool(repo, path or repo.get_uri(), queuesize=queuesize)
         i = 0
 
-        write_cursor = cnn.cursor()
         icursor = ICursor(cursor, self.INTERVAL_SIZE)
         icursor.execute(statement("SELECT id, rev, composed_rev " + \
                                   "from scmlog where repository_id = ?",
@@ -251,7 +250,9 @@ class Patches(Extension):
                 if i >= queuesize:
                     printdbg("Queue is now at %d, flushing to database", (i,))
                     job_pool.join()
+                    write_cursor = cnn.cursor()
                     self.__process_finished_jobs(job_pool, write_cursor, db)
+                    write_cursor.close()
                     cnn.commit()
                     i = 0
 
