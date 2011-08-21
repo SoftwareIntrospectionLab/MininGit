@@ -15,7 +15,8 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 #
 # Authors :
-#       Carlos Garcia Campos <carlosgc@gsyc.escet.urjc.es>
+#    Carlos Garcia Campos <carlosgc@gsyc.escet.urjc.es>
+#    Zhongpeng Lin <zlin5@ucsc.edu>
 
 from repositoryhandler.backends.watchers import DIFF
 from repositoryhandler.Command import CommandError, CommandRunningError
@@ -28,6 +29,8 @@ from pycvsanaly2.extensions import (Extension, register_extension,
 from pycvsanaly2.utils import to_utf8, printerr, printdbg, uri_to_filename
 from io import BytesIO
 from Jobs import JobPool, Job
+from pycvsanaly2.PatchParser import *;
+from pycvsanaly2.extensions.FilePaths import FilePaths
 
 
 class PatchJob(Job):
@@ -78,24 +81,50 @@ class PatchJob(Job):
 
 class DBPatch(object):
 
-    id_counter = 1
+    __insert__ = """INSERT INTO patches (commit_id, file_id, patch)
+                    values (?, ?, ?)"""
 
-    __insert__ = "INSERT INTO patches (id, commit_id, patch) values (?, ?, ?)"
-
-    def __init__(self, id, commit_id, data):
-        if id is None:
-            self.id = DBPatch.id_counter
-            DBPatch.id_counter += 1
-        else:
-            self.id = id
-
+    def __init__(self, db, commit_id, data):
+        self.db = db;
         self.commit_id = commit_id
-        self.patch = data
+        self.data = data
+        
+    def file_patches(self):
+        lines = [l+"\n" for l in self.data.splitlines() if l]
+        
+        cnn = self.db.connect()
+        for f in iter_file_patch(lines, True):
+            try:
+                patch = parse_patch(f.__iter__(), allow_dirty=True)
+            except PatchSyntax, BinaryFiles:
+                continue
+            file_name = patch.file_name()
+            # The file path needs to be in the exact revision,
+            # where FilePath.get_file_id should NOT be used
+            cursor = cnn.cursor()
+            
+            query = """SELECT file_id from actions
+                       WHERE current_file_path = ? AND commit_id = ?
+                       ORDER BY commit_id DESC LIMIT 1"""
+            cursor.execute(statement(query, self.db.place_holder),
+                            (file_name, self.commit_id))
+            try:
+                file_id = cursor.fetchone()[0]
+            except:
+                file_id = None                  
+            cursor.close()
+            
+            if file_id is None:
+                printerr("File id for %s @  %s not found" % (file_name, self.commit_id))
+                continue
+            else:
+                yield file_id, patch
+        cnn.close()
 
     def __str__(self):
-        return "<Patch ID: %s, commit_id: %s, data: %s>" % \
-                (str(self.id), str(self.commit_id),
-                 to_utf8(self.patch).decode("utf-8"))
+        return "<commit_id: %s, data: %s>" % \
+                (str(self.commit_id),
+                 to_utf8(self.data).decode("utf-8"))
 
 
 class Patches(Extension):
@@ -113,9 +142,11 @@ class Patches(Extension):
 
             try:
                 cursor.execute("""CREATE TABLE patches (
-                                id integer primary key,
-                                commit_id integer,
-                                patch text
+                                id integer primary key AUTOINCREMENT,
+                                commit_id integer NOT NULL,
+                                file_id integer NOT NULL,
+                                patch text,
+                                UNIQUE(commit_id, file_id)
                                 )""")
             except sqlite3.dbapi2.OperationalError:
                 cursor.close()
@@ -127,11 +158,11 @@ class Patches(Extension):
 
             try:
                 cursor.execute("""CREATE TABLE patches (
-                                id INT primary key,
-                                commit_id integer,
-                                patch LONGTEXT
-                                -- FOREIGN KEY (commit_id)
-                                --    REFERENCES scmlog(id)
+                                id integer primary key auto_increment,
+                                commit_id integer NOT NULL REFERENCES scmlog(id),
+                                file_id integer NOT NULL REFERENCES files(id),
+                                patch LONGTEXT,
+                                UNIQUE(commit_id, file_id)
                                 ) ENGINE=InnoDB, CHARACTER SET=utf8""")
             except MySQLdb.OperationalError, e:
                 if e.args[0] == 1050:
@@ -144,31 +175,25 @@ class Patches(Extension):
         cnn.commit()
         cursor.close()
 
-    def __get_patches_for_repository(self, repo_id, cursor):
-        query = """SELECT p.commit_id from patches p, scmlog s
-                WHERE p.commit_id = s.id and repository_id = ?"""
-        cursor.execute(statement(query, self.db.place_holder), (repo_id,))
-        commits = [res[0] for res in cursor.fetchall()]
-
-        return commits
-
     def __process_finished_jobs(self, job_pool, write_cursor, db):
-        finished_job = job_pool.get_next_done(0)
+        finished_job = job_pool.get_next_done()
 
         # scmlog_id is the commit ID. For some reason, the
         # documentation advocates tablename_id as the reference,
         # but in the source, these are referred to as commit IDs.
         # Don't ask me why!
         while finished_job is not None:
-            p = DBPatch(None, finished_job.commit_id, finished_job.data)
-
-            execute_statement(statement(DBPatch.__insert__,
-                                        self.db.place_holder),
-                              (p.id, p.commit_id, p.patch),
-                              write_cursor,
-                              db,
-                              "Couldn't insert, duplicate patch?",
-                              exception=ExtensionRunError)
+            p = DBPatch(db, finished_job.commit_id, finished_job.data)
+            
+            for file_id, patch in p.file_patches():
+#                printerr("Inserting patch for file %d at commit %d" % (file_id, p.commit_id))
+                execute_statement(statement(DBPatch.__insert__,
+                                            self.db.place_holder),
+                                  (p.commit_id, file_id, patch),
+                                  write_cursor,
+                                  db,
+                                  "Couldn't insert, duplicate patch?",
+                                  exception=ExtensionRunError)
 
             finished_job = job_pool.get_next_done(0)
 
@@ -193,22 +218,11 @@ class Patches(Extension):
                                  db.place_holder), (repo_uri,))
         repo_id = cursor.fetchone()[0]
 
-        # If table does not exist, the list of commits is empty,
-        # otherwise it will be filled within the except block below
-        commits = []
-
         try:
             printdbg("Creating patches table")
             self.__create_table(cnn)
         except TableAlreadyExists:
-            printdbg("Patches table exists already, getting max ID")
-            cursor.execute(statement("SELECT max(id) from patches",
-                                     db.place_holder))
-            id = cursor.fetchone()[0]
-            if id is not None:
-                DBPatch.id_counter = id + 1
-
-            commits = self.__get_patches_for_repository(repo_id, cursor)
+            pass
         except Exception, e:
             raise ExtensionRunError(str(e))
 
@@ -225,9 +239,6 @@ class Patches(Extension):
 
         while rs:
             for commit_id, revision, composed_rev in rs:
-                if commit_id in commits:
-                    continue
-
                 if composed_rev:
                     rev = revision.split("|")[0]
                 else:

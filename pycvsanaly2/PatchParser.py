@@ -287,7 +287,7 @@ def iter_hunks(iter_lines, allow_dirty=False):
                 if isinstance(hunk_line, (InsertLine, ContextLine)):
                     mod_size += 1
             except StopIteration:
-              break
+                break
     if hunk is not None:
         yield hunk
 
@@ -300,6 +300,12 @@ class BinaryPatch(object):
     def __str__(self):
         return 'Binary files %s and %s differ\n' % (self.oldname, self.newname)
 
+    def file_name(self):
+        file_name = self.newname.strip()
+        if file_name == "/dev/null":
+            file_name = self.oldname.strip()
+        file_name = re.sub(r'^[ab]\/', '', file_name)
+        return file_name
 
 class Patch(BinaryPatch):
 
@@ -311,7 +317,7 @@ class Patch(BinaryPatch):
         ret = self.get_header()
         ret += "".join([str(h) for h in self.hunks])
         return ret
-
+    
     def get_header(self):
         return "--- %s\n+++ %s\n" % (self.oldname, self.newname)
 

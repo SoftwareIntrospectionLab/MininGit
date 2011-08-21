@@ -26,7 +26,7 @@ from pycvsanaly2.Config import Config
 from pycvsanaly2.extensions import (Extension, register_extension,
     ExtensionRunError)
 from pycvsanaly2.extensions.Hunks import Hunks
-from pycvsanaly2.extensions.Patches import PatchJob
+from pycvsanaly2.extensions.Patches import PatchJob, DBPatch
 from pycvsanaly2.utils import to_utf8, printerr, printdbg, uri_to_filename
 from io import BytesIO
 from Jobs import JobPool, Job
@@ -55,8 +55,10 @@ class PatchesAndHunks(Extension):
                     path = uri_to_filename(repo_uri)
                     pj.run(repo, path or repo.get_uri())
 
+                    p = DBPatch(db, commit_id, pj.data)
                     # Yield the patch to hunks
-                    yield (pj.commit_id, to_utf8(pj.data), pj.rev)
+                    for file_id, patch in p.file_patches():
+                        yield (pj.commit_id, file_id, to_utf8(patch), pj.rev)
 
                 rs = icursor.fetchmany()
 
