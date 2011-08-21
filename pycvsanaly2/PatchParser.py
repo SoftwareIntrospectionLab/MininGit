@@ -14,8 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+
+# Although this file was originally taken from Bazaar project, we have
+# made our customization thereafter. It should not be upgraded to any
+# newer version from Bazaar without careful inspection.
+
 import re
-from pycvsanaly2.utils import printerr,to_utf8
+from pycvsanaly2.utils import printerr
 
 
 binary_files_re = 'Binary files (.*) and (.*) differ\n'
