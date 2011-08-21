@@ -189,7 +189,7 @@ class Patches(Extension):
 #                printerr("Inserting patch for file %d at commit %d" % (file_id, p.commit_id))
                 execute_statement(statement(DBPatch.__insert__,
                                             self.db.place_holder),
-                                  (p.commit_id, file_id, patch),
+                                  (p.commit_id, file_id, str(patch)),
                                   write_cursor,
                                   db,
                                   "Couldn't insert, duplicate patch?",
