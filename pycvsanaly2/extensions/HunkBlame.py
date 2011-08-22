@@ -138,7 +138,7 @@ class HunkBlame(Blame):
 
     deps = ['Hunks']
 
-    MAX_BLAMES = 2
+    MAX_BLAMES = 10
 
     # Insert query
     __insert__ = 'INSERT INTO hunk_blames (hunk_id, bug_commit_id) ' + \
@@ -160,10 +160,10 @@ class HunkBlame(Blame):
                                 "bug_commit_id integer"
                                 ")")
             except sqlite3.dbapi2.OperationalError:
-                cursor.close()
                 raise TableAlreadyExists
-            except:
-                raise
+            finally:
+                cursor.close()
+                
         elif isinstance(self.db, MysqlDatabase):
             import MySQLdb
 
@@ -175,14 +175,37 @@ class HunkBlame(Blame):
                                 ") CHARACTER SET=utf8")
             except MySQLdb.OperationalError, e:
                 if e.args[0] == 1050:
-                    cursor.close()
                     raise TableAlreadyExists
-                raise
+                else:
+                    raise
             except:
                 raise
-
+            finally:
+                cursor.close()
         cnn.commit()
-        cursor.close()
+
+    def __add_index(self, cnn):
+        cursor = cnn.cursor()
+        query = "CREATE INDEX rev ON scmlog(rev(40));"
+        if isinstance(self.db, SqliteDatabase):
+            import sqlite3.dbapi2
+            try:
+                cursor.execute(query)
+            except sqlite3.dbapi2.OperationalError:
+                pass
+            finally:
+                cursor.close()
+                
+        elif isinstance(self.db, MysqlDatabase):
+            import MySQLdb
+            try:
+                cursor.execute(query)
+            except MySQLdb.OperationalError, e:
+                if e.args[0] != 1061:
+                    raise
+            finally:
+                cursor.close()
+        
 
     def __drop_cache(self, cnn):
         cursor = cnn.cursor()
@@ -194,20 +217,18 @@ class HunkBlame(Blame):
             except sqlite3.dbapi2.OperationalError:
                 # Do nothing, thats OK
                 pass
-            except:
-                raise
+            finally:
+                cursor.close()
         elif isinstance(self.db, MysqlDatabase):
             import MySQLdb
 
             try:
                 cursor.execute("drop table _action_files_cache")
             except MySQLdb.OperationalError, e:
-                if e.args[0] == 1050:
-                    # Do nothing
-                    pass
-                raise
-            except:
-                raise
+                if e.args[0] != 1050:
+                    raise
+            finally:
+                cursor.close()
 
     def __create_cache(self, cnn):
         cursor = cnn.cursor()
@@ -223,10 +244,9 @@ class HunkBlame(Blame):
                 cursor.execute("""CREATE TABLE _action_files_cache as
                     select * from action_files""")
             except sqlite3.dbapi2.OperationalError:
-                cursor.close()
                 raise TableAlreadyExists
-            except:
-                raise
+            finally:
+                cursor.close()
         elif isinstance(self.db, MysqlDatabase):
             import MySQLdb
 
@@ -235,14 +255,13 @@ class HunkBlame(Blame):
                     select * from action_files""")
             except MySQLdb.OperationalError, e:
                 if e.args[0] == 1050:
-                    cursor.close()
                     raise TableAlreadyExists
-                raise
-            except:
-                raise
+                else:
+                    raise
+            finally:
+                cursor.close()
 
         cnn.commit()
-        cursor.close()
 
     def __get_hunk_blames(self, cursor, repoid):
         query = """select distinct b.hunk_id
@@ -357,6 +376,8 @@ class HunkBlame(Blame):
             pass
         except Exception, e:
             raise ExtensionRunError(str(e))
+        
+        self.__add_index(cnn)
 
         blames = self.__get_hunk_blames(read_cursor, repoid)
 
