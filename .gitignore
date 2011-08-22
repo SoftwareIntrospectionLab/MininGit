@@ -19,3 +19,4 @@ guilty/*
 guilty
 runner.sh
 *.bak
+*.log

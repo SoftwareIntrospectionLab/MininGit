@@ -29,8 +29,8 @@ Main funcion of cvsanaly. Fun starts here!
 """
 
 import os
+import sys
 import getopt
-from repositoryhandler.Command import Command, CommandTimeOut
 from repositoryhandler.backends import (create_repository,
     create_repository_from_path, RepositoryUnknownError)
 from ParserFactory import (create_parser_from_logfile,
@@ -186,27 +186,27 @@ def _get_uri_and_repo(path):
                      (uri,))
             sys.exit(1)
         else:
-          return (uri, repo)
+            return (uri, repo)
 
 def _get_parser_from_repository(repo):
-  return create_parser_from_repository(repo)
+    return create_parser_from_repository(repo)
 
 def _get_extensions_manager(extensions, hard_order=False):
-  try:
-    printdbg("Starting ExtensionsManager")
-    emg = ExtensionsManager(extensions,
-                            hard_order=hard_order)
-    return emg
-  except InvalidExtension, e:
-    printerr("Invalid extension %s", (e.name,))
-    sys.exit(1)
-  except InvalidDependency, e:
-    printerr("Extension %s depends on extension %s which is not a " + \
-                 "valid extension", (e.name1, e.name2))
-    sys.exit(1)
-  except Exception, e:
-    printerr("Unknown extensions error: %s", (str(e),))
-    sys.exit(1)
+    try:
+        printdbg("Starting ExtensionsManager")
+        emg = ExtensionsManager(extensions,
+                                hard_order=hard_order)
+        return emg
+    except InvalidExtension, e:
+        printerr("Invalid extension %s", (e.name,))
+        sys.exit(1)
+    except InvalidDependency, e:
+        printerr("Extension %s depends on extension %s which is not a " + \
+                   "valid extension", (e.name1, e.name2))
+        sys.exit(1)
+    except Exception, e:
+        printerr("Unknown extensions error: %s", (str(e),))
+        sys.exit(1)
 
 
 def main(argv):
@@ -370,10 +370,10 @@ def main(argv):
         config.analyze_merges = analyze_merges
     if bug_fix_regexes is not None:
         if bug_fix_regexes == ['']:
-          # This is empty, it means the user didn't want to match
-          bug_fix_regexes = []
-
-          config.bug_fix_regexes = bug_fix_regexes
+            # This is empty, it means the user didn't want to match
+            bug_fix_regexes = []
+            
+            config.bug_fix_regexes = bug_fix_regexes
     if bug_fix_regexes_case_sensitive is not None:
         if bug_fix_regexes == ['']:
             # This is empty, it means the user didn't want to match
@@ -387,7 +387,7 @@ def main(argv):
         return 0
 
     if config.debug:
-        import repositoryhandler.backends
+        import repositoryhandler
         repositoryhandler.backends.DEBUG = True
 
     path = uri_to_filename(uri)
