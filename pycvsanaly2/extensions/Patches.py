@@ -182,6 +182,7 @@ class Patches(Extension):
         # documentation advocates tablename_id as the reference,
         # but in the source, these are referred to as commit IDs.
         # Don't ask me why!
+        num_processed_jobs = 0
         while finished_job is not None:
             p = DBPatch(db, finished_job.commit_id, finished_job.data)
             
@@ -194,8 +195,10 @@ class Patches(Extension):
                                   db,
                                   "Couldn't insert, duplicate patch?",
                                   exception=ExtensionRunError)
-
+            num_processed_jobs += 1
             finished_job = job_pool.get_next_done(0)
+            
+        return num_processed_jobs
 
     def run(self, repo, uri, db):
         profiler_start("Running Patches extension")
@@ -214,6 +217,7 @@ class Patches(Extension):
         cnn = self.db.connect()
 
         cursor = cnn.cursor()
+        write_cursor = cnn.cursor()
         cursor.execute(statement("SELECT id from repositories where uri = ?",
                                  db.place_holder), (repo_uri,))
         repo_id = cursor.fetchone()[0]
@@ -249,15 +253,13 @@ class Patches(Extension):
                 i = i + 1
                 if i >= queuesize:
                     printdbg("Queue is now at %d, flushing to database", (i,))
-                    job_pool.join()
-                    write_cursor = cnn.cursor()
-                    self.__process_finished_jobs(job_pool, write_cursor, db)
-                    write_cursor.close()
-                    cnn.commit()
-                    i = 0
-
-            rs = icursor.fetchmany()
+                    num_processed_jobs = self.__process_finished_jobs(job_pool, write_cursor, db)
+                    i -= num_processed_jobs
+                    if num_processed_jobs < queuesize/5:
+                        job_pool.join()
+                        
             cnn.commit()
+            rs = icursor.fetchmany()
 
         job_pool.join()
         self.__process_finished_jobs(job_pool, write_cursor, db)
