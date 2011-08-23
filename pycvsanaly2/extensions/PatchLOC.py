@@ -30,9 +30,9 @@ class PatchLOC(Extension):
     deps = ['Patches']
     INTERVAL_SIZE = 100
     patterns = {}
-    patterns['old_file'] = re.compile("^--- a")
+    patterns['old_file'] = re.compile("^--- a\/")
     patterns['no_old_file'] = re.compile("^--- \/dev\/null")
-    patterns['new_file'] = re.compile("^\+\+\+ b")
+    patterns['new_file'] = re.compile("^\+\+\+ b\/")
     patterns['no_new_file'] = re.compile("^\+\+\+ \/dev\/null")
     patterns['added'] = re.compile("^\+.?")#"^\+(?!\+)"
     patterns['removed'] = re.compile("^-.?")#"^-(?!-)"
