@@ -255,7 +255,8 @@ class Hunks(Extension):
 
         while rs:
             for commit_id, file_id, patch_content, rev in rs:
-                yield (commit_id, file_id, to_utf8(patch_content), rev)
+                patch_content = unicode(to_utf8(patch_content), "utf-8").encode('ascii', 'ignore') #Make shure, that all wrong characters are ignored
+                yield (commit_id, file_id, patch_content, rev)
             
             rs = icursor.fetchmany()
 
