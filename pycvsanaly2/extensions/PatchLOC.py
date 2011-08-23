@@ -95,7 +95,7 @@ class PatchLOC(Extension):
         rs = icursor.fetchmany()
         while rs:
             for commit_id, file_id, patch_content, rev in rs:
-                yield (commit_id, file_id, to_utf8(patch_content), rev)
+                yield (commit_id, file_id, unicode(to_utf8(patch_content), "utf-8"), rev)
             rs = icursor.fetchmany()
 
     def count_lines(self, patch_content):
