@@ -373,6 +373,8 @@ class Content(Extension):
         i = 0
         # Loop through each file and its revision
         for revision, commit_id, file_id, action_type, composed in fr:
+            if action_type == 'D':
+                continue
 #            loop_start = datetime.now()
             if file_id not in code_files:
                 continue
