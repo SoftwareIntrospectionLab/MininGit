@@ -115,18 +115,17 @@ class ContentJob(Job):
                 printerr("Error obtaining %s@%s. Exception: %s", \
                         (self.path, self.rev, str(e)))
         self.repo.remove_watch(watcher, wid)
-
-        if failed:
-            printerr("Failure due to error")
-        else:
+        
+        results = None
+        if not failed:
             try:
                 results = io.getvalue()
-                return results
             except Exception, e:
                 printerr("Error getting contents." +
                             "Exception: %s", (str(e),))
             finally:
                 io.close()
+        return results
                 
     def _get_file_contents(self):
             """Returns contents of the file, stripped of whitespace 
