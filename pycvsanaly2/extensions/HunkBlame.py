@@ -408,7 +408,7 @@ class HunkBlame(Blame):
                                                         pre_commit_id)
                 if relative_path is None:
                     raise NotValidHunkWarning("Couldn't find path for " + \
-                                              "file ID %d" % file_id)
+                                              "file ID %d at %s" % (file_id, pre_rev))
                 printdbg("Path for %d at %s -> %s", (file_id, pre_rev,
                                                      relative_path))
 
