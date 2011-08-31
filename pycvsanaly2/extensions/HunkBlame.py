@@ -407,8 +407,16 @@ class HunkBlame(Blame):
                 relative_path = self.fp.get_path_from_database(file_id,
                                                         pre_commit_id)
                 if relative_path is None:
-                    raise NotValidHunkWarning("Couldn't find path for " + \
-                                              "file ID %d at %s" % (file_id, pre_rev))
+                    # Maybe the file_id did change (especially when working with different branches).
+                    # Check if a file with the exact same path exists at pre_commit_id
+                    old_file_name = self.fp.get_path_from_database(file_id, commit_id)
+                    new_file_id = self.fp.get_file_id(old_file_name, commit_id)
+                    if new_file_id is None:
+                        raise NotValidHunkWarning("Couldn't find path for " + \
+                                                  "file ID %d at %s" % (file_id, pre_rev))
+                    else:
+                        relative_path = old_file_name
+                
                 printdbg("Path for %d at %s -> %s", (file_id, pre_rev,
                                                      relative_path))
 
