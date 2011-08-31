@@ -88,6 +88,7 @@ class DBPatch(object):
         self.db = db;
         self.commit_id = commit_id
         self.data = data
+        self.fp = FilePaths(self.db)
         
     def file_patches(self):
         lines = [l+"\n" for l in self.data.splitlines() if l]
@@ -99,20 +100,7 @@ class DBPatch(object):
             except PatchSyntax, BinaryFiles:
                 continue
             file_name = patch.file_name()
-            # The file path needs to be in the exact revision,
-            # where FilePath.get_file_id should NOT be used
-            cursor = cnn.cursor()
-            
-            query = """SELECT file_id from actions
-                       WHERE current_file_path = ? AND commit_id = ?
-                       ORDER BY commit_id DESC LIMIT 1"""
-            cursor.execute(statement(query, self.db.place_holder),
-                            (file_name, self.commit_id))
-            try:
-                file_id = cursor.fetchone()[0]
-            except:
-                file_id = None                  
-            cursor.close()
+            file_id = self.fp.get_file_id(file_name, self.commit_id)
             
             if file_id is None:
                 printerr("File id for %s @  %s not found" % (file_name, self.commit_id))
