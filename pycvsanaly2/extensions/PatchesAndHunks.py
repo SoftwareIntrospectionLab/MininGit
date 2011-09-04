@@ -58,8 +58,7 @@ class PatchesAndHunks(Extension):
                     p = DBPatch(db, commit_id, pj.data)
                     # Yield the patch to hunks
                     for file_id, patch in p.file_patches():
-                        patch = unicode(to_utf8(patch), "utf-8").encode('ascii', 'ignore') #Make shure, that all wrong characters are ignored
-                        yield (pj.commit_id, file_id, patch, pj.rev)
+                        yield (pj.commit_id, file_id, str(patch), pj.rev)
 
                 rs = icursor.fetchmany()
 

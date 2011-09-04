@@ -139,7 +139,7 @@ def hunk_from_header(line):
 
 class HunkLine(object):
     def __init__(self, contents):
-        self.contents = str(contents.encode('utf-8'))
+        self.contents = contents
 
     def get_str(self, leadchar):
         if self.contents == "\n" and leadchar == " " and False:
@@ -202,7 +202,7 @@ class Hunk(object):
         if self.tail is None:
             tail_str = ''
         else:
-            tail_str = ' ' + str(self.tail.encode('utf-8'))
+            tail_str = ' ' + self.tail
         return "@@ -%s +%s @@%s\n" % (self.range_str(self.orig_pos,
                                                      self.orig_range),
                                       self.range_str(self.mod_pos,
