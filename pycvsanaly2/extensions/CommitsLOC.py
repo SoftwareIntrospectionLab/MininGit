@@ -222,7 +222,7 @@ class CommitsLOC(Extension):
             try:
                 cursor.execute("""CREATE TABLE commits_lines (
                                 id integer primary key,
-                                commit_id integer,
+                                commit_id integer unique,
                                 added integer,
                                 removed integer
                                 )""")
@@ -237,7 +237,7 @@ class CommitsLOC(Extension):
             try:
                 cursor.execute("""CREATE TABLE commits_lines (
                                 id INT primary key,
-                                commit_id integer,
+                                commit_id integer unique,
                                 added int,
                                 removed int
                                 -- FOREIGN KEY (commit_id) 
