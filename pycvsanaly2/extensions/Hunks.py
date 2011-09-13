@@ -255,7 +255,7 @@ class Hunks(Extension):
 
         while rs:
             for commit_id, file_id, patch_content, rev in rs:
-                yield (commit_id, file_id, patch_content, rev)
+                yield (commit_id, file_id, to_utf8(patch_content), rev)
             
             rs = icursor.fetchmany()
 
