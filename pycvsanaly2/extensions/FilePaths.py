@@ -225,7 +225,7 @@ class FilePaths(object):
         cnn = db.connect()
         cursor = cnn.cursor()
         query = """SELECT file_id from actions
-                   WHERE current_file_path = ? AND commit_id = ?
+                   WHERE binary current_file_path = ? AND commit_id = ?
                    ORDER BY commit_id DESC LIMIT 1"""
         cursor.execute(statement(query, db.place_holder),
                         (file_path, commit_id))
