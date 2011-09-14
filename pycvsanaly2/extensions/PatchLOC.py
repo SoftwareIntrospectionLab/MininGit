@@ -102,7 +102,7 @@ class PatchLOC(Extension):
         added = 0
         removed = 0
 
-        for line in patch_content.splitlines():
+        for line in patch_content.split("\n"):
             if self.patterns['old_file'].match(line) or self.patterns['no_old_file'].match(line):
                 # skip line
                 continue

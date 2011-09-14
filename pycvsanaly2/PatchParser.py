@@ -292,6 +292,11 @@ def iter_hunks(iter_lines, allow_dirty=False):
                     mod_size += 1
             except StopIteration:
                 break
+            except MalformedLine, e:
+                if allow_dirty:
+                    printerr("Error: MalformedLine; Probably binary file. Skipping line.")
+                    continue
+                raise e
     if hunk is not None:
         yield hunk
 
