@@ -91,7 +91,7 @@ class DBPatch(object):
         self.fp = FilePaths(self.db)
         
     def file_patches(self):
-        lines = [l+"\n" for l in self.data.splitlines() if l]
+        lines = [l+"\n" for l in self.data.split("\n") if l]
         
         cnn = self.db.connect()
         for f in iter_file_patch(lines, True):

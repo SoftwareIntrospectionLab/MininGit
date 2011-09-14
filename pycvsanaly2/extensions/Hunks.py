@@ -147,7 +147,7 @@ class Hunks(Extension):
 
     def get_commit_data(self, patch_content):
         profiler_start("get_commit_data")
-        lines = [l + "\n" for l in patch_content.splitlines() if l]
+        lines = [l + "\n" for l in patch_content.split("\n") if l]
         hunks = []
 
         for patch in [p for p in parse_patches(lines, allow_dirty=True, \
