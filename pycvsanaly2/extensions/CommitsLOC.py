@@ -164,7 +164,7 @@ class GitLineCounter(LineCounter):
         self.lines = {}
         
         cmd = [self.git, 'log', '--all', '--topo-order', '--shortstat',
-               '--pretty=oneline', '--find-renames']
+               '--pretty=oneline', '--find-copies']
         c = Command(cmd, uri)
         try:
             c.run(parser_out_func=self.__parse_line)
