@@ -30,6 +30,7 @@ from pycvsanaly2.extensions import (Extension, register_extension,
 from pycvsanaly2.utils import to_utf8, printerr, uri_to_filename
 from pycvsanaly2.FindProgram import find_program
 from pycvsanaly2.Command import Command, CommandError
+from Progress import Progress
 
 
 class DBCommitLines(object):
@@ -299,8 +300,10 @@ class CommitsLOC(Extension):
         
         cursor.execute(statement("""SELECT id, rev, composed_rev from scmlog 
             where repository_id = ?""", db.place_holder), (repo_id,))
+        progress = Progress("[Extension CommitsLOC]", cursor.rowcount)
         write_cursor = cnn.cursor()
         rs = cursor.fetchmany()
+
         while rs:
             commit_list = []
 
@@ -316,6 +319,7 @@ class CommitsLOC(Extension):
                 (added, removed) = counter.get_lines_for_revision(revision)
                 commit_list.append(DBCommitLines(None, commit_id, added, 
                                                  removed))
+                progress.finished_one()
 
             if commit_list:
                 commits_lines = [(commit.id, commit.commit_id, commit.added, \
@@ -329,5 +333,6 @@ class CommitsLOC(Extension):
         write_cursor.close()
         cursor.close()
         cnn.close()
+        progress.done()
 
 register_extension("CommitsLOC", CommitsLOC)
