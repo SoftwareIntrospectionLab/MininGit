@@ -28,6 +28,7 @@ from repositoryhandler.backends.watchers import BLAME
 from guilty.parser import create_parser, ParserUnknownError
 from Jobs import JobPool, Job
 from FilePaths import FilePaths
+from Progress import Progress
 import os
 import sys
 
@@ -49,12 +50,10 @@ class HunkBlameJob(Job):
 
         def start_file(self, filename):
             self.filename = filename
-            profiler_start("Processing blame output for %s",
+            printdbg("Processing blame output for %s",
                            (self.filename))
 
         def end_file(self):
-            profiler_stop("Processing blame output for %s",
-                           (self.filename), delete=True)
             if len(self.bug_revs) == 0:
                 printdbg("No bug revision found in this file")
 
@@ -66,7 +65,7 @@ class HunkBlameJob(Job):
         self.bug_revs = {}
 
     def run(self, repo, repo_uri):
-        profiler_start("Running HunkBlameJob for %s@%s", (self.path, self.rev))
+        printdbg("Running HunkBlameJob for %s@%s", (self.path, self.rev))
 
         def blame_line(line, p):
             p.feed(line)
@@ -116,8 +115,6 @@ class HunkBlameJob(Job):
                                                      e.error))
         p.end()
         repo.remove_watch(BLAME, wid)
-        profiler_stop("Running HunkBlameJob for %s@%s", (self.path, self.rev),
-                      delete=True)
 
     def get_content_handler(self):
         return self.BlameContentHandler(self.hunks)
@@ -392,6 +389,7 @@ class HunkBlame(Blame):
                 and h.commit_id is not null
         """
         read_cursor.execute(statement(outer_query, db.place_holder), (repoid,))
+        progress = Progress("[Extension HunkBlame]", read_cursor.rowcount)
         file_rev = read_cursor.fetchone()
         n_blames = 0
         while file_rev is not None:
@@ -453,14 +451,14 @@ class HunkBlame(Blame):
                     n_blames -= processed_jobs
 
                     if processed_jobs <= (self.MAX_BLAMES / 5):
-                        profiler_start("Joining unprocessed jobs")
+                        printdbg("Joining unprocessed jobs")
                         job_pool.join()
-                        profiler_stop("Joining unprocessed jobs", delete=True)
 
             except NotValidHunkWarning as e:
                 printerr("Not a valid hunk: " + str(e))
             finally:
                 file_rev = read_cursor.fetchone()
+                progress.finished_one()
 
         job_pool.join()
         self.process_finished_jobs(job_pool, write_cursor, True)
@@ -474,6 +472,7 @@ class HunkBlame(Blame):
         read_cursor.close()
         write_cursor.close()
         cnn.close()
+        progress.done()
 
         profiler_stop("Running HunkBlame extension", delete=True)
 
