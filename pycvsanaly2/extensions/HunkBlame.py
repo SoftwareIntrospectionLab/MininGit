@@ -291,12 +291,18 @@ class HunkBlame(Blame):
 
         # calculate rev and commit_id of previous commit
         try:
-            pre_rev = repo.get_previous_commit(self.uri, commit_rev, file_name)
+            pre_rev = repo.get_previous_commit(self.uri, commit_rev, file_name, follow=False)
         except NotImplementedError:
             raise NotValidHunkWarning("Repository type not supported!")
             return None, None
         except Exception as e:
             pre_rev = None
+
+        if pre_rev is None:
+            try:
+                pre_rev = repo.get_previous_commit(self.uri, commit_rev, file_name, follow=True)
+            except Exception as e:
+                pre_rev = None
 
         pre_commit_query = """SELECT id FROM scmlog WHERE rev = ?"""
         try:
