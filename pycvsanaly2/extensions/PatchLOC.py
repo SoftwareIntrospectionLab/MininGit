@@ -24,6 +24,7 @@ from pycvsanaly2.extensions import Extension, register_extension, \
 from pycvsanaly2.utils import printdbg, printerr, printout, uri_to_filename, \
     to_utf8
 from pycvsanaly2.profile import profiler_start, profiler_stop
+from Progress import Progress
 import re
 
 class PatchLOC(Extension):
@@ -141,6 +142,15 @@ class PatchLOC(Extension):
         except Exception, e:
             raise ExtensionRunError(str(e))
 
+        cursor.execute(statement("""select COUNT(*)
+                        from patches p, scmlog s
+                        where p.commit_id = s.id and
+                        s.repository_id = ? and
+                        p.patch is not NULL""",
+            db.place_holder), (repo_id,))
+        nr_records = cursor.fetchone()[0]
+        progress = Progress("[Extension PatchesLOC]", nr_records)
+
         patches = self.get_patches(repo, path or repo.get_uri(), repo_id, db,
                                    cursor)
 
@@ -156,10 +166,12 @@ class PatchLOC(Extension):
                                "Couldn't insert patch, dup record?",
                                exception=ExtensionRunError)
             connection.commit()
+            progress.finished_one()
 
         cursor.close()
         connection.commit()
         connection.close()
+        progress.done()
 
         profiler_stop("Running PatchLOC extension", delete=True)
 
