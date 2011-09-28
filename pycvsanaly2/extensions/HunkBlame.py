@@ -78,7 +78,7 @@ class HunkBlameJob(Job):
     def __do_the_blame(self, repo, repo_uri):
         printdbg("Running HunkBlameJob for %s@%s", (self.prev_path, self.prev_rev))
 
-        self.line_types = get_line_types(repo, repo_uri, self.rev, self.path)
+        self.line_types = get_line_types(repo, repo_uri, self.prev_rev, self.prev_path)
         if self.line_types is None:
             printdbg("""No lexer (output) for %s@%s""" % (self.prev_path, self.prev_rev))
 
