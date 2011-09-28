@@ -38,7 +38,10 @@ class HunkBlameJob(Job):
     class BlameContentHandler(BlameJob.BlameContentHandler):
         def __init__(self, hunks, line_types):
             self.hunks = hunks
-            self.line_types = line_types
+            if line_types:
+                self.line_types = line_types
+            else:
+                self.line_types = []
             self.bug_revs = {}
 
         def line(self, blame_line):

@@ -106,7 +106,7 @@ def get_line_types(repo, repo_uri, rev, path):
     try:
         lexer = get_lexer_for_filename(path)
     except(ClassNotFound) as e:
-        printerr("[get_line_types] No lexer found for " + str(path))
+        printdbg("[get_line_types] No lexer found for " + str(path))
         return None
 
     file_content = _get_file_content(repo, uri, rev)  # get file_content
@@ -118,7 +118,7 @@ def get_line_types(repo, repo_uri, rev, path):
         line_types = _comment_empty_or_code(lexer_output)
         line_types = line_types.split("\n")
     else:
-        printerr("Error: No file content for " + str(rev) + ":" + str(path) + "! Skipping.")
+        printdbg("Error: No file content for " + str(rev) + ":" + str(path) + "! Skipping.")
         line_types = None
 
     return line_types
