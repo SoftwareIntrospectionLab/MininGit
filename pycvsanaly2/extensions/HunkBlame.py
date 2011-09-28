@@ -41,6 +41,7 @@ class HunkBlameJob(Job):
             if line_types:
                 self.line_types = line_types
             else:
+                printdbg("Received empty set of line_types!")
                 self.line_types = []
             self.bug_revs = {}
 
@@ -79,8 +80,7 @@ class HunkBlameJob(Job):
 
         self.line_types = get_line_types(repo, repo_uri, self.rev, self.path)
         if self.line_types is None:
-            printerr("Skipping HunkBlameJob because no lexer output.")
-            return
+            printdbg("""No lexer (output) for %s@%s""" % (self.prev_path, self.prev_rev))
 
         def blame_line(line, p):
             p.feed(line)
