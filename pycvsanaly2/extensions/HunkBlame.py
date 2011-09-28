@@ -70,8 +70,6 @@ class HunkBlameJob(Job):
     def __do_the_blame(self, repo, repo_uri):
         printdbg("Running HunkBlameJob for %s@%s", (self.prev_path, self.prev_rev))
 
-        success = True
-
         def blame_line(line, p):
             p.feed(line)
 
@@ -115,11 +113,11 @@ class HunkBlameJob(Job):
                        start=start, end=end)
             self.collect_results(out)
         except RepositoryCommandError, e:
-            success = False
+            self.failed = True
         p.end()
         repo.remove_watch(BLAME, wid)
 
-        return success
+        return not self.failed
 
     def run(self, repo, repo_uri):
         try:
