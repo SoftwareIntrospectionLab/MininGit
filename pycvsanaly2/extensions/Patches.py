@@ -29,7 +29,7 @@ from pycvsanaly2.extensions import (Extension, register_extension,
 from pycvsanaly2.utils import to_utf8, printerr, printdbg, uri_to_filename
 from io import BytesIO
 from Jobs import JobPool, Job
-from pycvsanaly2.PatchParser import *;
+from pycvsanaly2.PatchParser import *
 from pycvsanaly2.extensions.FilePaths import FilePaths
 
 
