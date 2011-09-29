@@ -27,6 +27,7 @@ from pycvsanaly2.utils import printdbg, printerr, printout, uri_to_filename, \
 from pycvsanaly2.profile import profiler_start, profiler_stop
 from pycvsanaly2.PatchParser import parse_patches, RemoveLine, InsertLine, \
         ContextLine, Patch
+from Progress import Progress
 import re
 
 
@@ -146,7 +147,6 @@ class Hunks(Extension):
         cursor.close()
 
     def get_commit_data(self, patch_content):
-        profiler_start("get_commit_data")
         lines = [l + "\n" for l in patch_content.split("\n") if l]
         hunks = []
 
@@ -236,7 +236,6 @@ class Hunks(Extension):
                         cd.new_end_line = new_end_line
 
                     hunks.append(cd)
-        profiler_stop("get_commit_data")
         return hunks
 
     def get_patches(self, repo, repo_uri, repo_id, db, cursor):
@@ -293,6 +292,15 @@ class Hunks(Extension):
         self.__prepare_table(connection)
         fp = FilePaths(db)
 
+        read_cursor.execute(statement("""select COUNT(*)
+                        from patches p, scmlog s
+                        where p.commit_id = s.id and
+                        s.repository_id = ? and
+                        p.patch is not NULL""",
+            db.place_holder), (repo_id,))
+        nr_records = read_cursor.fetchone()[0]
+        progress = Progress("[Extension Hunks]", nr_records)
+
         patches = self.get_patches(repo, path or repo.get_uri(), repo_id, db,
                                    read_cursor)
 
@@ -315,10 +323,12 @@ class Hunks(Extension):
                                    exception=ExtensionRunError)
 
             connection.commit()
+            progress.finished_one()
 
         read_cursor.close()
         connection.commit()
         connection.close()
+        progress.done()
 
         # This turns off the profiler and deletes its timings
         profiler_stop("Running hunks extension", delete=True)

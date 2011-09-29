@@ -294,7 +294,7 @@ def iter_hunks(iter_lines, allow_dirty=False):
                 break
             except MalformedLine, e:
                 if allow_dirty:
-                    printerr("Error: MalformedLine; Probably binary file. Skipping line.")
+                    printerr("\nError: MalformedLine; Probably binary file. Skipping line.")
                     continue
                 raise e
     if hunk is not None:
@@ -431,7 +431,7 @@ def iter_file_patch(iter_lines, allow_dirty=False):
                 hunk = hunk_from_header(line)
             except MalformedHunkHeader, e:
                 if allow_dirty:
-                    printerr("Error: MalformedHunkHeader; Probably merge commit. Skipping.")
+                    printerr("\nError: MalformedHunkHeader; Probably merge commit. Skipping.")
                     continue
                 raise e
             orig_range = hunk.orig_range

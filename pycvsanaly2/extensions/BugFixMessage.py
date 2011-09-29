@@ -25,6 +25,7 @@ from pycvsanaly2.utils import printdbg, printerr, printout, \
         remove_directory, uri_to_filename, get_repo_uri
 from pycvsanaly2.profile import profiler_start, profiler_stop
 from pycvsanaly2.Config import Config
+from Progress import Progress
 import re
 
 
@@ -230,6 +231,7 @@ class BugFixMessage(Extension):
         query = """select s.id, s.message from scmlog s
             where s.repository_id = ?"""
         read_cursor.execute(statement(query, db.place_holder), (repo_id,))
+        progress = Progress("[Extension BugFixMessage]", read_cursor.rowcount)
 
         self.__prepare_table(connection)
 
@@ -252,10 +254,12 @@ class BugFixMessage(Extension):
                               db,
                               "Couldn't update scmlog",
                               exception=ExtensionRunError)
+            progress.finished_one()
 
         read_cursor.close()
         connection.commit()
         connection.close()
+        progress.done()
 
         # This turns off the profiler and deletes its timings
         profiler_stop("Running BugFixMessage extension", delete=True)

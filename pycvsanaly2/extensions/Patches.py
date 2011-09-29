@@ -30,6 +30,7 @@ from pycvsanaly2.utils import to_utf8, printerr, printdbg, uri_to_filename
 from io import BytesIO
 from Jobs import JobPool, Job
 from pycvsanaly2.PatchParser import *
+from Progress import Progress
 from pycvsanaly2.extensions.FilePaths import FilePaths
 
 
@@ -57,13 +58,13 @@ class PatchJob(Job):
                 done = True
             except (CommandError, CommandRunningError) as e:
                 if retries > 0:
-                    printerr("Error running show command: %s, trying again",
+                    printerr("\nError running show command: %s, trying again",
                              (str(e),))
                     retries -= 1
                     io.seek(0)
                 elif retries <= 0:
                     failed = True
-                    printerr("Error running show command: %s, FAILED",
+                    printerr("\nError running show command: %s, FAILED",
                              (str(e),))
                     self.data = None
 
@@ -72,11 +73,9 @@ class PatchJob(Job):
         return self.data
 
     def run(self, repo, repo_uri):
-        profiler_start("Processing patch for revision %s", (self.rev))
         self.repo = repo
         self.repo_uri = repo_uri
         self.get_patch_for_commit()
-        profiler_stop("Processing patch for revision %s", (self.rev))
 
 
 class DBPatch(object):
@@ -103,7 +102,7 @@ class DBPatch(object):
             file_id = self.fp.get_file_id(file_name, self.commit_id)
             
             if file_id is None:
-                printerr("File id for %s @  %s not found" % (file_name, self.commit_id))
+                printerr("\nFile id for %s @  %s not found" % (file_name, self.commit_id))
                 continue
             else:
                 yield file_id, patch
@@ -181,10 +180,11 @@ class Patches(Extension):
                                   (p.commit_id, file_id, str(patch)),
                                   write_cursor,
                                   db,
-                                  "Couldn't insert, duplicate patch?",
+                                  "\nCouldn't insert, duplicate patch?",
                                   exception=ExtensionRunError)
             num_processed_jobs += 1
             finished_job = job_pool.get_next_done(0)
+            self.progress.finished_one()
             
         return num_processed_jobs
 
@@ -228,6 +228,13 @@ class Patches(Extension):
                                     db.place_holder), (repo_id,))
         rs = icursor.fetchmany()
 
+        cursor.execute(statement("""select COUNT(*)
+                        from scmlog
+                        where repository_id = ?""",
+            db.place_holder), (repo_id,))
+        nr_records = cursor.fetchone()[0]
+        self.progress = Progress("[Extension Patches]", nr_records)
+
         while rs:
             for commit_id, revision, composed_rev in rs:
                 if composed_rev:
@@ -255,6 +262,7 @@ class Patches(Extension):
         write_cursor.close()
         cursor.close()
         cnn.close()
+        self.progress.done()
         profiler_stop("Running Patches extension", delete=True)
 
     def backout(self, repo, uri, db):
