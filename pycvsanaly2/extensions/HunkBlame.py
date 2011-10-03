@@ -121,33 +121,19 @@ class HunkBlameJob(Job):
 
     def run(self, repo, repo_uri):
         try:
-            used_follow = False
             try:
-                prev_tuple = repo.get_previous_commit_and_file_name(repo_uri, self.current_rev, self.current_path, False)
+                prev_tuple = repo.get_previous_commit_and_file_name(repo_uri, self.current_rev, self.current_path)
             except NotImplementedError:
                 raise ExtensionRunError("HunkBlame extension is not supported " + \
                                         "for %s repositories" % (repo.get_type()))
 
             if prev_tuple is None or prev_tuple == "":
-                # try again with follow on.
-                used_follow = True
-                prev_tuple = repo.get_previous_commit_and_file_name(repo_uri, self.current_rev, self.current_path, True)
-                if prev_tuple is None or prev_tuple == "":
-                    raise NotValidHunkWarning(
-                        """Couldn't find previous path for file %s@%s""" % (self.current_path, self.current_rev))
+                raise NotValidHunkWarning(
+                    """Couldn't find previous path for file %s@%s""" % (self.current_path, self.current_rev))
 
             (self.prev_rev, self.prev_path) = prev_tuple
 
-            if not self.__do_the_blame(repo, repo_uri) and not used_follow:
-                # try again with follow on
-                used_follow = True
-                prev_tuple = repo.get_previous_commit_and_file_name(repo_uri, self.current_rev, self.current_path, True)
-                if prev_tuple is None or prev_tuple == "":
-                    raise NotValidHunkWarning(
-                        """Couldn't find previous path for file %s@%s""" % (self.current_path, self.current_rev))
-                (self.prev_rev, self.prev_path) = prev_tuple
-                self.__do_the_blame(repo, repo_uri)
-
+            self.__do_the_blame(repo, repo_uri)
         except NotValidHunkWarning as e:
             printerr("Not a valid hunk: " + str(e))
 
