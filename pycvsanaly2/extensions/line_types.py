@@ -31,7 +31,7 @@ def _convert_linebreaks(input):
     return input.replace('\r\n', '\n').replace('\r', '\n')
 
 def _strip_lines(text):
-    """Strip every line of a strip of whitespaces."""
+    """Strip every line of whitespaces."""
 
     text_array = map(lambda s: s.strip(), text.split("\n"))
     return "\n".join(text_array)
