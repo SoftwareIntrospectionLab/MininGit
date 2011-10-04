@@ -17,12 +17,13 @@
 # Authors :
 #       Alexander Pepper <pepper@inf.fu-berlin.de>
 
-from pygments.lexers import get_lexer_for_filename
+from pygments.lexers import get_lexer_for_filename, guess_lexer, TextLexer
 from pygments.util import ClassNotFound
 from repositoryhandler.backends.watchers import CAT
 from repositoryhandler.Command import CommandError, CommandRunningError
 from pycvsanaly2.utils import to_utf8, printerr, printdbg
 from io import BytesIO
+import os
 
 def _convert_linebreaks(input):
     """Converts all linebreaks (e.g. from windows) to one format"""
@@ -102,24 +103,29 @@ def get_line_types(repo, repo_uri, rev, path):
        Each item is labled 'code', 'comment' or 'empty'"""
 
     #profiler_start("Processing LineTypes for revision %s:%s", (self.rev, self.file_path))
-    uri = repo_uri + "/" + path   # concat repo_uri and file_path for full path
-    try:
-        lexer = get_lexer_for_filename(path)
-    except(ClassNotFound) as e:
-        printdbg("[get_line_types] No lexer found for " + str(path))
-        return None
-
+    uri = os.path.join(repo_uri, path) # concat repo_uri and file_path for full path
     file_content = _get_file_content(repo, uri, rev)  # get file_content
-    if file_content is not None:
+
+    if file_content is None or file_content == '':
+        printerr("[get_line_types] Error: No file content for " + str(rev) + ":" + str(path) + " found! Skipping.")
+        line_types = None
+    else:
+        try:
+            lexer = get_lexer_for_filename(path)
+        except ClassNotFound:
+            try:
+                printdbg("[get_line_types] Guessing lexer for" + str(rev) + ":" + str(path) + ".")
+                lexer = guess_lexer(file_content)
+            except ClassNotFound:
+                printdbg("[get_line_types] No guess or lexer found for " + str(rev) + ":" + str(path) + ". Using TextLexer instead.")
+                lexer = TextLexer()
+
         # Not shure if this should be skipped, when the language uses off-side rules (e.g. python,
         # see http://en.wikipedia.org/wiki/Off-side_rule for list)
         stripped_code = _strip_lines(file_content)
         lexer_output = _iterate_lexer_output(lexer.get_tokens(stripped_code))
-        line_types = _comment_empty_or_code(lexer_output)
-        line_types = line_types.split("\n")
-    else:
-        printdbg("Error: No file content for " + str(rev) + ":" + str(path) + "! Skipping.")
-        line_types = None
+        line_types_str = _comment_empty_or_code(lexer_output)
+        line_types = line_types_str.split("\n")
 
     return line_types
     #profiler_stop("Processing LineTypes for revision %s:%s", (self.rev, self.file_path))
