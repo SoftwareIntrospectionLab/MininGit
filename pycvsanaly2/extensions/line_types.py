@@ -49,8 +49,8 @@ def _get_file_content(repo, uri, rev):
         repo.cat(uri, rev)
         file_content = to_utf8(io.getvalue()).decode("utf-8")
         file_content = _convert_linebreaks(file_content) #make shure we do have the same new lines.
-    except (CommandError, CommandRunningError) as e:
-        printerr("Error running show command: %s, FAILED", (str(e),))
+    except Exception as e:
+        printerr("[get_line_types] Error running show command: %s, FAILED", (str(e),))
         file_content = None
 
     repo.remove_watch(CAT, wid)
@@ -68,9 +68,9 @@ def _iterate_lexer_output(iterator):
             item = {}
             item["token"] = str(ttype)
             item["value"] = to_utf8(input_lines[i]).decode("utf-8")
-            if (item["value"] != '') | (i == 0):
+            if (item["value"] != '') or (i == 0):
                 output_line.append(item)
-            if (len(input_lines) > 1) & (i < len(input_lines)-1):
+            if (len(input_lines) > 1) and (i < len(input_lines)-1):
                 output_lines.append(output_line)
                 output_line = []
     return output_lines
