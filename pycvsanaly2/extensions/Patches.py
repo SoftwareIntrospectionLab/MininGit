@@ -53,7 +53,7 @@ class PatchJob(Job):
 
         while not done and not failed:
             try:
-                self.repo.show(self.repo_uri, self.rev)
+                self.repo.show(self.repo_uri, self.rev, ignore_whitespaces=True)
                 self.data = to_utf8(unicode(to_utf8(io.getvalue()), "utf-8", errors='replace')).strip()
                 done = True
             except (CommandError, CommandRunningError) as e:
