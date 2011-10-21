@@ -125,11 +125,10 @@ class HunkBlameJob(Job):
                        start=start, end=end, ignore_whitespaces=True)
             self.collect_results(out)
         except RepositoryCommandError, e:
+            printerr("Command %s returned %d (%s).", (e.cmd, e.returncode, e.error))
             self.failed = True
         p.end()
         repo.remove_watch(BLAME, wid)
-
-        return not self.failed
 
     def run(self, repo, repo_uri):
         try:
