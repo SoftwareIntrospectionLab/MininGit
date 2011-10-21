@@ -110,7 +110,7 @@ class HunkBlameJob(Job):
         wid = repo.add_watch(BLAME, blame_line, p)
         try:
             repo.blame(os.path.join(repo_uri, self.prev_path), self.prev_rev,
-                       start=start, end=end)
+                       start=start, end=end, ignore_whitespaces=True)
             self.collect_results(out)
         except RepositoryCommandError, e:
             self.failed = True
