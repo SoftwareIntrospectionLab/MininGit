@@ -175,7 +175,8 @@ class HunkBlame(Blame):
                 cursor.execute("CREATE TABLE hunk_blames (" +
                                 "id integer primary key," +
                                 "hunk_id integer," +
-                                "bug_commit_id integer"
+                                "bug_commit_id integer," +
+                                "KEY hunk_id (hunk_id)"
                                 ")")
             except sqlite3.dbapi2.OperationalError:
                 raise TableAlreadyExists
@@ -189,7 +190,8 @@ class HunkBlame(Blame):
                 cursor.execute("CREATE TABLE hunk_blames (" +
                                 "id integer primary key auto_increment," +
                                 "hunk_id integer REFERENCES hunks(id)," +
-                                "bug_commit_id integer REFERENCES scmlog(id)" +
+                                "bug_commit_id integer REFERENCES scmlog(id)," +
+                                "KEY hunk_id (hunk_id)" +
                                 ") CHARACTER SET=utf8")
             except MySQLdb.OperationalError, e:
                 if e.args[0] == 1050:
