@@ -24,6 +24,7 @@ from repositoryhandler.Command import CommandError, CommandRunningError
 from pycvsanaly2.utils import to_utf8, printerr, printdbg
 from io import BytesIO
 import os
+from pygments.lexers import NemerleLexer
 
 def _convert_linebreaks(input):
     """Converts all linebreaks (e.g. from windows) to one format"""
@@ -119,6 +120,11 @@ def get_line_types(repo, repo_uri, rev, path):
             except ClassNotFound:
                 printdbg("[get_line_types] No guess or lexer found for " + str(rev) + ":" + str(path) + ". Using TextLexer instead.")
                 lexer = TextLexer()
+
+        if isinstance(lexer, NemerleLexer):
+            # this lexer is broken and yield an unstoppable process
+            # see https://bitbucket.org/birkenfeld/pygments-main/issue/706/nemerle-lexer-ends-in-an-infinite-loop
+            lexer = TextLexer()
 
         # Not shure if this should be skipped, when the language uses off-side rules (e.g. python,
         # see http://en.wikipedia.org/wiki/Off-side_rule for list)
