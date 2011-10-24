@@ -316,4 +316,11 @@ class Blame(Extension):
 
         profiler_stop("Running Blame extension", delete=True)
 
+    def backout(self, repo, uri, db):
+        update_statement = """delete from blame where
+                              commit_id in (select s.id from scmlog s
+                                          where s.repository_id = ?)"""
+
+        self._do_backout(repo, uri, db, update_statement)
+
 register_extension("Blame", Blame)
