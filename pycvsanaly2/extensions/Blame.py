@@ -181,7 +181,7 @@ class Blame(Extension):
     def __get_authors(self, cursor):
         query = "select id, name from people"
         cursor.execute(statement(query, self.db.place_holder))
-        self.authors = dict([(name, id) for id, name in cursor.fetchall()])
+        self.authors = dict([(name.decode("utf-8"), id) for id, name in cursor.fetchall()])
 
     def process_finished_jobs(self, job_pool, write_cursor, unlocked=False):
         if unlocked:
