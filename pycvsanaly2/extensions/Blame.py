@@ -214,9 +214,14 @@ class Blame(Extension):
         file_id = job.get_file_id()
         commit_id = job.get_commit_id()
 
-        return [(self.id_counter + i, file_id, commit_id, \
+        try:
+            args = [(self.id_counter + i, file_id, commit_id, \
                  self.authors[key], authors[key]) \
                  for i, key in enumerate(authors.keys())]
+        except:
+            printdbg("Error occurred while processing file %d @ commit %d", (file_id, commit_id))
+            raise
+        return args
 
     def run(self, repo, uri, db):
         profiler_start("Running Blame extension")
