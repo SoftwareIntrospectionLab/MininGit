@@ -283,15 +283,6 @@ class HunkBlame(Blame):
 
         cnn.commit()
 
-    def __get_hunk_blames(self, cursor, repoid):
-        query = """select distinct b.hunk_id
-            from hunk_blames b
-            join hunks h on b.hunk_id=h.id
-            join files f on h.file_id=f.id
-            where f.repository_id=?"""
-        cursor.execute(statement(query, self.db.place_holder), (repoid,))
-        return [h[0] for h in cursor.fetchall()]
-
     def populate_insert_args(self, job):
         bug_revs = job.get_bug_revs()
         cnn = self.db.connect()
@@ -356,8 +347,6 @@ class HunkBlame(Blame):
         
         self.__add_index(cnn)
 
-        blames = self.__get_hunk_blames(read_cursor, repoid)
-
         job_pool = JobPool(repo, path or repo.get_uri(), queuesize=100)
 
         outer_query = """select distinct h.file_id, h.commit_id
@@ -417,7 +406,6 @@ class HunkBlame(Blame):
                         % (file_id, commit_id))
                 finally:
                     inner_cursor.close()
-                hunks = [h for h in hunks if h[0] not in blames]
 
                 # create the Job and run it
                 job = HunkBlameJob(hunks, current_path, current_rev)
