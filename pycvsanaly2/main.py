@@ -88,6 +88,8 @@ Options:
                                  the on-disk cache, so will often empty it.
       --analyze-merges           Tells cvsanaly to also parse merge commits.
                                  The default is to skip them.
+      --hb-ignore-comments       Tells extension HunkBlame to ignore lines,
+                                 that only contain comments.
 
 Database:
 
@@ -219,7 +221,7 @@ def main(argv):
                  "db-database=", "db-driver=", "extensions=", "hard-order",
                  "metrics-all", "metrics-noerr", "no-content", "branch=",
                  "backout", "low-memory", "count-types=", "analyze-merges",
-                 "bugfixregexes=", "bugfixregexes-case="]
+                 "hb-ignore-comments", "bugfixregexes=", "bugfixregexes-case="]
 
     # Default options
     debug = None
@@ -244,6 +246,7 @@ def main(argv):
     backout = None
     count_types = None
     analyze_merges = None
+    hb_ignore_comments = None
     bug_fix_regexes = None
     bug_fix_regexes_case_sensitive = None
 
@@ -304,6 +307,8 @@ def main(argv):
             backout = True
         elif opt in ("--analyze-merges"):
             analyze_merges = True
+        elif opt in ("--hb-ignore-comments"):
+            hb_ignore_comments = True
         elif opt in("--bugfixregexes", ):
             bug_fix_regexes = value.split(',')
         elif opt in("--bugfixregexes-case", ):
@@ -368,6 +373,8 @@ def main(argv):
         config.extensions = get_all_extensions()
     if analyze_merges is not None:
         config.analyze_merges = analyze_merges
+    if hb_ignore_comments is not None:
+        config.hb_ignore_comments = hb_ignore_comments
     if bug_fix_regexes is not None:
         if bug_fix_regexes == ['']:
             # This is empty, it means the user didn't want to match
