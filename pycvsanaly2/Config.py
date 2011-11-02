@@ -63,6 +63,8 @@ class Config(object):
                                                          "CVE-\d+-\d+"],
                       # Should merge commits be analyzed.
                       'analyze_merges': False,
+                      # Should comments be ignored, when running hunk_blame?
+                      'hb_ignore_comments': False,
                      }
 
     def __init__(self):
@@ -183,6 +185,10 @@ class Config(object):
             pass
         try:
             self.analyze_merges = config.analyze_merges
+        except:
+            pass
+        try:
+            self.hb_ignore_comments = config.hb_ignore_comments
         except:
             pass
 

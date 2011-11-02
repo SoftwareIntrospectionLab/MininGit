@@ -22,6 +22,7 @@ from pycvsanaly2.extensions import register_extension, ExtensionRunError
 from pycvsanaly2.extensions.line_types import get_line_types, line_is_code
 from pycvsanaly2.profile import profiler_start, profiler_stop
 from pycvsanaly2.utils import printdbg, printerr, uri_to_filename
+from pycvsanaly2.Config import Config
 from pycvsanaly2.Database import (SqliteDatabase, MysqlDatabase,
     TableAlreadyExists, statement)
 from repositoryhandler.backends import RepositoryCommandError
@@ -46,7 +47,7 @@ class HunkBlameJob(Job):
             self.bug_revs = {}
 
         def line(self, blame_line):
-            if line_is_code(self.line_types, blame_line.line):
+            if (not Config().hb_ignore_comments) or line_is_code(self.line_types, blame_line.line):
                 for hunk_id, start_line, end_line in self.hunks:
                     if blame_line.line >= start_line and \
                     blame_line.line <= end_line:
@@ -78,9 +79,12 @@ class HunkBlameJob(Job):
     def __do_the_blame(self, repo, repo_uri):
         printdbg("Running HunkBlameJob for %s@%s", (self.prev_path, self.prev_rev))
 
-        self.line_types = get_line_types(repo, repo_uri, self.prev_rev, self.prev_path)
-        if self.line_types is None:
-            printdbg("""No lexer (output) for %s@%s""" % (self.prev_path, self.prev_rev))
+        if Config().hb_ignore_comments:
+            self.line_types = get_line_types(repo, repo_uri, self.prev_rev, self.prev_path)
+            if self.line_types is None:
+                printdbg("""No lexer (output) for %s@%s""" % (self.prev_path, self.prev_rev))
+        else:
+            self.line_types = []
 
         def blame_line(line, p):
             p.feed(line)
