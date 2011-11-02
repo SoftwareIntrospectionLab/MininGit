@@ -356,7 +356,7 @@ class HunkBlame(Blame):
                 and h.old_end_line is not null
                 and h.file_id is not null
                 and h.commit_id is not null
-                and h.id NOT IN (SELECT hunk_id FROM hunk_blames)
+                and h.id NOT IN (SELECT DISTINCT hunk_id FROM hunk_blames)
         """
         read_cursor.execute(statement(outer_query, db.place_holder), (repoid,))
         progress = Progress("[Extension HunkBlame]", read_cursor.rowcount)
@@ -394,7 +394,7 @@ class HunkBlame(Blame):
                             and h.old_end_line is not null
                             and h.file_id is not null
                             and h.commit_id is not null
-                            and h.id NOT IN (SELECT hunk_id FROM hunk_blames)
+                            and h.id NOT IN (SELECT DISTINCT hunk_id FROM hunk_blames)
                     """
                     inner_cursor.execute(statement(inner_query,
                                                    db.place_holder),
