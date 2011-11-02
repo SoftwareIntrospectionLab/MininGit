@@ -30,6 +30,7 @@ CVSAnalY has the following dependencies:
 * Subversion (optional. Required for SVN support. Make sure to read the "SCM Support section.)
 * Git (optional. Required for Git support. Must be >= 1.7.4 for HunkBlame extension to work)
 * Python MySQLDb (optional, but of course required if you wish to actually use MySQL as your database engine!)
+* Pygments (optional. Required for extension HunkBlame with the option --hb-ignore-comments. This needs to be placed in your [PYTHONPATH][pp])
 
 ### Install
 

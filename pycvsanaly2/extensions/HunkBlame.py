@@ -19,8 +19,10 @@
 
 from Blame import BlameJob, Blame
 from pycvsanaly2.extensions import register_extension, ExtensionRunError
+from pycvsanaly2.extensions.line_types import get_line_types, line_is_code
 from pycvsanaly2.profile import profiler_start, profiler_stop
 from pycvsanaly2.utils import printdbg, printerr, uri_to_filename
+from pycvsanaly2.Config import Config
 from pycvsanaly2.Database import (SqliteDatabase, MysqlDatabase,
     TableAlreadyExists, statement)
 from repositoryhandler.backends import RepositoryCommandError
@@ -35,18 +37,24 @@ import sys
 
 class HunkBlameJob(Job):
     class BlameContentHandler(BlameJob.BlameContentHandler):
-        def __init__(self, hunks):
+        def __init__(self, hunks, line_types):
             self.hunks = hunks
+            if line_types:
+                self.line_types = line_types
+            else:
+                printdbg("Received empty set of line_types!")
+                self.line_types = []
             self.bug_revs = {}
 
         def line(self, blame_line):
-            for hunk_id, start_line, end_line in self.hunks:
-                if blame_line.line >= start_line and \
-                blame_line.line <= end_line:
-                    if self.bug_revs.get(hunk_id) is None:
-                        self.bug_revs[hunk_id] = set()
-                    self.bug_revs[hunk_id].add(blame_line.rev)
-                    break
+            if (not Config().hb_ignore_comments) or line_is_code(self.line_types, blame_line.line):
+                for hunk_id, start_line, end_line in self.hunks:
+                    if blame_line.line >= start_line and \
+                    blame_line.line <= end_line:
+                        if self.bug_revs.get(hunk_id) is None:
+                            self.bug_revs[hunk_id] = set()
+                        self.bug_revs[hunk_id].add(blame_line.rev)
+                        break
 
         def start_file(self, filename):
             self.filename = filename
@@ -62,6 +70,7 @@ class HunkBlameJob(Job):
         self.prev_path = None
         self.prev_rev = None
         self.bug_revs = {}
+        self.line_types = None
 
         self.hunks = hunks
         self.current_path = current_path
@@ -69,6 +78,13 @@ class HunkBlameJob(Job):
 
     def __do_the_blame(self, repo, repo_uri):
         printdbg("Running HunkBlameJob for %s@%s", (self.prev_path, self.prev_rev))
+
+        if Config().hb_ignore_comments:
+            self.line_types = get_line_types(repo, repo_uri, self.prev_rev, self.prev_path)
+            if self.line_types is None:
+                printdbg("""No lexer (output) for %s@%s""" % (self.prev_path, self.prev_rev))
+        else:
+            self.line_types = []
 
         def blame_line(line, p):
             p.feed(line)
@@ -113,11 +129,10 @@ class HunkBlameJob(Job):
                        start=start, end=end, ignore_whitespaces=True)
             self.collect_results(out)
         except RepositoryCommandError, e:
+            printerr("Command %s returned %d (%s).", (e.cmd, e.returncode, e.error))
             self.failed = True
         p.end()
         repo.remove_watch(BLAME, wid)
-
-        return not self.failed
 
     def run(self, repo, repo_uri):
         try:
@@ -138,7 +153,7 @@ class HunkBlameJob(Job):
             printerr("Not a valid hunk: " + str(e))
 
     def get_content_handler(self):
-        return self.BlameContentHandler(self.hunks)
+        return self.BlameContentHandler(self.hunks, self.line_types)
 
     def collect_results(self, content_handler):
         self.bug_revs = content_handler.bug_revs
