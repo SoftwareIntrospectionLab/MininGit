@@ -359,6 +359,17 @@ If the diff only *deletes* lines, the hunk only stores changes in the `old_start
 * `old_end_line`: The end line of the hunk from the changed file.
 * `bug_introducing`: Boolean used by [UCSC](http://users.soe.ucsc.edu/~ejw) research project.
 
+#### LineBlame extension
+
+This extension adds a `line_blames` table, which tracks the revision when each line was introduced for each file at each revision. As adjacent  lines are often introduced in the same revision, they are group together in hunks by their start line and end line.
+
+* `id`: Auto-generated database identifier.
+* `file_id`: ID for the file of interest.
+* `commit_id`: The revision for the file of interest.
+* `start`: the start line number for the code hunk.
+* `end`: the end line number for the code hunk.
+* `blame_commit_id`: the ID for the revision when the hunk was introduced.
+
 
 Frequently Asked Questions
 --------------------------

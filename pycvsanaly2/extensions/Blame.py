@@ -121,6 +121,8 @@ class Blame(Extension):
                                        n_lines)
                          VALUES (?,?,?,?,?)"""
     MAX_BLAMES = 10
+    
+    job_class = BlameJob
 
     def __init__(self):
         self.db = None
@@ -128,7 +130,7 @@ class Blame(Extension):
         self.authors = None
         self.id_counter = 1
 
-    def __create_table(self, cnn):
+    def create_table(self, cnn):
         cursor = cnn.cursor()
 
         if isinstance(self.db, SqliteDatabase):
@@ -172,7 +174,7 @@ class Blame(Extension):
         cnn.commit()
         cursor.close()
 
-    def __get_blames(self, cursor, repoid):
+    def get_blames(self, cursor, repoid):
         query = "select b.file_id, b.commit_id from blame b, files f " + \
                 "where b.file_id = f.id and repository_id = ?"
         cursor.execute(statement(query, self.db.place_holder), (repoid,))
@@ -181,7 +183,7 @@ class Blame(Extension):
     def __get_authors(self, cursor):
         query = "select id, name from people"
         cursor.execute(statement(query, self.db.place_holder))
-        self.authors = dict([(name, id) for id, name in cursor.fetchall()])
+        self.authors = dict([(name.decode("utf-8"), id) for id, name in cursor.fetchall()])
 
     def process_finished_jobs(self, job_pool, write_cursor, unlocked=False):
         if unlocked:
@@ -214,9 +216,14 @@ class Blame(Extension):
         file_id = job.get_file_id()
         commit_id = job.get_commit_id()
 
-        return [(self.id_counter + i, file_id, commit_id, \
+        try:
+            args = [(self.id_counter + i, file_id, commit_id, \
                  self.authors[key], authors[key]) \
                  for i, key in enumerate(authors.keys())]
+        except:
+            printdbg("Error occurred while processing file %d @ commit %d", (file_id, commit_id))
+            raise
+        return args
 
     def run(self, repo, uri, db):
         profiler_start("Running Blame extension")
@@ -248,7 +255,7 @@ class Blame(Extension):
                                     "Exception: %s" % (repo.get_uri(), str(e)))
 
         try:
-            self.__create_table(cnn)
+            self.create_table(cnn)
         except TableAlreadyExists:
             cursor = cnn.cursor()
             cursor.execute(statement("SELECT max(id) from blame", 
@@ -264,7 +271,7 @@ class Blame(Extension):
         self.__get_authors(read_cursor)
 
         if self.id_counter > 1:
-            blames = self.__get_blames(read_cursor, repoid)
+            blames = self.get_blames(read_cursor, repoid)
 
         job_pool = JobPool(repo, path or repo.get_uri(), queuesize=100)
 
@@ -299,7 +306,7 @@ class Blame(Extension):
                 printdbg("Skipping file %s", (relative_path,))
                 continue
 
-            job = BlameJob(file_id, commit_id, relative_path, rev)
+            job = self.job_class(file_id, commit_id, relative_path, rev)
             job_pool.push(job)
             n_blames += 1
 
@@ -315,5 +322,12 @@ class Blame(Extension):
         cnn.close()
 
         profiler_stop("Running Blame extension", delete=True)
+
+    def backout(self, repo, uri, db):
+        update_statement = """delete from blame where
+                              commit_id in (select s.id from scmlog s
+                                          where s.repository_id = ?)"""
+
+        self._do_backout(repo, uri, db, update_statement)
 
 register_extension("Blame", Blame)

@@ -579,7 +579,7 @@ class MysqlDatabase(Database):
                             ) CHARACTER SET=utf8 ENGINE=MyISAM""")
             cursor.execute("""CREATE TABLE people (
                             id INT primary key,
-                            name varchar(255),
+                            name varchar(255) collate utf8_bin,
                             email varchar(255)
                             ) CHARACTER SET=utf8 ENGINE=MyISAM""")
             cursor.execute("""CREATE TABLE scmlog (
