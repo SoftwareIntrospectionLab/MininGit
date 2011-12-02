@@ -265,7 +265,10 @@ class DBContentHandler(ContentHandler):
                            (person.name, self.repo_id), True)
 
             return person_id
-
+        
+        if person is None:
+            return None
+        
         name = to_utf8(person.name)
 
         if name in self.people_cache:
