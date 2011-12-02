@@ -23,7 +23,7 @@ import re
 from ContentHandler import ContentHandler
 from Database import (DBRepository, DBLog, DBFile, DBFileLink,
                       DBAction, DBFileCopy, DBBranch, DBPerson, DBTag,
-                      DBTagRev, statement)
+                      DBTagRev, statement, MysqlDatabase)
 from profile import profiler_start, profiler_stop
 from utils import printdbg, printout, to_utf8, cvsanaly_cache_dir
 from cPickle import dump, load
@@ -161,15 +161,24 @@ class DBContentHandler(ContentHandler):
         cursor = self.cursor
 
         if self.actions:
-            actions = [(a.id, a.type, a.file_id, a.commit_id, a.branch_id, a.current_file_path) \
-                       for a in self.actions]
             profiler_start("Inserting actions for repository %d",
                            (self.repo_id,))
-            try:
-                cursor.executemany(statement(DBAction.__insert__,
-                                         self.db.place_holder), actions)
-            except Exception, e:
-                pass
+            for a in self.actions:
+                action_tuple = (a.id, a.type, a.file_id, a.commit_id, a.branch_id, a.current_file_path)
+                if isinstance(self.db, MysqlDatabase):
+                    import MySQLdb
+                    try:
+                        cursor.execute(statement(DBAction.__insert__,
+                                             self.db.place_holder), 
+                                             action_tuple)
+                    except MySQLdb.IntegrityError, e:
+                        if e.args[0] == 1062:
+                            # Duplicate entry
+                            pass
+                else:
+                    cursor.execute(statement(DBAction.__insert__,
+                                             self.db.place_holder), 
+                                             action_tuple)
             self.actions = []
             profiler_stop("Inserting actions for repository %d",
                           (self.repo_id,))
