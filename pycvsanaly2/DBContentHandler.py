@@ -337,8 +337,10 @@ class DBContentHandler(ContentHandler):
         return tag_id
 
     def __move_path_to_deletes_cache(self, path):
-        self.deletes_cache[path] = self.file_cache[path]
-        del(self.file_cache[path])
+        value =self.file_cache.get(path) 
+        if value is not None:
+            self.deletes_cache[path] = value
+            del(self.file_cache[path])
 
     def __get_file_from_moves_cache(self, path):
         # Path is not in the cache, but it should
