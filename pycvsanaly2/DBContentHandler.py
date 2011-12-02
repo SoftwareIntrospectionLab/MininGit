@@ -165,8 +165,11 @@ class DBContentHandler(ContentHandler):
                        for a in self.actions]
             profiler_start("Inserting actions for repository %d",
                            (self.repo_id,))
-            cursor.executemany(statement(DBAction.__insert__,
+            try:
+                cursor.executemany(statement(DBAction.__insert__,
                                          self.db.place_holder), actions)
+            except Exception, e:
+                pass
             self.actions = []
             profiler_stop("Inserting actions for repository %d",
                           (self.repo_id,))
@@ -341,6 +344,8 @@ class DBContentHandler(ContentHandler):
         if value is not None:
             self.deletes_cache[path] = value
             del(self.file_cache[path])
+        else:
+            pass
 
     def __get_file_from_moves_cache(self, path):
         # Path is not in the cache, but it should
