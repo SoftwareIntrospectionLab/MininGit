@@ -632,7 +632,7 @@ class DBContentHandler(ContentHandler):
         log.repository_id = self.repo_id
         self.revision_cache[commit.revision] = log.id
 
-        log.committer = self.__get_person(commit.committer)
+        log.committer = self.__get_person(commit.committer or commit.author)
 
         if commit.author == commit.committer:
             log.author = log.committer
