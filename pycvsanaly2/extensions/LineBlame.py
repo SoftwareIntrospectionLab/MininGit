@@ -117,8 +117,8 @@ class LineBlame(Blame):
         cnn.close()
         return args
 
-        def get_max_id(self, db):
-            return None
+    def get_max_id(self, db):
+        return None
 
     def get_blames(self, cursor, repoid):
         query = "select distinct b.file_id, b.commit_id from line_blames b, files f " + \
