@@ -23,7 +23,7 @@ import re
 from ContentHandler import ContentHandler
 from Database import (DBRepository, DBLog, DBFile, DBFileLink,
                       DBAction, DBFileCopy, DBBranch, DBPerson, DBTag,
-                      DBTagRev, statement)
+                      DBTagRev, statement, MysqlDatabase)
 from profile import profiler_start, profiler_stop
 from utils import printdbg, printout, to_utf8, cvsanaly_cache_dir
 from cPickle import dump, load
@@ -161,12 +161,24 @@ class DBContentHandler(ContentHandler):
         cursor = self.cursor
 
         if self.actions:
-            actions = [(a.id, a.type, a.file_id, a.commit_id, a.branch_id, a.current_file_path) \
-                       for a in self.actions]
             profiler_start("Inserting actions for repository %d",
                            (self.repo_id,))
-            cursor.executemany(statement(DBAction.__insert__,
-                                         self.db.place_holder), actions)
+            for a in self.actions:
+                action_tuple = (a.id, a.type, a.file_id, a.commit_id, a.branch_id, a.current_file_path)
+                if isinstance(self.db, MysqlDatabase):
+                    import MySQLdb
+                    try:
+                        cursor.execute(statement(DBAction.__insert__,
+                                             self.db.place_holder), 
+                                             action_tuple)
+                    except MySQLdb.IntegrityError, e:
+                        if e.args[0] == 1062:
+                            # Duplicate entry
+                            pass
+                else:
+                    cursor.execute(statement(DBAction.__insert__,
+                                             self.db.place_holder), 
+                                             action_tuple)
             self.actions = []
             profiler_stop("Inserting actions for repository %d",
                           (self.repo_id,))
@@ -253,7 +265,10 @@ class DBContentHandler(ContentHandler):
                            (person.name, self.repo_id), True)
 
             return person_id
-
+        
+        if person is None:
+            return None
+        
         name = to_utf8(person.name)
 
         if name in self.people_cache:
@@ -337,8 +352,12 @@ class DBContentHandler(ContentHandler):
         return tag_id
 
     def __move_path_to_deletes_cache(self, path):
-        self.deletes_cache[path] = self.file_cache[path]
-        del(self.file_cache[path])
+        value =self.file_cache.get(path) 
+        if value is not None:
+            self.deletes_cache[path] = value
+            del(self.file_cache[path])
+        else:
+            pass
 
     def __get_file_from_moves_cache(self, path):
         # Path is not in the cache, but it should
@@ -632,7 +651,7 @@ class DBContentHandler(ContentHandler):
         log.repository_id = self.repo_id
         self.revision_cache[commit.revision] = log.id
 
-        log.committer = self.__get_person(commit.committer)
+        log.committer = self.__get_person(commit.committer or commit.author)
 
         if commit.author == commit.committer:
             log.author = log.committer

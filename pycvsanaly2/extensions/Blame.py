@@ -224,6 +224,16 @@ class Blame(Extension):
             printdbg("Error occurred while processing file %d @ commit %d", (file_id, commit_id))
             raise
         return args
+    
+    def get_max_id(self, db):
+        cnn = self.db.connect()
+        cursor = cnn.cursor()
+        cursor.execute(statement("SELECT max(id) from blame", 
+                                 db.place_holder))
+        max_id = cursor.fetchone()[0]
+        cursor.close()
+        cnn.close()
+        return max_id
 
     def run(self, repo, uri, db):
         profiler_start("Running Blame extension")
@@ -257,14 +267,12 @@ class Blame(Extension):
         try:
             self.create_table(cnn)
         except TableAlreadyExists:
-            cursor = cnn.cursor()
-            cursor.execute(statement("SELECT max(id) from blame", 
-                                     db.place_holder))
-            id = cursor.fetchone()[0]
-            if id is not None:
-                self.id_counter = id + 1
+            max_id = self.get_max_id(db)
+            
+            if max_id is not None:
+                self.id_counter = max_id + 1
 
-            cursor.close()
+            
         except Exception, e:
             raise ExtensionRunError(str(e))
 
