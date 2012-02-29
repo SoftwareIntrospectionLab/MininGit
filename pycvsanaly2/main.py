@@ -72,7 +72,9 @@ Options:
   -s, --save-logfile[=path]      Save the repository log to the given path
   -n, --no-parse                 Skip the parsing process. It only makes sense
                                  in conjunction with --extensions
-      --extensions=ext1,ext2,    List of extensions to run
+      --extensions=ext1,ext2,    List of extensions to run, available extensions
+                                 can be found under 'pycvsanaly2/extensions'
+                                 directory
       --hard-order               Execute extensions in exactly the order given.
                                  Won't follow extension dependencies.
       --branch=[branch]          Specify local branch that should be monitored.
