@@ -240,7 +240,27 @@ class HunkBlame(Blame):
                     raise
             finally:
                 cursor.close()
-        
+                
+        cursor = cnn.cursor()
+        query = "CREATE INDEX hunk_id ON hunk_blames(hunk_id);"
+        if isinstance(self.db, SqliteDatabase):
+            import sqlite3.dbapi2
+            try:
+                cursor.execute(query)
+            except sqlite3.dbapi2.OperationalError:
+                pass
+            finally:
+                cursor.close()
+                
+        elif isinstance(self.db, MysqlDatabase):
+            import MySQLdb
+            try:
+                cursor.execute(query)
+            except MySQLdb.OperationalError, e:
+                if e.args[0] != 1061:
+                    raise
+            finally:
+                cursor.close()
 
     def __drop_cache(self, cnn):
         cursor = cnn.cursor()
