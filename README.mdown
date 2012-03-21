@@ -1,23 +1,23 @@
-CVSAnalY
+MininGit
 ========
 
 Description
 -----------
 
-The CVSAnalY tool extracts information out of source code repository logs and stores it into a database.
+The MininGit tool extracts information out of source code repository logs and stores it into a database. MininGit is a fork of Libresoft's CVSAnalY.
 
 Quick installation
 ------------------
 1. Get pip: `sudo easy_install pip`
-2. Use pip: `pip install "https://github.com/SoftwareIntrospectionLab/cvsanaly/tarball/master#egg=master"`
+2. Use pip: `pip install "https://github.com/SoftwareIntrospectionLab/MininGit/tarball/master#egg=master"`
 
 Slower installation
 -------------------
 ### Requirements
 
-**Note for upgraders:** CVSAnalY now uses setuptools for installation. Depending on your [PYTHONPATH][pp], the old CVSAnalY might not be removed (or worse, override this release). Please check for and remove old installations before installing this version.
+**Note for upgraders:** MininGit now uses setuptools for installation. Depending on your [PYTHONPATH][pp], the old MininGit/CVSAnalY might not be removed (or worse, override this release). Please check for and remove old installations before installing this version.
 
-CVSAnalY has the following dependencies:
+MininGit has the following dependencies:
 
 * Python 2.5 or higher
 * RepositoryHandler (this needs to be placed in your [PYTHONPATH][pp])
@@ -35,7 +35,7 @@ CVSAnalY has the following dependencies:
 
 ### Install
 
-You don't need to do anything if you are happy using CVSAnalY from the path you downloaded it to. This is easiest if you intend on staying up-to-date with our releases from our Git repositories. You can also move the directory around to wherever you wish.
+You don't need to do anything if you are happy using MininGit from the path you downloaded it to. This is easiest if you intend on staying up-to-date with our releases from our Git repositories. You can also move the directory around to wherever you wish.
 
 If you want to install it to a system location, you can do this by running the `setup.py` script:
 
@@ -43,54 +43,54 @@ If you want to install it to a system location, you can do this by running the `
 
 If you do this, you'll need to remember to run this every time you get a new release.
 
-If you don't have root privledges, you can just add CVSAnalY to your $PATH (cvsanalydir is the directory
-where CVSAnalY is installed):
+If you don't have root privledges, you can just add MininGit to your $PATH (<MininGit dir> is the directory
+where MininGit is installed):
 
-    export PATH=$PATH:cvsanalydir
+    export PATH=$PATH:<MininGit dir>
 
-CVSAnalY needs RepositoryHandler. If it is not installed in the usual
+MininGit needs RepositoryHandler. If it is not installed in the usual
 path for Python packages, PKG\_CONFIG\_PATH should include the directory
 where it is installed (repohandlerdir is the path where RepositoryHandler
 is installed):
 
     export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:repohandlerdir
 
-You are now ready to use CVSAnalY!
+You are now ready to use MininGit!
 
-Running CVSAnalY if you installed it
+Running MininGit if you installed it
 ------------------------------------
 
 Just checkout (from Git/SVN/CVS) to obtain a local
-version of your repository, and then run `cvsanaly2`.
+version of your repository, and then run `miningit`.
 Here's an example using [Voldemort](https://github.com/voldemort/voldemort)
 
     $ git clone git://github.com/voldemort/voldemort.git ~/Downloads/voldemort
     $ cd ~/Downloads/voldemort
-    $ ~/Downloads/voldemort$ cvsanaly2 
+    $ ~/Downloads/voldemort$ miningit 
 
 More options, and a more detailed info about the options, can be
-found by running `cvsanaly2 --help`.
+found by running `miningit --help`.
 
 
-Running CVSAnalY from its directory
+Running MininGit from its directory
 -----------------------------------
 Just checkout (from Git/SVN/CVS) to obtain a local
-version of your repository, and then run `cvsanaly2`, pointing to where you downloaded it.
+version of your repository, and then run `miningit`, pointing to where you downloaded it.
 Here's an example using [Voldemort](https://github.com/voldemort/voldemort):
 
     $ git clone git://github.com/voldemort/voldemort.git ~/Downloads/voldemort
-    $ cd [where you downloaded CVSAnalY to]
-    [CVSAnalY directory]$ ./cvsanaly2 ~/Downloads/voldemort 
+    $ cd [where you downloaded MininGit to]
+    [MininGit directory]$ ./miningit ~/Downloads/voldemort 
 
 More options, and a more detailed info about the options, can be
-found by running `./cvsanaly2 --help`.
+found by running `./miningit --help`.
 
 
 SCM Support
 -----------
-At this point in time, **only Git is fully tested and supported across all of CVSAnalY and its extensions**. SVN is a "best effort" basis: things *shouldn't* break using SVN, but if they do, you're unlikely to have anyone respond to a bug tracker issue without a pull request patch.
+At this point in time, **only Git is fully tested and supported across all of MininGit and its extensions**. SVN is a "best effort" basis: things *shouldn't* break using SVN, but if they do, you're unlikely to have anyone respond to a bug tracker issue without a pull request patch.
 
-CVSAnalY was originally created to support CVS and SVN. Git support appeared later, and Bazaar support was started but abandoned. As development has continued, it has become clear that Git represents the best possibilities for data mining source code repositories. Because Git allows all the source history to be downloaded to local storage, CVSAnalY actions are orders of magnitude faster. For example, the Content extension can get every revision of a file. With CVS and SVN, this requires sending the request to the central server, have the server (slowly) process it, and then get the content back. We've found that operations which take hours on Git can take weeks with SVN.
+MininGit was originally created to support CVS and SVN. Git support appeared later, and Bazaar support was started but abandoned. As development has continued, it has become clear that Git represents the best possibilities for data mining source code repositories. Because Git allows all the source history to be downloaded to local storage, MininGit actions are orders of magnitude faster. For example, the Content extension can get every revision of a file. With CVS and SVN, this requires sending the request to the central server, have the server (slowly) process it, and then get the content back. We've found that operations which take hours on Git can take weeks with SVN.
 
 If you have an SVN repository that you want to mine, but you can't find a Git mirror for it, we've had good success with [svn2git](https://github.com/nirvdrum/svn2git).
 
@@ -98,12 +98,12 @@ If you have an SVN repository that you want to mine, but you can't find a Git mi
 If you're having problems
 -------------------------
 ### Packet bigger than max_allowed_packet
-Sometimes, a lot of data can pass between CVSAnalY and MySQL, and packet limits are set too small.
+Sometimes, a lot of data can pass between MininGit and MySQL, and packet limits are set too small.
 
 Follow the instructions [here](http://stackoverflow.com/questions/93128/mysql-got-a-packet-bigger-than-max-allowed-packet-bytes/104176#104176).
 
 ### UnicodeEncodeError: 'ascii' codec can't encode character
-This happens because Python is trying to print out a Unicode string to a terminal that has told Python it only supports ASCII. You can coerce Python into printing Unicode by setting up your [sitecustomize.py](http://diveintopython.org/xml_processing/unicode.html). 	
+This happens because Python is trying to print out a Unicode string to a terminal that has told Python it only supports ASCII. You can coerce Python into printing Unicode by setting up your [sitecustomize.py](http://www.faqs.org/docs/diveintopython/kgp_unicode.html). 	
 
 Credits
 -------
@@ -113,7 +113,7 @@ CVSAnalY is developed by the [GSyC/LibreSoft](http://libresoft.es) group at the
 part of a wider research on libre software engineering, aimed to gain
 knowledge on how libre software is developed and maintained.
 
-CVSAnalY is actively contributed to by the [Software Introspection Lab](http://games.soe.ucsc.edu/sil) at [University of California, Santa Cruz](http://www.ucsc.edu), and hosts Git mirrors at https://github.com/SoftwareIntrospectionLab . UCSC can review pull requests and bug reports using GitHub's systems. This is currently more active than the official LibreSoft repository ecosystem, and may be more likely to have your issue reviewed.
+MininGit is actively contributed to by the [Software Introspection Lab](http://games.soe.ucsc.edu/sil) at [University of California, Santa Cruz](http://www.ucsc.edu), and hosts Git mirrors at https://github.com/SoftwareIntrospectionLab . UCSC can review pull requests and bug reports using GitHub's systems. This is currently more active than the official LibreSoft repository ecosystem, and may be more likely to have your issue reviewed.
 
 More information
 ----------------
@@ -126,8 +126,8 @@ Main authors of CVSAnalY
 ------------------------
 * Carlos Garcia Campos, <carlosgc@gsyc.es>
 
-Contributors
-------------
+Contributors of CVSAnalY
+------------------------
 
 * Gregorio Robles, <grex@gsyc.escet.urjc.es>
 * Alvaro Navarro, <anavarro@gsyc.escet.urjc.es>
@@ -137,6 +137,9 @@ Contributors
 * Martin Michlmayr, <tbm@debian.org>
 * Alvaro del Castillo, <acs@barrapunto.com>
 * Santiago Duenas, <sduenas@libresoft.es>
+
+Contributors of MininGit
+------------------------
 * Chris Lewis, ([Lewisham](https://github.com/Lewisham) on GitHub) <cflewis@soe.ucsc.edu>
 * Zhongpeng Lin, ([linzhp](https://github.com/linzhp) on GitHub) <zlin5@ucsc.edu>
 * Alexander Pepper, ([apepper](https://github.com/apepper) on GitHub) <pepper@inf.fu-berlin.de>
