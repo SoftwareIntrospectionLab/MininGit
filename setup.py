@@ -26,14 +26,14 @@ def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 setup(
-    name = "cvsanaly",
+    name = "miningit",
     version = "2.4",
     author = "Chris Lewis",
     author_email = "cflewis@soe.ucsc.edu",
     description = ("A Python library for analyzing source control repositories"),
     license = "GPL version 2",
     keywords = "cvs svn git source sourcecontrol scm",
-    url = "https://github.com/Lewisham/cvsanaly",
+    url = "https://github.com/SoftwareIntrospectionLab/MininGit",
     packages=['pycvsanaly2', 'pycvsanaly2.extensions'],
     long_description=read('README.mdown'),
     scripts = ["cvsanaly2"],
