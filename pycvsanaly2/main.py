@@ -92,6 +92,9 @@ Options:
                                  The default is to skip them.
       --hb-ignore-comments       Tells extension HunkBlame to ignore lines,
                                  that only contain comments.
+      --dot-dir[=path]           This is a hidden directory where the cache and other
+                                 information is saved. By default, this is the user's
+                                 home directory.
 
 Database:
 
@@ -223,7 +226,8 @@ def main(argv):
                  "db-database=", "db-driver=", "extensions=", "hard-order",
                  "metrics-all", "metrics-noerr", "no-content", "branch=",
                  "backout", "low-memory", "count-types=", "analyze-merges",
-                 "hb-ignore-comments", "bugfixregexes=", "bugfixregexes-case="]
+                 "hb-ignore-comments", "bugfixregexes=", "bugfixregexes-case=",
+                 "dot-dir="]
 
     # Default options
     debug = None
@@ -251,6 +255,7 @@ def main(argv):
     hb_ignore_comments = None
     bug_fix_regexes = None
     bug_fix_regexes_case_sensitive = None
+    dot_dir = None
 
     try:
         opts, args = getopt.getopt(argv, short_opts, long_opts)
@@ -315,6 +320,8 @@ def main(argv):
             bug_fix_regexes = value.split(',')
         elif opt in("--bugfixregexes-case", ):
             bug_fix_regexes_case_sensitive = value.split(',')
+        elif opt in("--dot-dir"):
+        	dot_dir = value
 
     if len(args) <= 0:
         uri = os.getcwd()
@@ -343,6 +350,8 @@ def main(argv):
         config.save_logfile = save_logfile
     if no_parse is not None:
         config.no_parse = no_parse
+    if dot_dir is not None:
+    	config.dot_dir = dot_dir
     if driver is not None:
         config.db_driver = driver
     if user is not  None:

@@ -138,8 +138,12 @@ def cvsanaly_dot_dir():
         return _dirs['dot']
     except KeyError:
         pass
+        
+    if config.dot_dir is not None:
+    	dot_dir = os.path.join(config.dot_dir, '.cvsanaly2')
+    else:
+    	dot_dir = os.path.join(os.environ.get('HOME'), '.cvsanaly2')
     
-    dot_dir = os.path.join(os.environ.get('HOME'), '.cvsanaly2')
     try:
         os.mkdir(dot_dir, 0700)
     except OSError, e:

@@ -43,6 +43,7 @@ class Config(object):
                       'branch': None,
                       'low_memory': False,
                       'backout': False,
+                      'dot_dir': None,
                       # Metrics extension options
                       'metrics_all': False,
                       'metrics_noerr': False,
@@ -111,6 +112,10 @@ class Config(object):
             self.no_parse = config.no_parse
         except:
             pass
+        try:
+        	self.dot_file = config.dot_file
+       	except:
+       		pass
         try:
             self.db_driver = config.db_driver
         except:
