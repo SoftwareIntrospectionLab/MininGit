@@ -81,7 +81,7 @@ from pycvsanaly2.utils import printerr
 
 
 _extensions = {}
-
+_unavailable_extensions = {}
 
 def register_extension(extension_name, extension_class):
     _extensions[extension_name] = extension_class
@@ -92,8 +92,9 @@ def get_extension(extension_name):
         try:
             __import__("pycvsanaly2.extensions.%s" % extension_name)
         except ImportError as e:
-            printerr("Error in importing extension %s: %s", 
-                     (extension_name, str(e)))
+            _unavailable_extensions[extension_name] = "missing dependency: %s" % str(e)
+#            printerr("Error in importing extension %s: %s", 
+#                     (extension_name, str(e)))
 
     if extension_name not in _extensions:
         raise ExtensionUnknownError('Extension %s not registered' % \
@@ -101,6 +102,8 @@ def get_extension(extension_name):
 
     return _extensions[extension_name]
 
+def get_unavailable_extensions():
+    return _unavailable_extensions
 
 def get_all_extensions():
     # Do something to get a list of extensions, probably like a file
@@ -111,7 +114,6 @@ def get_all_extensions():
     # script, ie. all possible extensions
     possible_file_paths = glob(os.path.realpath(os.path.dirname(__file__)) \
                                + "/*.py")
-    
     # This splitting will extract the file name from the expression.
     # The list has special Python files, like __init.py__ filtered.
     for extension in [os.path.splitext(os.path.split(fp)[1])[0] for 
