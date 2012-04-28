@@ -40,7 +40,7 @@ from Database import (create_database, TableAlreadyExists, AccessDenied,
     initialize_ids, DatabaseException)
 from DBProxyContentHandler import DBProxyContentHandler
 from Log import LogReader, LogWriter
-from extensions import get_all_extensions
+from extensions import get_all_extensions, get_unavailable_extensions
 from ExtensionsManager import (ExtensionsManager, InvalidExtension,
     InvalidDependency)
 from Config import Config, ErrorLoadingConfig
@@ -50,6 +50,21 @@ from DBDeletionHandler import DBDeletionHandler
 
 
 def usage():
+    extlist = get_all_extensions()
+    unavailableextlist = get_unavailable_extensions();
+    extensionhelp = """\n\t\t\t\t\t"""
+    for extensionname in extlist:
+      extensionhelp += extensionname+"""\n\t\t\t\t\t"""
+    
+    if len(unavailableextlist) > 0:
+      extensionhelp += """
+                                 The following extensions are not available 
+                                 due to missing dependencies:\n\n\t\t\t\t\t"""
+
+    for extensionname in unavailableextlist:
+      extensionhelp += extensionname+""" (%s) """"""\n\t\t\t\t\t""" % \
+                       unavailableextlist[extensionname].replace("No module named ","")
+      
     print "%s %s - %s" % (PACKAGE, VERSION, DESCRIPTION)
     print COPYRIGHT
     print
@@ -72,9 +87,9 @@ Options:
   -s, --save-logfile[=path]      Save the repository log to the given path
   -n, --no-parse                 Skip the parsing process. It only makes sense
                                  in conjunction with --extensions
-      --extensions=ext1,ext2,    List of extensions to run, available extensions
-                                 can be found under 'pycvsanaly2/extensions'
-                                 directory
+      --extensions=ext1,ext2,    List of extensions to run. Currently available 
+                                 extensions are:
+                                 \t"""+extensionhelp+"""
       --hard-order               Execute extensions in exactly the order given.
                                  Won't follow extension dependencies.
       --branch=[branch]          Specify local branch that should be monitored.
