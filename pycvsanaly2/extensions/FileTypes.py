@@ -85,6 +85,28 @@ class FileTypes(Extension):
             
         cnn.commit()
         cursor.close()
+        
+    def __create_indices(self, cnn):
+        cursor = cnn.cursor()
+        if isinstance(self.db, MysqlDatabase):
+            import MySQLdb
+            
+            try:
+                cursor.execute("create index parent_id on file_links(parent_id)")
+            except MySQLdb.OperationalError, e:
+                if e.args[0] != 1061:
+                    cursor.close()
+                    raise
+                
+            try:
+                cursor.execute("create index repository_id on files(repository_id)")
+            except MySQLdb.OperationalError, e:
+                if e.args[0] != 1061:
+                    cursor.close()
+                    raise
+            
+        cursor.close()
+
 
     def __get_files_for_repository(self, repo_id, cursor):
         query = "SELECT ft.file_id from file_types ft, files f " + \
@@ -124,13 +146,13 @@ class FileTypes(Extension):
             files = self.__get_files_for_repository(repo_id, cursor)
         except Exception, e:
             raise ExtensionRunError(str(e))
-
-        query = """select a.file_id fid, f.file_name fname
-                from action_files a, files f
-                where f.id = a.file_id and
-                not exists 
-                (select id from file_links where parent_id = a.file_id)
-                and f.repository_id = ? group by fid, fname"""
+        
+        self.__create_indices(cnn)
+        
+        query = """select distinct f.id fid, f.file_name fname
+                from files f
+                where f.repository_id = ?
+                and not exists (select id from file_links where parent_id = f.id)"""
 
         cursor.execute(statement(query, db.place_holder), (repo_id,))
         write_cursor = cnn.cursor()
