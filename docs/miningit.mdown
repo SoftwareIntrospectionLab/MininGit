@@ -61,7 +61,8 @@ The database is divided into two main parts. The first part consists of the set 
 
 The second part is composed by tables created and filled by `MininGit` extensions. The information provided by these tables depends on every `MininGit` Extension, however the main goal is common: to complete the `MininGit` schema with additional information directly related to the existing tables but not provided by the repository log. 
 
-![Database schema](http://github.com/SoftwareIntrospectionLab/MininGit/raw/develop/docs/images/db_schema.png)
+![Database schema (core)](https://github.com/philip-iii/cvsanaly/raw/contrib/data_model/docs/images/db_core.png)
+![Database schema (with extensions)](https://github.com/philip-iii/cvsanaly/raw/contrib/data_model/docs/images/db_ext.png)
 
 ### General conventions
 
