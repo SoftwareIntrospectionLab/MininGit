@@ -71,9 +71,8 @@ class FileTypes(Extension):
             try:
                 cursor.execute("CREATE TABLE file_types (" +
                                 "id INT primary key," +
-                                "file_id integer," +
-                                "type mediumtext," +
-                                "FOREIGN KEY (file_id) REFERENCES files(id)" +
+                                "file_id integer REFERENCES files(id)," +
+                                "type mediumtext" +
                                 ") CHARACTER SET=utf8")
             except MySQLdb.OperationalError, e:
                 if e.args[0] == 1050:

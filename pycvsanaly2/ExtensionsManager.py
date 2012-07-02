@@ -53,7 +53,8 @@ class ExtensionsManager(object):
                 
             try:
                 self.exts[name] = get_extension(ext)
-            except ExtensionUnknownError:
+            except ExtensionUnknownError,e:
+                printerr("Error importing extenstion %s: %s", (name, str(e)))                
                 raise InvalidExtension(ext)
 
             # Add dependencies

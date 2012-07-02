@@ -462,10 +462,10 @@ def main(argv):
         return 1
     except DatabaseNotFound:
         printerr("Database %s doesn't exist. It must be created before " + \
-                 "running cvsanaly", (config.db_database,))
+                 "running MininGit", (config.db_database,))
         return 1
     except DatabaseDriverNotSupported:
-        printerr("Database driver %s is not supported by cvsanaly",
+        printerr("Database driver %s is not supported by MininGit",
                  (config.db_driver,))
         return 1
 

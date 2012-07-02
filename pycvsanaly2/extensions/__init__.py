@@ -97,8 +97,8 @@ def get_extension(extension_name):
 #                     (extension_name, str(e)))
 
     if extension_name not in _extensions:
-        raise ExtensionUnknownError('Extension %s not registered' % \
-                                    extension_name)
+        raise ExtensionUnknownError('Extension %s not registered: %s' % \
+                                    (extension_name, _unavailable_extensions.get(extension_name)))
 
     return _extensions[extension_name]
 
