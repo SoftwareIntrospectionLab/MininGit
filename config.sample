@@ -21,6 +21,7 @@
 ## Extensions
 ## No extensions enable by default
 # extensions = ['Metrics', 'CommitsLOC']
+hard_order = True
 #
 ## Metrics extension options
 # metrics_all = False
