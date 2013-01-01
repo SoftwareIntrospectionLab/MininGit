@@ -176,6 +176,8 @@ class GitLineCounter(LineCounter):
                                     str(e))
         
     def __parse_line(self, line):
+        if len(line) == 0:
+            return
         match = self.diffstat_pattern.match(line)
         if match:
             added = removed = 0
