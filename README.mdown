@@ -142,7 +142,7 @@ Contributors of CVSAnalY
 
 Contributors of MininGit
 ------------------------
-* Chris Lewis, ([Lewisham](https://github.com/Lewisham) on GitHub) <cflewis@soe.ucsc.edu>
+* Chris Lewis, ([cflewis](https://github.com/cflewis) on GitHub) <cflewis@soe.ucsc.edu>
 * Zhongpeng Lin, ([linzhp](https://github.com/linzhp) on GitHub) <zlin5@ucsc.edu>
 * Alexander Pepper, ([apepper](https://github.com/apepper) on GitHub) <pepper@inf.fu-berlin.de>
 
