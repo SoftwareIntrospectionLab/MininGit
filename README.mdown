@@ -1,6 +1,8 @@
 MininGit
 ========
 
+*Warning*: MininGit is no longer being actively developed or used. It was working last time we looked, but that may change depending on what happens with Git versions. Good luck :)
+
 Description
 -----------
 
@@ -113,7 +115,7 @@ CVSAnalY is developed by the [GSyC/LibreSoft](http://libresoft.es) group at the
 part of a wider research on libre software engineering, aimed to gain
 knowledge on how libre software is developed and maintained.
 
-MininGit is actively contributed to by the [Software Introspection Lab](http://games.soe.ucsc.edu/sil) at [University of California, Santa Cruz](http://www.ucsc.edu), and hosts Git mirrors at https://github.com/SoftwareIntrospectionLab . UCSC can review pull requests and bug reports using GitHub's systems. This is currently more active than the official LibreSoft repository ecosystem, and may be more likely to have your issue reviewed.
+~~MininGit is actively contributed to by the [Software Introspection Lab](http://games.soe.ucsc.edu/sil) at [University of California, Santa Cruz](http://www.ucsc.edu), and hosts Git mirrors at https://github.com/SoftwareIntrospectionLab . UCSC can review pull requests and bug reports using GitHub's systems. This is currently more active than the official LibreSoft repository ecosystem, and may be more likely to have your issue reviewed.~~
 
 More information
 ----------------
